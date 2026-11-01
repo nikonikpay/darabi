@@ -41,7 +41,7 @@ public class GpuAutoTunerTests
     private static readonly AutoTuneOptions Quick = new()
     {
         BaselineDuration = TimeSpan.FromMilliseconds(60), ProbeDuration = TimeSpan.FromMilliseconds(30), ConfirmDuration = TimeSpan.FromMilliseconds(60),
-        ProbeSettle = TimeSpan.Zero, LongSettle = TimeSpan.Zero
+        SceneConfirmDuration = TimeSpan.FromMilliseconds(60), ProbeSettle = TimeSpan.Zero, LongSettle = TimeSpan.Zero, SceneConfirmSettle = TimeSpan.Zero
     };
 
     [Fact] public async Task Finds_an_undervolt_journals_every_step_and_leaves_the_card_at_stock()
@@ -50,7 +50,7 @@ public class GpuAutoTunerTests
         var tuner = new GpuAutoTuner(card, new FakeLoad(card, stableTo: 120), journal.Add, TimeSpan.FromMilliseconds(5));
         var outcome = await tuner.RunAsync(new UndervoltSearch(card.Limits, Quick), CancellationToken.None);
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
-        Assert.Equal(105, outcome.Settings!.CoreOffsetMHz);
+        Assert.Equal(90, outcome.Settings!.CoreOffsetMHz);
         Assert.True(card.Current.IsStock); Assert.True(card.Resets >= 1);
         Assert.Equal(card.Applied, journal.Where(j => j is not null));   // each apply was journalled first
         Assert.Null(journal[^1]);
@@ -67,7 +67,7 @@ public class GpuAutoTunerTests
     [Fact] public async Task Cancelling_puts_the_card_back_to_stock()
     {
         var card = new FakeCard(); using var cts = new CancellationTokenSource();
-        var load = new FakeLoad(card, 1000, run => { if (run == 3) cts.Cancel(); });   // (run 2 is the scene at stock) cancelled during the first probe, with an offset applied
+        var load = new FakeLoad(card, 1000, run => { if (run == 4) cts.Cancel(); });   // (runs 2 and 3 are the scene's shaders and the scene at stock) cancelled during the first probe, with an offset applied
         var outcome = await new GpuAutoTuner(card, load, _ => { }, TimeSpan.FromMilliseconds(5)).RunAsync(new UndervoltSearch(card.Limits, Quick), cts.Token);
         Assert.Equal(AutoTuneVerdict.Cancelled, outcome.Verdict); Assert.Equal(30, card.Applied[^1].CoreOffsetMHz); Assert.True(card.Current.IsStock);
     }

@@ -388,7 +388,8 @@ public sealed partial class TuningViewModel : ObservableObject
     private Task AutoUndervolt()
     {
         if (!_confirm(Loc.Get("Tuning_ConfirmAuto"))) return Task.CompletedTask;
-        return RunAuto(new UndervoltSearch(Device!.Limits, new AutoTuneOptions()), GpuProfileKind.Undervolt);
+        var device = Device!;
+        return RunAuto(new UndervoltSearch(device.Limits, new AutoTuneOptions { RayTraceScene = _load(device).SupportsRayTracing }), GpuProfileKind.Undervolt);
     }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
@@ -427,7 +428,7 @@ public sealed partial class TuningViewModel : ObservableObject
     [ObservableProperty] private bool _sceneBursts;
     partial void OnSceneSecondsChanged(int value) { int fit = Math.Clamp(value, SceneSecondsMin, SceneSecondsMax); if (fit != value) SceneSeconds = fit; }
 
-    /// <summary>Runs the garden scene from its fixed camera on the card as it is now (whatever has been applied) and keeps the figures beside those of the earlier
+    /// <summary>Runs the garden scene on its walking camera on the card as it is now (whatever has been applied) and keeps the figures beside those of the earlier
     /// tests: change the profile, run it again, and see what the frame rate, the temperature and the power did.</summary>
     [RelayCommand(CanExecute = nameof(CanChange))]
     private async Task SceneTest()

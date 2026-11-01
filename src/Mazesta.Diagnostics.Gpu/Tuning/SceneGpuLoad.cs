@@ -2,18 +2,19 @@ using System.Diagnostics; using ComputeSharp; using Mazesta.Diagnostics.Gpu.Benc
 namespace Mazesta.Diagnostics.Gpu.Tuning;
 
 /// <summary>
-/// The tuner's third load: the benchmark's own Persian garden (Direct3D 12, 1080p, the heavy quality) drawn from one fixed camera in one fixed light (the water, the fountain, the wind and the wings
-/// move on the clock), frame after frame with no v-sync. A game's load, not a stress test's: the card runs into its boost the way it does in use, where the
-/// hash chain of <see cref="ComputeGpuLoad"/> holds it at the power limit well under its boost clock. The score is the frame rate, and with a still
-/// camera the view is the same every frame and the motion repeats over seconds, so two profiles are comparable by it (and by the temperature and power read beside it). A frame drawn
-/// before and after the run at one moment must be the same picture, or the card computed wrongly. With <c>rayTraced</c> the frame is the DXR 1.1 one (shadows and reflections by rays).
+/// The tuner's third load: the benchmark's own Persian garden (Direct3D 12, 1080p, the heavy quality) with the benchmark's own walking camera and turning day, frame after frame with no v-sync.
+/// A game's load, not a stress test's: the card's clock and power rise and fall from view to view as in use, and it draws the benchmark's full power, where a fixed view hid the instability games
+/// met. A run shorter than the walk covers all of it faster, so every run sees every view, and two runs of one length are comparable by their frame rate (and by the temperature and power read
+/// beside it). A frame drawn before and after the run at one moment must be the same picture, or the card computed wrongly. With <c>rayTraced</c> the frame is the DXR 1.1 one (shadows and reflections by rays).
 /// With <c>bursts</c> it is <see cref="GpuLoadKind.Transient"/>: the scene in bursts from idle, every CPU core loaded during each burst, and the check frame drawn again
 /// after every long rest - the first frames after the jump are where an undervolt or an overclock fails.
 /// </summary>
 internal static class SceneGpuLoad
 {
     private const int Width = 1920, Height = 1080; private const float CheckTime = 1.234f;
-    private static readonly float[] TuningViews = [0f, 42f, 60f, 90f, 114f, 132f];
+
+    /// <summary>How fast the walk goes for a run this long: at its own pace, or fast enough that the run sees all of it.</summary>
+    private static double WalkSpeed(TimeSpan duration) => Math.Max(1, GardenCamera.Loop / Math.Max(1, duration.TotalSeconds));
 
     public static LoadRunResult Run(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct, bool bursts = false)
     {
@@ -27,11 +28,7 @@ internal static class SceneGpuLoad
     }
 
     private static LoadRunResult RunOnThread(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct, bool bursts)
-    {
-        GardenCamera.Pinned = 0;   // the light stays put; the water, the fountain, the wind and the wings move with the clock
-        GardenCamera.Cycle = TuningViews;   // the camera jumps between the heavy view at the gate and the lighter ones (walk seconds: gate, stairs, hall's left, sitting corner, terrace, right walk)
-        try { return bursts ? Bursts(device, duration, rayTraced, ct) : Draw(device, duration, settle, rayTraced, ct); } finally { GardenCamera.Pinned = null; GardenCamera.Cycle = null; }
-    }
+        => bursts ? Bursts(device, duration, rayTraced, ct) : Draw(device, duration, settle, rayTraced, ct);
 
     /// <summary>Bursts of 30-400 ms, one in four 1-4 s long, after rests of 20-600 ms, one in five 3-8 s long (long enough for the card to drop to its idle clock and
     /// voltage). The score is frames per second of burst; an error is a check frame, drawn after each long rest, that is not the picture drawn before the run.</summary>
@@ -43,7 +40,7 @@ internal static class SceneGpuLoad
         using var cpu = new CpuBursts();
         view.Overlay.Visible = false;
         var before = view.CheckFrame(CheckTime);
-        var rng = new Random(0x7A5E); var clock = Stopwatch.StartNew(); long frames = 0, errors = 0; double burstSeconds = 0;
+        var rng = new Random(0x7A5E); var clock = Stopwatch.StartNew(); long frames = 0, errors = 0; double burstSeconds = 0, speed = WalkSpeed(duration);
         void Rest(double ms) { var until = clock.Elapsed.TotalMilliseconds + ms; while (clock.Elapsed.TotalMilliseconds < until) { ct.ThrowIfCancellationRequested(); if (!window.Pump()) throw new OperationCanceledException("The tuning window was closed."); Thread.Sleep(5); } }
         while (clock.Elapsed < duration)
         {
@@ -58,7 +55,7 @@ internal static class SceneGpuLoad
                 {
                     ct.ThrowIfCancellationRequested();
                     if (!window.Pump()) throw new OperationCanceledException("The tuning window was closed.");
-                    view.Present((float)clock.Elapsed.TotalSeconds); frames++;
+                    view.Present((float)(clock.Elapsed.TotalSeconds * speed)); frames++;
                 }
                 view.Drain();   // the card really goes idle in the rest, not still working through queued frames
             }
@@ -102,12 +99,12 @@ internal static class SceneGpuLoad
         var before = view.CheckFrame(CheckTime);
         for (int i = 0; i < 3; i++) view.Present(0);
         view.Drain();
-        long frames = 0, counted = 0; var clock = Stopwatch.StartNew(); TimeSpan countedFrom = default;
+        long frames = 0, counted = 0; var clock = Stopwatch.StartNew(); TimeSpan countedFrom = default; double speed = WalkSpeed(duration);
         while (clock.Elapsed < duration)
         {
             ct.ThrowIfCancellationRequested();
             if (!window.Pump()) throw new OperationCanceledException("The tuning window was closed.");
-            view.Present((float)clock.Elapsed.TotalSeconds); frames++;
+            view.Present((float)(clock.Elapsed.TotalSeconds * speed)); frames++;
             if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else counted++; }
         }
         view.Drain();

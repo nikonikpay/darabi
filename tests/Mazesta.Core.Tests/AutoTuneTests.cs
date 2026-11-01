@@ -34,7 +34,7 @@ public class AutoTuneTests
     {
         var (outcome, steps) = Drive(new UndervoltSearch(Limits, Options), Undervoltable(stableTo: 150));
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
-        Assert.Equal(new GpuTuningSettings(135, 0, 1905, null, null), outcome.Settings);   // last stable +150, minus the 15 MHz margin
+        Assert.Equal(new GpuTuningSettings(120, 0, 1905, null, null), outcome.Settings);   // last stable +150, minus the 30 MHz margin
         Assert.All(steps.Skip(2), s => Assert.Equal(1905, s.Settings.MaxClockMHz));   // (the first two are stock: the stress test and the scene)
         Assert.Equal(TuneStepKind.Confirm, steps[^1].Kind);
         Assert.True(outcome.Tuned!.AveragePowerW < outcome.Baseline!.AveragePowerW);
@@ -48,7 +48,7 @@ public class AutoTuneTests
         var (outcome, steps) = Drive(new UndervoltSearch(radeon, Options), step => step.Kind == TuneStepKind.Baseline ? M(2900, 150)
             : M(2900, 150 + 0.4 * step.Settings.VoltageOffsetMv, 70, errors: step.Settings.VoltageOffsetMv < -80 ? 2 : 0));
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
-        Assert.Equal(new GpuTuningSettings(0, 0, null, null, null, -70), outcome.Settings);   // last stable -80 mV, minus the 10 mV margin
+        Assert.Equal(new GpuTuningSettings(0, 0, null, null, null, -50), outcome.Settings);   // last stable -80 mV, minus the 30 mV margin
         Assert.All(steps, s => Assert.True(s.Settings.CoreOffsetMHz == 0 && s.Settings.MaxClockMHz is null && s.Settings.VoltageOffsetMv >= -Options.MaxVoltageOffsetMv));
     }
 
@@ -76,7 +76,7 @@ public class AutoTuneTests
         // From +90 up, the card no longer reaches its stock clock: that is not "the same frequency", whatever the power says.
         var (outcome, _) = Drive(new UndervoltSearch(Limits, Options), step => step.Kind == TuneStepKind.Baseline ? M(1905, 340)
             : M(step.Settings.CoreOffsetMHz >= 90 ? 1800 : 1905, 300));
-        Assert.Equal(45, outcome.Settings!.CoreOffsetMHz);
+        Assert.Equal(30, outcome.Settings!.CoreOffsetMHz);
     }
 
     [Fact] public void A_failed_confirmation_steps_down_and_gives_up_after_three_tries()
@@ -87,14 +87,15 @@ public class AutoTuneTests
         });
         Assert.Equal(AutoTuneVerdict.NoImprovement, outcome.Verdict); Assert.Equal("Tuning_Out_ConfirmFailed", outcome.ReasonKey);
         var confirms = steps.Where(s => s.Kind == TuneStepKind.Confirm).Select(s => s.Settings.CoreOffsetMHz).ToList();
-        Assert.Equal([285, 255, 225], confirms);
+        Assert.Equal([270, 240, 210], confirms);
     }
 
     [Fact] public void Undervolt_keeps_the_factory_top_clock_not_the_one_held_at_the_power_limit()
     {
         // Holds 1665 under the heavy load, reaches 1965 lightly. The cap is the top clock; offsets only count if the held clock is kept and the top is reached.
-        var (outcome, steps) = Drive(new UndervoltSearch(Limits, Options), step => step.Load == GpuLoadKind.Scene ? M(1965, 200) : step.Kind == TuneStepKind.Baseline ? M(1665, 350) with { PeakClockMHz = 1965 }
+        var (outcome, steps) = Drive(new UndervoltSearch(Limits, Options), step => step.Load == GpuLoadKind.Scene ? M(1965, 200, errors: step.Settings.CoreOffsetMHz > 150 ? 2 : 0) : step.Kind == TuneStepKind.Baseline ? M(1665, 350) with { PeakClockMHz = 1965 }
             : M(1665, 330 - 0.1 * step.Settings.CoreOffsetMHz, errors: step.Settings.CoreOffsetMHz > 150 ? 2 : 0));
+        Assert.All(steps.Where(s => s.Kind == TuneStepKind.Probe), s => Assert.Equal(GpuLoadKind.Scene, s.Load));   // probed where a game catches it
         Assert.All(steps.Skip(2), s => Assert.Equal(1965, s.Settings.MaxClockMHz));
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(1965, outcome.Settings!.MaxClockMHz);
         Assert.Equal(GpuLoadKind.Scene, steps[^2].Load);   // the top of the curve is tested with the load that gets there
@@ -141,11 +142,11 @@ public class AutoTuneTests
 
     [Fact] public void Overclock_stops_raising_when_the_card_no_longer_runs_faster()
     {
-        // A power-limited card: the cap goes up but the clock stays at 1950.
+        // A power-limited card: the cap goes up but the clock stays at 2010.
         var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, new(90, 0, 1905, null, null), M(1905, 340, throughput: 100)),
-            step => M(Math.Min(step.Settings.MaxClockMHz ?? 1905, 1950), 330, throughput: 103));
-        Assert.Equal(1935, outcome.Settings!.MaxClockMHz);                       // 1965 was the lowest cap that reached 1950 (1995 gained nothing), less the margin
-        Assert.Equal(3, steps.Count(s => s.Kind == TuneStepKind.Probe));
+            step => M(Math.Min(step.Settings.MaxClockMHz ?? 1905, 2010), 330, throughput: 103));
+        Assert.Equal(1965, outcome.Settings!.MaxClockMHz);                       // 2025 was the lowest cap that reached 2010 (2055 gained nothing), less the margin
+        Assert.Equal(5, steps.Count(s => s.Kind == TuneStepKind.Probe));
     }
 
     [Fact] public void Overclock_that_needs_more_power_than_stock_is_refused()
@@ -195,11 +196,11 @@ public class AutoTuneTests
     {
         // Held at the power limit the stress test never sees the clock cap; the garden scene, a game's load, does: more clock, more frames.
         var stock = M(1665, 340, throughput: 100) with { PeakClockMHz = 1965 };
-        static int Top(TuneStep s) => Math.Min(1965 + s.Settings.CoreOffsetMHz, 2025);   // the offset moves the curve; the card has no more in it past 2025
+        static int Top(TuneStep s) => Math.Min(1965 + s.Settings.CoreOffsetMHz, 2085);   // the offset moves the curve; the card has no more in it past 2085
         var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, null, null),
             step => step.Load is GpuLoadKind.Scene or GpuLoadKind.Transient ? M(Top(step), 300, throughput: 60 + (Top(step) - 1965) / 10.0) : stock);
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
-        Assert.Equal(new GpuTuningSettings(60 - Options.OverclockMarginMHz, 0, null, null, null), outcome.Settings);   // from stock: an offset, no cap
+        Assert.Equal(new GpuTuningSettings(120 - Options.OverclockMarginMHz, 0, null, null, null), outcome.Settings);   // from stock: an offset, no cap
         Assert.Equal(GpuLoadKind.Transient, steps[^1].Load);
     }
 
@@ -220,11 +221,25 @@ public class AutoTuneTests
 
     [Fact] public void An_overclock_that_fails_only_in_bursts_from_idle_is_stepped_down()
     {
-        var card = Overclockable(stableTo: 2025, memoryStableTo: 0);
+        var card = Overclockable(stableTo: 2055, memoryStableTo: 0);
         var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, null, null),
             step => step.Load == GpuLoadKind.Transient && step.Settings.CoreOffsetMHz > 60 ? card(step) with { DeviceLost = true } : card(step));
-        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(60, outcome.Settings!.CoreOffsetMHz);
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(30, outcome.Settings!.CoreOffsetMHz);
         Assert.Equal(2, steps.Count(s => s.Load == GpuLoadKind.Transient));
+    }
+
+    [Fact] public void Scene_steps_are_ray_traced_when_asked_and_an_overclock_from_an_undervolt_is_budgeted_on_stock_in_the_scene()
+    {
+        // The walk draws more than the stress test: 180 W against 150. A start of -130 mV draws 150 in the scene, so the room to climb is what stock drew there, not the stress test's figure.
+        var radeon = new GpuTuningLimits(-500, 1000, 0, 0, null, null, null, null, 0, null, null, -200);
+        var (outcome, steps) = Drive(new OverclockSearch(radeon, Options with { RayTraceScene = true }, new(0, 0, null, null, null, -130), M(3400, 150, throughput: 100)), step => step.Load == GpuLoadKind.Compute
+            ? M(3400 + step.Settings.CoreOffsetMHz, 150, throughput: 100 + step.Settings.CoreOffsetMHz / 10.0)
+            : M(3300 + step.Settings.CoreOffsetMHz, step.Settings.IsStock ? 180 : 150 + step.Settings.CoreOffsetMHz / 10.0, errors: step.Settings.CoreOffsetMHz > 120 ? 1 : 0));
+        Assert.True(steps[1].Settings.IsStock); Assert.Equal(GpuLoadKind.Scene, steps[1].Load);
+        Assert.All(steps.Where(s => s.Load is GpuLoadKind.Scene or GpuLoadKind.Transient), s => Assert.True(s.RayTraced));
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(120 - Options.OverclockMarginMHz, outcome.Settings!.CoreOffsetMHz);
+        var (_, under) = Drive(new UndervoltSearch(radeon, Options with { RayTraceScene = true }), step => M(3400, step.Settings.IsStock ? 180 : 150));
+        Assert.All(under.Where(s => s.Load is GpuLoadKind.Scene or GpuLoadKind.Transient), s => Assert.True(s.RayTraced));
     }
 
     [Fact] public void Limits_refuse_values_outside_the_driver_range_instead_of_clamping()

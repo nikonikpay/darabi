@@ -746,7 +746,7 @@
   <data name="Tuning_ProfileSaved" xml:space="preserve"><value>پروفایل «{0}» ذخیره شد.</value></data>
   <data name="Tuning_ConfirmDelete" xml:space="preserve"><value>پروفایل «{0}» حذف شود؟</value></data>
   <data name="Tuning_Refused" xml:space="preserve"><value>{0}: درایور نپذیرفت ({1}).</value></data>
-  <data name="Tuning_ConfirmAuto" xml:space="preserve"><value>جستجوی خودکار کارت گرافیک را حدود ۱۰ تا ۲۵ دقیقه با بار کامل اجرا می‌کند و عمداً آن را تا مرز ناپایداری می‌برد. ممکن است صفحه لحظه‌ای سیاه شود و در موارد نادر سیستم هنگ کند و نیاز به ری‌استارت داشته باشد (در این صورت کارت به حالت کارخانه برمی‌گردد). بازی‌ها را ببندید و کارهایتان را ذخیره کنید. شروع شود؟</value></data>
+  <data name="Tuning_ConfirmAuto" xml:space="preserve"><value>جستجوی خودکار کارت گرافیک را حدود ۲۰ تا ۴۰ دقیقه با بار کامل اجرا می‌کند و عمداً آن را تا مرز ناپایداری می‌برد. ممکن است صفحه لحظه‌ای سیاه شود و در موارد نادر سیستم هنگ کند و نیاز به ری‌استارت داشته باشد (در این صورت کارت به حالت کارخانه برمی‌گردد). بازی‌ها را ببندید و کارهایتان را ذخیره کنید. شروع شود؟</value></data>
   <data name="Tuning_Step_Baseline" xml:space="preserve"><value>اندازه‌گیری</value></data>
   <data name="Tuning_Step_Probe" xml:space="preserve"><value>آزمایش</value></data>
   <data name="Tuning_Step_Confirm" xml:space="preserve"><value>تأیید</value></data>
@@ -3590,12 +3590,12 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس</value></data>
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس {0}</value></data>
   <data name="Tuning_Factory" xml:space="preserve"><value>کارخانه، اندازه‌گیری‌شده زیر بار کامل: کلاک پایدار {0}، بالاترین کلاک {1}؛ توان میانگین {2} (حداکثر {3})؛ ولتاژ هسته {4}. جست‌وجو از بالاترین کلاکی که کارت رسیده شروع می‌کند، نه از کلاکی که زیر سقف توان نگه داشته است.</value></data>
-  <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) در حالت کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین متحرک) در حالت کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
   <data name="Tuning_SceneTest" xml:space="preserve"><value>تست صحنه</value></data>
-  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>صحنهٔ باغ را از یک دوربین ثابت و به‌مدت زمان تعیین‌شده روی کارتی که الان تنظیم است می‌کشد</value></data>
+  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>صحنهٔ اصلی باغ را با دوربین متحرک و به‌مدت زمان تعیین‌شده روی کارتی که الان تنظیم است می‌کشد؛ اگر زمان از یک دور کوتاه‌تر باشد، دوربین تندتر می‌رود تا همهٔ مسیر را ببیند</value></data>
   <data name="Tuning_SceneTest_Clear" xml:space="preserve"><value>پاک کردن</value></data>
   <data name="Tuning_SceneTest_Title" xml:space="preserve"><value>تست صحنه: مقایسهٔ تنظیمات</value></data>
-  <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>هر فریم همان تصویر است: یک پروفایل اعمال کنید، تست را اجرا کنید، تنظیم را عوض کنید و دوباره اجرا کنید</value></data>
+  <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>هر اجرا با یک طول زمان، همان مسیر را می‌بیند: یک پروفایل اعمال کنید، تست را اجرا کنید، تنظیم را عوض کنید و با همان زمان دوباره اجرا کنید</value></data>
   <data name="Tuning_SceneTest_Running" xml:space="preserve"><value>تست صحنه</value></data>
   <data name="Tuning_SceneTest_First" xml:space="preserve"><value>اولین تست</value></data>
   <data name="Tuning_SceneTest_Empty" xml:space="preserve"><value>هنوز تستی نیست. هر تست نرخ فریم، کلاک، توان و دما و تغییر نسبت به تست قبلی را نشان می‌دهد.</value></data>
@@ -3663,7 +3663,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_Net_Https" xml:space="preserve"><value>HTTPS به {0} با {1} جریان هم‌زمان، {2} ثانیه دانلود و بعد {3} ثانیه آپلود</value></data>
   <data name="Detail_Net_IcmpEchoes" xml:space="preserve"><value>پینگ (ICMP) به {0} ({1} درخواست)</value></data>
   <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} مگابایت داده جابه‌جا شد</value></data>
-  <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) با تنظیمات نقطهٔ شروع: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین متحرک) با تنظیمات نقطهٔ شروع: {0}  ←  تنظیم‌شده: {1}</value></data>
   <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>درایور بعد از {0} بافر حافظهٔ گرافیک بیشتری نداد؛ همان بخشی که داد آزمایش شد</value></data>
   <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>آمار ارسال شد و فایل عیب‌یابی آماده است؛ پوشه‌اش باز شد.</value></data>
   <data name="Settings_Report_Button" xml:space="preserve"><value>با این دکمه آمار ناشناس همین حالا ارسال می‌شود، حتی اگر ارسال خودکار خاموش باشد، و فایل عیب‌یابی ساخته می‌شود.</value></data>
@@ -3914,7 +3914,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Help_Tuning_Curve_Title" xml:space="preserve"><value>منحنی ولتاژ-فرکانس کارخانه‌ی کارت و منحنی‌ای که تنظیمات شما می‌سازد، کنار هم.</value></data>
   <data name="Help_Tuning_Profiles" xml:space="preserve"><value>مجموعه‌ای از تنظیمات را به‌صورت پروفایل ذخیره کنید و با یک کلیک اعمال کنید. هر پروفایل فقط روی همان کارتی که با آن ساخته شده پیشنهاد می‌شود.</value></data>
   <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>پروفایلی که وقتی یک بازی تمام‌صفحه یا برنامه‌ای که مشخص کرده‌اید (Lumion، D5 Render، 3ds Max و…) باز شود خودکار اعمال می‌شود و با بسته شدنش برمی‌گردد. این کار را پایشگر پس‌زمینه انجام می‌دهد.</value></data>
-  <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>یک صحنه‌ی سه‌بعدی ثابت برای مقایسه‌ی تنظیمات: پروفایل را اعمال کنید، اجرا کنید، تنظیمات را عوض کنید و دوباره اجرا کنید. آندرولت و اورکلاک خودکار مرحله‌به‌مرحله زیر بار حد خود کارت را پیدا می‌کنند.</value></data>
+  <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>صحنه‌ی اصلی باغ با دوربین متحرک برای مقایسه‌ی تنظیمات: پروفایل را اعمال کنید، اجرا کنید، تنظیمات را عوض کنید و دوباره اجرا کنید. آندرولت و اورکلاک خودکار مرحله‌به‌مرحله زیر بار حد خود کارت را پیدا می‌کنند.</value></data>
   <data name="Help_Tuning_Memory" xml:space="preserve"><value>تایمینگ رم و پروفایل‌های XMP، DOCP یا EXPO در بایوس تنظیم می‌شوند؛ دکمه سیستم را مستقیم به تنظیمات بایوس ری‌استارت می‌کند.</value></data>
   <data name="Help_Nav_Lights" xml:space="preserve"><value>رنگ و افکت نورهای RGB رم، کارت گرافیک، مادربرد، فن‌ها و نوارها (Corsair، ASUS، Gigabyte، MSI و…)، برای همه با هم یا هر کدام جدا.</value></data>
   <data name="Help_Nav_Fans" xml:space="preserve"><value>خروجی‌های فن مادربرد: کنترل خود مادربرد، سرعت ثابت، یا منحنی دما به سرعت که خودتان می‌کشید. پروفایل‌های آماده یک تنظیم را روی همه‌ی فن‌ها می‌گذارند.</value></data>

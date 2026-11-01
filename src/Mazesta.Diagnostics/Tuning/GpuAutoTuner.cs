@@ -26,6 +26,7 @@ public sealed record AutoTuneStepLog(int StepNumber, TuneStep Step, LoadMeasurem
 public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<GpuTuningSettings?> journal, TimeSpan? sampleInterval = null, Func<(DateTimeOffset At, double Volts)?>? voltage = null, Func<(DateTimeOffset At, double Celsius)?>? hotSpot = null)
 {
     private readonly TimeSpan _interval = sampleInterval ?? TimeSpan.FromMilliseconds(500);
+    private bool _shadersBuilt;
     public event Action<AutoTuneProgress>? Progress;
     public event Action<AutoTuneStepLog>? StepFinished;
 
@@ -76,6 +77,8 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
 
     private (LoadMeasurement, string?) Measure(int number, TuneStep step, CancellationToken ct)
     {
+        // The scene's first start compiles its shaders for many seconds, inside the step's warm-up and past it: on an RTX 3090 stock read 289 W against the 348 W it really draws, and an overclock is budgeted on that figure.
+        if (!_shadersBuilt && step.Load is GpuLoadKind.Scene or GpuLoadKind.Transient) { _shadersBuilt = true; if (load.Run(GpuLoadKind.Scene, TimeSpan.FromSeconds(1), TimeSpan.Zero, step.RayTraced, ct).DeviceLost) Recover(); }
         var samples = new List<GpuTelemetry>(); var volts = new List<double>(); var hot = new List<double>(); var clock = Stopwatch.StartNew();
         var settled = DateTimeOffset.UtcNow + step.Settle; DateTimeOffset lastVolt = default, lastHot = default;
         using var done = new CancellationTokenSource();

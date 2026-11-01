@@ -746,7 +746,7 @@
   <data name="Tuning_ProfileSaved" xml:space="preserve"><value>Profile “{0}” saved.</value></data>
   <data name="Tuning_ConfirmDelete" xml:space="preserve"><value>Delete the profile “{0}”?</value></data>
   <data name="Tuning_Refused" xml:space="preserve"><value>{0}: the driver refused ({1}).</value></data>
-  <data name="Tuning_ConfirmAuto" xml:space="preserve"><value>The automatic search loads the graphics card fully for about 10–25 minutes and deliberately pushes it until it becomes unstable. The screen may go black for a moment, and in rare cases the PC may freeze and need a restart (the card is then back at stock). Close games and save your work. Start?</value></data>
+  <data name="Tuning_ConfirmAuto" xml:space="preserve"><value>The automatic search loads the graphics card fully for about 20–40 minutes and deliberately pushes it until it becomes unstable. The screen may go black for a moment, and in rare cases the PC may freeze and need a restart (the card is then back at stock). Close games and save your work. Start?</value></data>
   <data name="Tuning_Step_Baseline" xml:space="preserve"><value>measuring</value></data>
   <data name="Tuning_Step_Probe" xml:space="preserve"><value>trying</value></data>
   <data name="Tuning_Step_Confirm" xml:space="preserve"><value>confirming</value></data>
@@ -3590,12 +3590,12 @@ Cancel: stop.</value></data>
   <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>Overclock Plus</value></data>
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>Overclock Plus {0}</value></data>
   <data name="Tuning_Factory" xml:space="preserve"><value>Factory, as measured under full load: held {0}, reached {1}; drew {2} on average ({3} at most); core voltage {4}. A search starts from the highest clock the card reached, not from the one it held while running into its power limit.</value></data>
-  <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at stock: {0}  →  tuned: {1}</value></data>
+  <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>In the 3D scene (a game's load, moving camera) at stock: {0}  →  tuned: {1}</value></data>
   <data name="Tuning_SceneTest" xml:space="preserve"><value>Scene test</value></data>
-  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>Draws the garden scene from one fixed camera, for the time set, on the card as it is now</value></data>
+  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>Draws the main garden scene with its moving camera, for the time set, on the card as it is now; a run shorter than one walk moves faster to cover all of it</value></data>
   <data name="Tuning_SceneTest_Clear" xml:space="preserve"><value>Clear</value></data>
   <data name="Tuning_SceneTest_Title" xml:space="preserve"><value>Scene test: compare settings</value></data>
-  <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>The same picture every frame: apply a profile, run the test, change it, run it again</value></data>
+  <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>Runs of one length cover the same walk: apply a profile, run the test, change it, run it again for the same time</value></data>
   <data name="Tuning_SceneTest_Running" xml:space="preserve"><value>Scene test</value></data>
   <data name="Tuning_SceneTest_First" xml:space="preserve"><value>first test</value></data>
   <data name="Tuning_SceneTest_Empty" xml:space="preserve"><value>No test yet. Each one shows the frame rate, clock, power and temperature, and the change since the one before.</value></data>
@@ -3663,7 +3663,7 @@ Cancel: stop.</value></data>
   <data name="Detail_Net_Https" xml:space="preserve"><value>HTTPS to {0}, {1} parallel streams, {2} s down then {3} s up</value></data>
   <data name="Detail_Net_IcmpEchoes" xml:space="preserve"><value>ICMP to {0} ({1} echoes)</value></data>
   <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} MB moved</value></data>
-  <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at the starting settings: {0}  →  tuned: {1}</value></data>
+  <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>In the 3D scene (a game's load, moving camera) at the starting settings: {0}  →  tuned: {1}</value></data>
   <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>The driver would not give more graphics memory after {0} buffers; the part it gave was tested</value></data>
   <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>The statistics were sent and the troubleshooting file is ready; its folder is open.</value></data>
   <data name="Settings_Report_Button" xml:space="preserve"><value>Pressing this sends the anonymous statistics now, even if the automatic sending is off, and makes the troubleshooting file.</value></data>
@@ -3914,7 +3914,7 @@ Cancel: stop.</value></data>
   <data name="Help_Tuning_Curve_Title" xml:space="preserve"><value>The card's factory voltage-frequency curve and the curve your settings make, side by side.</value></data>
   <data name="Help_Tuning_Profiles" xml:space="preserve"><value>Save a set of settings as a profile and apply it with one click. A profile is offered only on the card it was made on.</value></data>
   <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>A profile applied by itself when a full-screen game or a program you list (Lumion, D5 Render, 3ds Max…) starts, and taken off when it ends. The background monitor does this.</value></data>
-  <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>The same 3D scene every frame, to compare settings: apply a profile, run it, change the settings, run it again. Automatic undervolt and overclock find the card's own limits step by step under load.</value></data>
+  <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>The main garden scene with its moving camera, to compare settings: apply a profile, run it, change the settings, run it again. Automatic undervolt and overclock find the card's own limits step by step under load.</value></data>
   <data name="Help_Tuning_Memory" xml:space="preserve"><value>Memory timings and XMP, DOCP or EXPO profiles are set in the BIOS; the button restarts the computer straight into BIOS setup.</value></data>
   <data name="Help_Nav_Lights" xml:space="preserve"><value>Colours and effects of the RGB lights of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI and more), for all devices at once or one by one.</value></data>
   <data name="Help_Nav_Fans" xml:space="preserve"><value>The board's fan outputs: left to the board, a fixed speed, or a curve of temperature against speed that you draw. Ready profiles put one setting on every fan.</value></data>
