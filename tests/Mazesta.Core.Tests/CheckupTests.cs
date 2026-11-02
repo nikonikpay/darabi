@@ -229,6 +229,16 @@ public class CpuSpecTests
     { var f = Assert.Single(DriveCheck.Evaluate([Drive(status, wear)])); Assert.Equal((code, level), (f.Code, f.Level)); }
     [Fact] public void Nvme_media_errors_need_attention() => Assert.Equal(FindingCode.DriveUnhealthy, Assert.Single(DriveCheck.Evaluate([Drive("Healthy", 5, 3)])).Code);
     [Fact] public void A_drive_that_reports_nothing_says_nothing() => Assert.Empty(DriveCheck.Evaluate([Drive(null, null, bus: "SATA")]));
+    [Fact] public void A_drive_bitlocker_can_lock_is_noted_and_one_without_a_recovery_password_needs_a_look()
+    {
+        var f = DriveCheck.BitLocker([new("C:", 1, 1, 2, true), new("D:", 1, 1, 1, false), new("E:", 0, 1, 0, false), new("F:", 0, 0, 0, null), new("G:", null, null, null, null)]);
+        Assert.Equal([("C:", FindingLevel.Note), ("D:", FindingLevel.Attention), ("E:", FindingLevel.Note)], f.Select(x => (x.Subject!, x.Level)));   // E: waits for activation; off and unreadable say nothing
+    }
+    [Fact] public void An_interrupted_tuning_search_needs_a_look_and_offsets_now_are_noted_but_stock_and_a_held_fan_say_nothing()
+    {
+        var f = GpuCheck.Tuning(("RTX 3090", new(150, 500, 1905, null, null)), [("RTX 3090", new(-100, 0, null, 300, null)), ("RTX 3090", new(0, 0, null, null, 60)), ("GTX 950", Mazesta.Core.Tuning.GpuTuningSettings.Stock)]);
+        Assert.Equal([(FindingCode.GpuTuneInterrupted, FindingLevel.Attention, 3), (FindingCode.GpuTunedNow, FindingLevel.Note, 2)], f.Select(x => (x.Code, x.Level, x.Measures.Count)));
+    }
     [Fact] public void A_first_run_is_not_judged() => Assert.Null(SelfCheck.Evaluate("CPU", HardwareKind.Cpu, 1000, [], true, "pts"));
     [Theory, InlineData(980, FindingCode.BenchAsBefore, FindingLevel.Good), InlineData(850, FindingCode.BenchSlowerThanBefore, FindingLevel.Attention), InlineData(700, FindingCode.BenchSlowerThanBefore, FindingLevel.Problem)]
     public void A_run_is_judged_against_the_machines_own_earlier_runs(double mine, FindingCode code, FindingLevel level)

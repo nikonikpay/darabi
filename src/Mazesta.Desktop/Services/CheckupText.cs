@@ -19,6 +19,8 @@ public static class CheckupText
         static string N(double v, string format) => v.ToString(format, CultureInfo.InvariantCulture);
         return m.Unit switch
         {
+            _ when m.Key.EndsWith("Offset", StringComparison.Ordinal) => (m.Value > 0 ? "+" : m.Value < 0 ? "−" : "") + N(Math.Abs(m.Value), "0") + " " + m.Unit,
+            _ when m.Key == "Check_M_ClockCap" => N(m.Value, "0") + " MHz",   // a cap is set to the megahertz; 1.91 GHz would hide which
             "MHz" => m.Value >= 1000 ? N(m.Value / 1000, "0.00") + " GHz" : N(m.Value, "0") + " MHz",
             "°C" => N(m.Value, "0") + " °C",
             "W" => N(m.Value, "0") + " W",

@@ -60,9 +60,10 @@ public static class Bootstrapper
         // Opened before the container so a search that never came back (see TuningViewModel.Recover) is undone at start-up, not when the page is first visited.
         var tuningStore = new JsonStore<GpuProfileDocument>(Path.Combine(paths.ConfigDir, "gpu-profiles.json"), new SchemaMigrator([]), GpuProfileDocument.CurrentSchemaVersion, lf.CreateLogger("Tuning"));
         var tuning = new Mazesta.Hardware.Amd.CombinedTuningProvider(new Mazesta.Hardware.Nvidia.NvmlTuningProvider(lf.CreateLogger("Tuning")), new Mazesta.Hardware.Amd.AmdTuningProvider(new Mazesta.Hardware.Wmi.WmiQuery(), log: lf.CreateLogger("Tuning")));
+        var interrupted = tuningStore.Load().Value.Journal;   // read before Recover clears it: the checkup names the setting
         string? recovered = ViewModels.TuningViewModel.Recover(tuningStore, tuning);
         if (recovered is not null) lf.CreateLogger("Tuning").LogWarning("Interrupted automatic GPU tuning found at start-up: {Message}", recovered);
-        s.AddSingleton(new ViewModels.TuningRecovery(recovered));
+        s.AddSingleton(new ViewModels.TuningRecovery(recovered, recovered is null ? null : interrupted?.Settings, tuning.Devices.FirstOrDefault(d => d.Id == interrupted?.GpuId)?.Name));
         s.AddSingleton<Mazesta.Core.Tuning.IGpuTuningProvider>(tuning);   // the graphics card's fan curve (GpuFanController) drives the same devices
         s.AddSingleton(sp => new ViewModels.TuningViewModel(tuning, tuningStore, sp.GetRequiredService<InventoryCache>(),
             text => Ask(text, Localization.Loc.Get("Nav_Tuning"), System.Windows.Forms.MessageBoxIcon.Warning),

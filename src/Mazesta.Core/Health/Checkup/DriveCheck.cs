@@ -28,4 +28,10 @@ public static class DriveCheck
         if (life <= LifeAttention) return F(FindingCode.DriveWorn, FindingLevel.Attention);
         return d.Status == "Healthy" || life is not null ? F(FindingCode.DriveHealthy, FindingLevel.Good) : null;
     }
+
+    /// <summary>Each lettered volume BitLocker can lock (on, suspended, waiting for activation, converting): a reinstall, a reset or a BIOS update then
+    /// asks for its recovery key. Not a fault, so a note; worth a look when Windows holds no recovery password for it - except a drive waiting for
+    /// activation, which has no protector by design (as the storage page's box words it). A volume that could not be read says nothing.</summary>
+    public static IReadOnlyList<Finding> BitLocker(IEnumerable<BitLockerVolume> volumes) => [.. volumes.Where(v => v.CanLock).Select(v =>
+        new Finding(FindingCode.DriveEncrypted, v.RecoveryPassword == false && v.State != BitLockerState.WaitingForActivation ? FindingLevel.Attention : FindingLevel.Note, HardwareKind.Storage, [], v.Letter))];
 }

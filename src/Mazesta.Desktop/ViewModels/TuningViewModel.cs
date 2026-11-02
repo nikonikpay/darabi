@@ -4,7 +4,8 @@ using Mazesta.Diagnostics; using Mazesta.Diagnostics.Tuning; using Mazesta.Persi
 namespace Mazesta.Desktop.ViewModels;
 
 /// <summary>The start-up recovery's message (see <see cref="TuningViewModel.Recover"/>), for the shell's banner; null when nothing was recovered.</summary>
-public sealed record TuningRecovery(string? Message);
+/// <summary>The start-up recovery's message (see <see cref="TuningViewModel.Recover"/>), for the shell's banner, with the setting and the card it was found on, for the checkup; all null when nothing was recovered.</summary>
+public sealed record TuningRecovery(string? Message, GpuTuningSettings? Settings = null, string? Card = null);
 
 public sealed record GpuProfileRow(GpuProfile Profile)
 {

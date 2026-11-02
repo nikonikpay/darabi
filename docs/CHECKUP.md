@@ -43,6 +43,9 @@ Levels: **Good** (checked and held), **Note** (explains a measurement, not a fau
 | GPU | Hot spot minus core (median under load) ≥ 25 °C NVIDIA / 30 °C others | Attention |
 | GPU / NVMe | Link narrower than card and slot allow; generation lower under load (NVIDIA only, read live) | Attention |
 | GPU / NVMe | Slot narrower or older than the device; slot unknown and link narrower (e.g. APUs give x8) | Note |
+| Drive (BitLocker) | A lettered volume BitLocker can lock (on, suspended, waiting for activation, converting): have the recovery key before a reinstall or BIOS update; no recovery password held (not waiting for activation) | Note / Attention |
+| GPU tuning | An automatic undervolt/overclock search found unfinished at start-up (freeze, restart, app killed): its setting is named, the card was put back to stock | Attention |
+| GPU tuning | Offsets, a clock cap or a power limit the driver reports now (this app or another program): undo first when games crash or the PC freezes | Note |
 | Any benchmark | Against the median of the same part model: ≥ −10 % Good, to −20 % Attention, below Problem; fewer than 3 systems Note. A gap with ≥ 15 % less power and no more heat is a power limit (Note / Attention); hotter by ≥ 8 °C points to cooling; clock ≤ 93 % points to settings | as stated |
 
 ## Verified

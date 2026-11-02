@@ -35,9 +35,12 @@ public sealed class CheckupService
     public event Action<SessionJudgment>? SessionJudged;
     public sealed record SessionJudgment(IReadOnlyList<TestRunResult> Results, IReadOnlyList<PartJudgment> Parts, IReadOnlyList<QueuedTest> Queue, Mazesta.Core.Health.ThermalTrip? Trip = null, IReadOnlyList<TestId>? TripTests = null);
 
-    public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log, TestEngine? tests = null)
+    private readonly ViewModels.TuningRecovery? _recovery; private readonly Mazesta.Core.Tuning.IGpuTuningProvider? _tuning;
+
+    public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log, TestEngine? tests = null,
+        ViewModels.TuningRecovery? recovery = null, Mazesta.Core.Tuning.IGpuTuningProvider? tuning = null)
     {
-        _engine = engine; _inventory = inventory; _details = details; _drives = drives; _log = log;
+        _engine = engine; _inventory = inventory; _details = details; _drives = drives; _log = log; _recovery = recovery; _tuning = tuning;
         runner.Started += OnStarted; runner.Finished += OnFinished;
         if (tests is not null) { tests.SessionStarted += OnTestsStarted; tests.TestCompleted += OnTestDone; tests.StateChanged += OnTestsState; tests.ThermalStopped += (trip, ids) => { lock (_lock) { _trip = trip; _tripTests = ids; } }; }
     }
@@ -280,6 +283,9 @@ public sealed class CheckupService
         foreach (var (name, errors) in CheckupTraces.PcieErrors(_engine)) found.AddRange(GpuCheck.PcieErrors(errors, name));
         try { found.AddRange(DriveCheck.Evaluate(await Task.Run(_drives.Read).ConfigureAwait(false))); }
         catch (Exception e) { _log.LogWarning(e, "Checkup: reading the drives' health failed"); }
+        if (await Task.Run(Mazesta.Hardware.Wmi.BitLockerReader.Read).ConfigureAwait(false) is { } volumes) found.AddRange(DriveCheck.BitLocker(volumes));
+        try { found.AddRange(GpuCheck.Tuning(_recovery?.Settings is { } s ? (_recovery.Card, s) : null, (_tuning?.Devices ?? []).Select(d => (d.Name, d.ReadCurrent())).ToList())); }
+        catch (Exception e) { _log.LogWarning(e, "Checkup: reading the graphics card's tuning failed"); }
         return found;
     }
 

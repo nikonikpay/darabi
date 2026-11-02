@@ -1,4 +1,4 @@
-using Mazesta.Core.Hardware; using static Mazesta.Core.Health.Checkup.Measures;
+using Mazesta.Core.Hardware; using Mazesta.Core.Tuning; using static Mazesta.Core.Health.Checkup.Measures;
 namespace Mazesta.Core.Health.Checkup;
 
 /// <summary>How often, over the samples taken while the card was busy, NVIDIA's driver said why the clock was held (its "clock event reasons"),
@@ -126,6 +126,21 @@ public static class GpuCheck
         }
         if (fine && l.Width is { } width && l.CardWidth is not null)
             add(FindingCode.GpuLinkOk, FindingLevel.Good, [.. l.LiveGen && l.Gen is { } gen ? [M("Check_M_LinkGen", gen, None)] : Array.Empty<Measure>(), M("Check_M_LinkWidth", width, Lanes)]);
+    }
+
+    /// <summary>The card's tuning as the checkup sees it: an automatic undervolt or overclock search the app found unfinished at start-up (the computer
+    /// froze, restarted or the app was killed on that setting, so it is past what this card holds; the card was put back to stock), and the offsets the
+    /// driver reports on each card now (set by this app or another program), the first thing to undo when games crash or the computer freezes.</summary>
+    public static IReadOnlyList<Finding> Tuning((string? Name, GpuTuningSettings Settings)? interrupted, IEnumerable<(string Name, GpuTuningSettings Now)> cards)
+    {
+        static Measure[] Of(GpuTuningSettings s) => [.. new (string, double?, string)[] { ("Check_M_CoreOffset", s.CoreOffsetMHz, MHz), ("Check_M_MemoryOffset", s.MemoryOffsetMHz, MHz),
+            ("Check_M_VoltageOffset", s.VoltageOffsetMv, Millivolt), ("Check_M_ClockCap", s.MaxClockMHz, MHz), ("Check_M_PowerLimit", s.PowerLimitW, Watt) }
+            .Where(x => x.Item2 is { } v && v != 0).Select(x => M(x.Item1, x.Item2!.Value, x.Item3))];
+        var found = new List<Finding>();
+        if (interrupted is { } i) found.Add(new(FindingCode.GpuTuneInterrupted, FindingLevel.Attention, HardwareKind.Gpu, Of(i.Settings), i.Name));
+        // the fan alone is no tuning (a fan curve holds it by hand), so it is left out
+        foreach (var (name, now) in cards) if (Of(now) is { Length: > 0 } m) found.Add(new(FindingCode.GpuTunedNow, FindingLevel.Note, HardwareKind.Gpu, m, name));
+        return found;
     }
 
     /// <summary>A reading narrowed to the seconds the card was busy (load 80 % or more); with no load reading, the whole run.</summary>
