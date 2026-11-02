@@ -58,6 +58,7 @@ public static class AppGuide
         P("gpu", "Nav_Gpu", "the graphics card's specification and sensors"),
         P("ram", "Dashboard_Ram", "the memory modules and their sensors"),
         P("storage", "Nav_Storage", "the drives, their health and sensors"),
+        T("storage", "bitlocker", "BitLocker_Title", "whether BitLocker has encrypted each drive (also suspended or waiting for activation), the recovery-key warning before a Windows reinstall or BIOS update, and how to turn it off", null),
         P("network", "Nav_Network", "the network adapters"),
         P("tests", "Nav_Tests", "hardware tests with a report: the memory tests check the RAM's health over nearly all of it (other programs' memory is paged out first), the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs; the graphics card's VRAM test fills nearly all of its memory and shows the bandwidth, VRAM temperature and memory clock; separate video decode and encode tests (H.264, HEVC, VP9, AV1 at 1080p, 4K and 8K, 8 and 10 bit, 4:2:0 and 4:2:2) check every frame; ready-made sets (quick check, everyday, Mazesta default); a switch runs processor, memory and graphics card tests together; when the tests end a window sums up each part (processor, memory, graphics card, drives): healthy or not, highest temperature, load, what needs a look, with a button to the report's summary"),
         T("tests", "start", "Test_Start", "start the ticked tests", null),

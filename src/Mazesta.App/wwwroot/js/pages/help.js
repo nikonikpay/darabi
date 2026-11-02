@@ -11,7 +11,7 @@ import { norm, mark } from "../search.js";
 const TOPICS = [
   ["dashboard", null, "Nav_Dashboard"],
   ["monitoring", null, "Nav_Monitoring"], ["system", null, "Nav_SystemInfo"], ["cpu", null, "Nav_Cpu"], ["gpu", null, "Nav_Gpu"], ["ram", null, "Dashboard_Ram"],
-  ["storage", null, "Nav_Storage"], ["network", null, "Nav_Network"],
+  ["storage", null, "Nav_Storage"], ["storage", "bitlocker", "BitLocker_Title"], ["network", null, "Nav_Network"],
   ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"],
   ["apps", null, "Nav_Apps"], ["ai", null, "Nav_Ai"],
   ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"], ["play", "gameboost", "GameBoost_Title"], ["games", null, "Nav_Games"], ["overlay", null, "Nav_Overlay"],
@@ -27,7 +27,7 @@ const TOPICS = [
 ];
 // The boxes' own icons and each section's colour (the part colours of the rest of the app).
 const BOX_ICON = { power: "bolt", gamemode: "gamepad", gameboost: "sparkle", curve: "chart", profiles: "layers", rules: "clock", scene: "play", memory: "ram",
-  dns: "net", netfix: "net", crashes: "alert", repair: "wrench", cleanup: "win", hibernate: "hourglass", vm: "drive", hosts: "doc" };
+  dns: "net", netfix: "net", crashes: "alert", repair: "wrench", cleanup: "win", hibernate: "hourglass", vm: "drive", hosts: "doc", bitlocker: "lock" };
 const LOOSE_ICON = { Nav_Assistant: "chat", Help_Tray_Title: "pin", Help_Keys_Title: "keyboard", Nav_Dashboard: "home", Nav_Messages: "mail", Nav_Reports: "doc" };
 const HUE = { Nav_Group_Hardware: "--c-cpu", Nav_Group_Tests: "--pass", Nav_Group_Apps: "--c-ram", Nav_Group_Gaming: "--c-gpu", Nav_Tuning: "--c-power",
   Nav_Group_Lights: "--c-board", Nav_Group_Windows: "--c-net", Nav_Reports: "--c-storage" };

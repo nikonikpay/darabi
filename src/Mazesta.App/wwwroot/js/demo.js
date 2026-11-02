@@ -429,6 +429,7 @@ export async function call(m, p, emit) {
     case "tuning.state": return tuning();
     case "tuning.set": if (p.field === "curve") { form.core = p.core; form.coreValue = +p.core; form.capValue = +p.cap; form.maxClock = p.cap; } return null;
     case "reports.state": return reports();
+    case "bitlocker.get": return { known: true, volumes: [{ letter: "C:", state: "WaitingForActivation", canLock: true, recovery: false }, { letter: "D:", state: "Off", canLock: false, recovery: null }] };
     case "tools.state": return { busy: false, status: strings.Tools_Result_Healthy, percent: 100, canCancel: false,
       output: ["Beginning system scan.  This process will take some time.", "", "Beginning verification phase of system scan.", "Verification 100% complete.", "", "Windows Resource Protection did not find any integrity violations."],
       pageFile: [{ label: strings.Tools_PageFile_Managed, value: "C:\\pagefile.sys" }, { label: strings.Tools_PageFile_Size, value: "16384 MB" }, { label: strings.Tools_PageFile_Used, value: "120 MB" }] };

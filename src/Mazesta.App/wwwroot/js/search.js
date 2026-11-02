@@ -5,7 +5,7 @@ import { h, icon } from "./ui.js";
 
 // [page, box mark, name key] - a box on a page; the pages themselves are added from the page list.
 const BOXES = [
-  ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["play", "gameboost", "GameBoost_Title"], ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"],
+  ["storage", "bitlocker", "BitLocker_Title"], ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["play", "gameboost", "GameBoost_Title"], ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"],
   ["tools", "crashes", "Bsod_Title"], ["tools", "repair", "Tools_Repair"], ["tools", "cleanup", "Tools_Windows"], ["tools", "hibernate", "Tools_Hib_Title"], ["tools", "vm", "Tools_Vm_Title"], ["tools", "hosts", "Tools_Hosts_Title"],
   ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "fancurve", "Tuning_FanCurve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"], ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
   ["fans", "fans", "Fans_Profiles_Title"], ["lights", "rgb", "Rgb_Title"], ["settings", null, "Settings_DataFolder"], ["settings", null, "Settings_Tray_Section"], ["appupdate", null, "AppUpd_Version"],

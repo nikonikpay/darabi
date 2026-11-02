@@ -4161,4 +4161,31 @@ Cancel: stop.</value></data>
   <data name="Log_Smart_NvmeBad" xml:space="preserve"><value>This drive's own health log reports a critical warning or media errors: {0}. Back up its data now.</value></data>
   <data name="Detail_Sto_DriveAt" xml:space="preserve"><value>Drive {0}</value></data>
   <data name="Detail_Sto_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}</value></data>
+  <data name="BitLocker_Title" xml:space="preserve"><value>Drive encryption (BitLocker)</value></data>
+  <data name="BitLocker_Sub" xml:space="preserve"><value>Whether Windows has encrypted your drives, and what to do before reinstalling Windows or updating the BIOS</value></data>
+  <data name="BitLocker_NotKnown" xml:space="preserve"><value>Windows did not say whether BitLocker is used on this computer (this Windows may not have it, or it refused to answer). That does not mean it is off: if you are unsure, check with manage-bde -status in a command prompt opened as administrator.</value></data>
+  <data name="BitLocker_None" xml:space="preserve"><value>No drive is encrypted with BitLocker: a Windows reinstall or a BIOS update cannot lock your files behind a key.</value></data>
+  <data name="BitLocker_SomeUnknown" xml:space="preserve"><value>No drive is known to be encrypted, but Windows did not give the state of every drive (marked unknown): unknown is not the same as off.</value></data>
+  <data name="BitLocker_State_On" xml:space="preserve"><value>Encrypted, protection on</value></data>
+  <data name="BitLocker_State_Off" xml:space="preserve"><value>Not encrypted</value></data>
+  <data name="BitLocker_State_Suspended" xml:space="preserve"><value>Encrypted, protection suspended</value></data>
+  <data name="BitLocker_State_WaitingForActivation" xml:space="preserve"><value>Encrypted, waiting for activation</value></data>
+  <data name="BitLocker_State_Encrypting" xml:space="preserve"><value>Being encrypted</value></data>
+  <data name="BitLocker_State_Decrypting" xml:space="preserve"><value>Being decrypted</value></data>
+  <data name="BitLocker_State_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="BitLocker_Note_Suspended" xml:space="preserve"><value>The data stays encrypted; protection usually comes back by itself at the next restart.</value></data>
+  <data name="BitLocker_Note_Waiting" xml:space="preserve"><value>Windows' device encryption has already encrypted this drive but its key is not protected yet; it turns on by itself as soon as you sign in to Windows with a Microsoft account, and the key is then sent to that account.</value></data>
+  <data name="BitLocker_Note_Encrypting" xml:space="preserve"><value>Windows is encrypting this drive now.</value></data>
+  <data name="BitLocker_Note_Decrypting" xml:space="preserve"><value>Windows is decrypting this drive; keep the computer on until it finishes.</value></data>
+  <data name="BitLocker_NoRecovery" xml:space="preserve"><value>No recovery key exists for this drive: if it locks, nothing can open it.</value></data>
+  <data name="BitLocker_Warn" xml:space="preserve"><value>Your data on {0} is encrypted by BitLocker. Before you reinstall Windows, update or reset the BIOS, change the motherboard or clear the TPM, make sure you have its 48-digit recovery key: Windows may ask for it, and without it the files are lost for good. Nobody, including us, can open them.</value></data>
+  <data name="BitLocker_Key_Title" xml:space="preserve"><value>Is your recovery key saved?</value></data>
+  <data name="BitLocker_Key_Steps" xml:space="preserve"><value>Open account.microsoft.com/devices/recoverykey and sign in with the Microsoft account you use on this computer; the key ID shown there must match the one Windows shows for the drive.|If it is not there, save it now: Control Panel &gt; BitLocker Drive Encryption &gt; Back up your recovery key (to your Microsoft account, to a file on another drive, or print it).|In a command prompt opened as administrator, manage-bde -protectors -get C: shows the key (put the drive's own letter); write it down and keep it away from this computer.</value></data>
+  <data name="BitLocker_OpenKeys" xml:space="preserve"><value>Open the recovery-key page</value></data>
+  <data name="BitLocker_Off_Title" xml:space="preserve"><value>Don't know what BitLocker is, and did not turn it on? How to turn it off</value></data>
+  <data name="BitLocker_Off_Who" xml:space="preserve"><value>On a home computer whose owner never chose encryption, turning it off removes the risk of losing everything to a missing key. Do not turn it off on a company or office computer: ask its IT department. Mazesta never turns it off by itself.</value></data>
+  <data name="BitLocker_Off_Steps" xml:space="preserve"><value>First copy your important files to another drive or to the cloud.|Windows Home: Settings &gt; Privacy &amp; security &gt; Device encryption, and set it to Off.|Windows Pro: Control Panel &gt; BitLocker Drive Encryption, and press Turn off BitLocker beside each drive.|Or in a command prompt opened as administrator: manage-bde -off C: (one line for each letter listed above); manage-bde -status shows how far it has got.</value></data>
+  <data name="BitLocker_Off_Warn" xml:space="preserve"><value>Decryption takes from a few minutes to several hours, depending on the drive. Keep the computer plugged in and on until it finishes; you can keep working meanwhile. With BitLocker off, anyone who takes the drive can read your files.</value></data>
+  <data name="Help_BitLocker_Title" xml:space="preserve"><value>Shows, for each drive letter, whether Windows has encrypted it with BitLocker - also when encryption is suspended or still waiting for activation - and warns that a Windows reinstall or a BIOS update can lock the data for good without the recovery key.</value></data>
+  <data name="HelpHow_BitLocker_Title" xml:space="preserve"><value>Open the Storage page and read each drive's state in the BitLocker box.|If a drive is encrypted, check that its recovery key is in your Microsoft account before any reinstall or BIOS update.|If you did not turn it on and do not want it, follow the steps in the box to turn it off yourself.</value></data>
 </root>

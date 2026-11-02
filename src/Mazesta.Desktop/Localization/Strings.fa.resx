@@ -4161,4 +4161,31 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Log_Smart_NvmeBad" xml:space="preserve"><value>گزارش سلامت خودِ این درایو هشدار بحرانی یا خطای رسانه دارد: {0}. همین حالا از داده‌های آن پشتیبان بگیرید.</value></data>
   <data name="Detail_Sto_DriveAt" xml:space="preserve"><value>درایو {0}</value></data>
   <data name="Detail_Sto_DriveBad" xml:space="preserve"><value>این درایو مشکل دارد: {0}</value></data>
+  <data name="BitLocker_Title" xml:space="preserve"><value>رمزگذاری درایو (BitLocker)</value></data>
+  <data name="BitLocker_Sub" xml:space="preserve"><value>آیا ویندوز درایوهای شما را رمزگذاری کرده، و پیش از نصب دوباره ویندوز یا به‌روزرسانی بایوس چه باید کرد</value></data>
+  <data name="BitLocker_NotKnown" xml:space="preserve"><value>ویندوز نگفت که BitLocker روی این کامپیوتر به کار رفته یا نه (شاید این ویندوز آن را ندارد یا پاسخ نداد). این به معنی خاموش بودن آن نیست: اگر مطمئن نیستید، در خط فرمانی که با دسترسی مدیر باز شده manage-bde -status را اجرا کنید.</value></data>
+  <data name="BitLocker_None" xml:space="preserve"><value>هیچ درایوی با BitLocker رمزگذاری نشده است: نصب دوباره ویندوز یا به‌روزرسانی بایوس فایل‌های شما را پشت کلید قفل نمی‌کند.</value></data>
+  <data name="BitLocker_SomeUnknown" xml:space="preserve"><value>درایو رمزگذاری‌شده‌ای شناخته نشد، اما ویندوز وضعیت همه درایوها را نداد (با «نامعلوم» مشخص شده‌اند): نامعلوم با خاموش یکی نیست.</value></data>
+  <data name="BitLocker_State_On" xml:space="preserve"><value>رمزگذاری‌شده، محافظت روشن</value></data>
+  <data name="BitLocker_State_Off" xml:space="preserve"><value>رمزگذاری نشده</value></data>
+  <data name="BitLocker_State_Suspended" xml:space="preserve"><value>رمزگذاری‌شده، محافظت معلق</value></data>
+  <data name="BitLocker_State_WaitingForActivation" xml:space="preserve"><value>رمزگذاری‌شده، در انتظار فعال‌سازی</value></data>
+  <data name="BitLocker_State_Encrypting" xml:space="preserve"><value>در حال رمزگذاری</value></data>
+  <data name="BitLocker_State_Decrypting" xml:space="preserve"><value>در حال رمزگشایی</value></data>
+  <data name="BitLocker_State_Unknown" xml:space="preserve"><value>نامعلوم</value></data>
+  <data name="BitLocker_Note_Suspended" xml:space="preserve"><value>داده‌ها رمزگذاری‌شده می‌مانند؛ محافظت معمولاً با راه‌اندازی دوباره بعدی خودش برمی‌گردد.</value></data>
+  <data name="BitLocker_Note_Waiting" xml:space="preserve"><value>رمزگذاری دستگاه ویندوز این درایو را رمزگذاری کرده ولی کلیدش هنوز محافظت نشده است؛ به محض ورود به ویندوز با حساب مایکروسافت خودش روشن می‌شود و کلید به همان حساب فرستاده می‌شود.</value></data>
+  <data name="BitLocker_Note_Encrypting" xml:space="preserve"><value>ویندوز همین حالا این درایو را رمزگذاری می‌کند.</value></data>
+  <data name="BitLocker_Note_Decrypting" xml:space="preserve"><value>ویندوز این درایو را رمزگشایی می‌کند؛ تا پایان کار کامپیوتر را روشن نگه دارید.</value></data>
+  <data name="BitLocker_NoRecovery" xml:space="preserve"><value>این درایو کلید بازیابی ندارد: اگر قفل شود، هیچ راهی برای باز کردنش نیست.</value></data>
+  <data name="BitLocker_Warn" xml:space="preserve"><value>داده‌های شما روی {0} با BitLocker رمزگذاری شده است. پیش از نصب دوباره ویندوز، به‌روزرسانی یا ریست بایوس، تعویض مادربرد یا پاک کردن TPM مطمئن شوید کلید بازیابی ۴۸ رقمی آن را دارید: ممکن است ویندوز آن را بخواهد و بدون آن فایل‌ها برای همیشه از دست می‌روند. هیچ‌کس، حتی ما، نمی‌تواند آن‌ها را باز کند.</value></data>
+  <data name="BitLocker_Key_Title" xml:space="preserve"><value>کلید بازیابی شما ذخیره شده است؟</value></data>
+  <data name="BitLocker_Key_Steps" xml:space="preserve"><value>account.microsoft.com/devices/recoverykey را باز کنید و با همان حساب مایکروسافتی که روی این کامپیوتر دارید وارد شوید؛ شناسه کلیدی که آنجا می‌بینید باید با شناسه‌ای که ویندوز برای درایو نشان می‌دهد یکی باشد.|اگر آنجا نیست، همین حالا ذخیره‌اش کنید: Control Panel &gt; BitLocker Drive Encryption &gt; Back up your recovery key (در حساب مایکروسافت، در فایلی روی درایو دیگر، یا چاپ آن).|در خط فرمانی که با دسترسی مدیر باز شده، manage-bde -protectors -get C: کلید را نشان می‌دهد (حرف همان درایو را بگذارید)؛ آن را یادداشت کنید و جایی دور از همین کامپیوتر نگه دارید.</value></data>
+  <data name="BitLocker_OpenKeys" xml:space="preserve"><value>باز کردن صفحه کلید بازیابی</value></data>
+  <data name="BitLocker_Off_Title" xml:space="preserve"><value>نمی‌دانید BitLocker چیست و خودتان روشنش نکرده‌اید؟ روش خاموش کردن</value></data>
+  <data name="BitLocker_Off_Who" xml:space="preserve"><value>روی کامپیوتر خانگی‌ای که صاحبش هرگز رمزگذاری را انتخاب نکرده، خاموش کردن آن خطر از دست رفتن همه‌چیز به خاطر نبودن کلید را برمی‌دارد. روی کامپیوتر شرکت یا اداره خاموشش نکنید و از بخش فناوری اطلاعات آنجا بپرسید. مازستا هرگز خودش آن را خاموش نمی‌کند.</value></data>
+  <data name="BitLocker_Off_Steps" xml:space="preserve"><value>اول فایل‌های مهم را روی درایو دیگر یا فضای ابری کپی کنید.|ویندوز Home: Settings &gt; Privacy &amp; security &gt; Device encryption و آن را روی Off بگذارید.|ویندوز Pro: Control Panel &gt; BitLocker Drive Encryption و کنار هر درایو Turn off BitLocker را بزنید.|یا در خط فرمانی که با دسترسی مدیر باز شده: manage-bde -off C: (برای هر حرفی که بالا آمده یک بار)؛ manage-bde -status نشان می‌دهد چقدر پیش رفته است.</value></data>
+  <data name="BitLocker_Off_Warn" xml:space="preserve"><value>رمزگشایی بسته به درایو از چند دقیقه تا چند ساعت طول می‌کشد. تا پایان کار کامپیوتر را به برق وصل و روشن نگه دارید؛ در این مدت می‌توانید کار کنید. با خاموش بودن BitLocker هر کسی که درایو را بردارد می‌تواند فایل‌هایتان را بخواند.</value></data>
+  <data name="Help_BitLocker_Title" xml:space="preserve"><value>برای هر حرف درایو نشان می‌دهد که آیا ویندوز آن را با BitLocker رمزگذاری کرده است - حتی وقتی محافظت معلق است یا هنوز در انتظار فعال‌سازی است - و هشدار می‌دهد که بدون کلید بازیابی، نصب دوباره ویندوز یا به‌روزرسانی بایوس می‌تواند داده‌ها را برای همیشه قفل کند.</value></data>
+  <data name="HelpHow_BitLocker_Title" xml:space="preserve"><value>صفحه ذخیره‌سازی را باز کنید و وضعیت هر درایو را در کادر BitLocker بخوانید.|اگر درایوی رمزگذاری شده، پیش از هر نصب دوباره یا به‌روزرسانی بایوس مطمئن شوید کلید بازیابی آن در حساب مایکروسافت شماست.|اگر خودتان روشنش نکرده‌اید و آن را نمی‌خواهید، با مراحل داخل کادر خودتان خاموشش کنید.</value></data>
 </root>

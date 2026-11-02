@@ -13,7 +13,7 @@ public class AppGuideLexiconTests
      InlineData("ویندوز آپدیت رو خاموش کن", "updates"), InlineData("برنامه رو آپدیت کن", "appupdate"), InlineData("رنگ رم ها رو قرمز کن", "lights"), InlineData("نور سیستم رو خاموش کن", "lights"),
      InlineData("نمودار فن گرافیک رو میخوام", "tuning"), InlineData("فن رو روی سایلنت بذار", "fans"), InlineData("حالت بازی رو روشن کن", "play"), InlineData("ایکس ام پی رو فعال کنم", "tuning"), InlineData("تاریخچه دما", "monitoring"),
      InlineData("خروجی pdf از مشخصات بگیر", "system"), InlineData("مشخصات سیستم رو pdf کن", "system"),
-     InlineData("سیستمم از اسلیپ خودش روشن میشه", "wake"), InlineData("wake on lan رو خاموش کن", "wake")]
+     InlineData("سیستمم از اسلیپ خودش روشن میشه", "wake"), InlineData("wake on lan رو خاموش کن", "wake"), InlineData("کلید بازیابی درایو", "storage")]
     public void An_everyday_request_shows_the_place_where_it_is_done(string text, string page) { var r = R(text); Assert.True(r.Intent == AiIntent.Navigate && r.Place?.Page == page, $"{text}: {r.Intent} {r.Place?.Page}"); }
 
     [Theory, InlineData("ویندوزم کنده چیکار کنم"), InlineData("کامپیوترم کند شده"), InlineData("سیستمم هنگ میکنه"), InlineData("چرا کامپیوترم خودش ری استارت میشه"), InlineData("چرا بازی ها لگ دارن"), InlineData("فن لپ تاپم خیلی سر و صدا میکنه")]

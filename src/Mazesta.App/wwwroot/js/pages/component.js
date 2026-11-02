@@ -9,6 +9,7 @@ import { card, cachedNote } from "./system.js";
 import { part } from "../parts.js";
 import { mount as sensors } from "./monitoring.js";
 import { lanPanel } from "../lanpeer.js";
+import { bitlockerPanel } from "../bitlocker.js";
 
 const FIGURES = {
   Cpu: [["Overlay_Temp", ["CpuPackageTemp", "CpuTctlTdie"]], ["Overlay_Load", ["CpuTotalLoad"]], ["Overlay_Clock", ["CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuCoreClock"]], ["Overlay_Power", ["CpuPackagePower"]]],
@@ -42,7 +43,7 @@ export function mount(el, kind) {
   const specs = h("div", { class: "cols spec", style: { marginTop: "4px" } });
   const sensorBox = h("div", {}), runSlot = h("div", {});
   const lan = kind === "Network" ? lanPanel() : null;
-  el.append(runSlot, band, lan?.el ?? "",
+  el.append(runSlot, band, lan?.el ?? "", kind === "Storage" ? bitlockerPanel() : "",
     h("div", { class: "section" }, h("div", { class: "section-head" }, h("h2", { class: "h2" }, t("Web_Spec"))), specs),
     h("div", { class: "section" }, h("div", { class: "section-head" }, h("h2", { class: "h2" }, t("Nav_Monitoring"))), sensorBox));
   const offSensors = sensors(sensorBox, null, { kinds: [kind], page: PAGE[kind], runSlot });

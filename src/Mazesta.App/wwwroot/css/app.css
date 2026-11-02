@@ -1456,6 +1456,17 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .lan-addr { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .lan-addr code { background: var(--well); padding: 3px 8px; border-radius: 4px; font-size: 12.5px; }
 
+/* The BitLocker box on the storage page: a row per drive letter, the warning with its colour down the start edge, the steps as a numbered list. */
+.bl-panel { --hue: var(--c-storage); margin: 14px 0 4px; }
+.bl-vols { display: grid; gap: 6px; margin-bottom: 10px; }
+.bl-vol { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bl-vol code { background: var(--well); padding: 2px 8px; border-radius: 4px; font-size: 12.5px; }
+.bl-bad { color: var(--fail); font-weight: 700; }
+.bl-warn { border-inline-start: 3px solid var(--warn); padding-inline-start: 10px; margin: 10px 0; line-height: 1.8; }
+.bl-more { margin-top: 8px; }
+.bl-more summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+.bl-steps { margin: 6px 0; padding-inline-start: 22px; line-height: 1.9; }
+
 /* ———— Checkup: a finding is a flat panel with its state's colour down the start edge, its stamp, its words and the numbers it stands on ———— */
 .findings { display: grid; gap: 10px; }
 .checkup-runs { max-height: min(70vh, 720px); }   /* the benchmark runs hold several cards each: room for more than one at a time */

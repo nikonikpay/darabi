@@ -13,7 +13,7 @@ public sealed partial class WebBridge
         ["shop"] = "https://www.dfmrendering.com/shop/", ["systems"] = "https://www.dfmrendering.com/product-category/systems/",
         ["sales-whatsapp"] = "https://wa.me/989197588700", ["support-whatsapp"] = "https://wa.me/989197588701",
         ["sales-telegram"] = "https://t.me/DFMRendering", ["support-telegram"] = "https://t.me/dfm_support", ["bale"] = "https://ble.ir/join/DjEi5p9iS5", ["channel-telegram"] = "https://t.me/DFMRendering", ["instagram"] = "https://www.instagram.com/dfm.rendering/",
-        ["email"] = "mailto:info@dfmrendering.com",
+        ["email"] = "mailto:info@dfmrendering.com", ["recoverykey"] = "https://account.microsoft.com/devices/recoverykey",
     };
 
     /// <summary>The company's contact details as its own site publishes them (dfmrendering.com/contactus, read 2026-09-29; the site gives one Bale link for both desks). Numbers stay as the
