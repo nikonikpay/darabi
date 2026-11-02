@@ -37,8 +37,9 @@
     <ProjectReference Include="../Mazesta.Tray/Mazesta.Tray.csproj" ReferenceOutputAssembly="false" OutputItemType="TrayOutput" />
   </ItemGroup>
   <ItemGroup>
-    <!-- The demo files let the page be opened in a plain browser for design work; the app never loads them and they are not shipped. -->
-    <Content Include="wwwroot\**\*" Exclude="wwwroot\js\demo*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- The demo files let the page be opened in a plain browser for design work; the app never loads them and they are not shipped.
+         Never inside the single-file exe: the page reads them from disk, and the publish had packed the .ttf (the Latin numbers' font) into the exe. -->
+    <Content Include="wwwroot\**\*" Exclude="wwwroot\js\demo*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
   <!-- As in Mazesta.Desktop: @(TrayOutput) is the tray's dll; the build copies it with its apphost, deps and runtimeconfig, and publishing adds the
        dll the SDK leaves out for a non-referenced project. Without the dll the tray exe starts and dies at once. -->
