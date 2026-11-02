@@ -2112,6 +2112,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Note_Bf6" xml:space="preserve"><value>EA requires TPM 2.0 and UEFI Secure Boot turned on, and a computer capable of HVCI and VBS (its anti-cheat); Windows 11 is recommended. Not checked here.</value></data>
   <data name="Soft_Note_Ssd" xml:space="preserve"><value>The publisher requires an SSD.</value></data>
   <data name="Soft_Note_Wukong" xml:space="preserve"><value>The publisher's figures were tested with DLSS, FSR or XeSS on (upscaled, not native resolution). An SSD is required for the recommended tier.</value></data>
+  <data name="Soft_Note_Upscaled" xml:space="preserve"><value>The publisher's targets are with upscaling on (DLSS, FSR or XeSS), not the native resolution. The publisher requires an SSD.</value></data>
   <data name="Soft_Purpose_Solidworks" xml:space="preserve"><value>Mechanical design: parts, assemblies, drawings and simulation.</value></data>
   <data name="Soft_Purpose_Fusion" xml:space="preserve"><value>CAD, CAM and simulation in one: design, toolpaths for machining, 3D printing.</value></data>
   <data name="Soft_Purpose_Sap2000" xml:space="preserve"><value>General structural analysis and design: bridges, towers, industrial structures.</value></data>
@@ -2136,6 +2137,12 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Purpose_EldenRing" xml:space="preserve"><value>Open-world action RPG.</value></data>
   <data name="Soft_Purpose_Bg3" xml:space="preserve"><value>Role-playing game; its later acts weigh on the processor.</value></data>
   <data name="Soft_Purpose_Wukong" xml:space="preserve"><value>Action RPG; heavy on the graphics card.</value></data>
+  <data name="Soft_Purpose_CrimsonDesert" xml:space="preserve"><value>Open-world action adventure; heavy, needs an SSD.</value></data>
+  <data name="Soft_Purpose_Re9" xml:space="preserve"><value>Survival horror.</value></data>
+  <data name="Soft_Purpose_FirstLight" xml:space="preserve"><value>Stealth action adventure.</value></data>
+  <data name="Soft_Purpose_Onimusha" xml:space="preserve"><value>Sword-fighting action.</value></data>
+  <data name="Soft_Purpose_Mw4" xml:space="preserve"><value>Shooter: campaign and multiplayer.</value></data>
+  <data name="Soft_Purpose_PhantomBlade" xml:space="preserve"><value>Martial-arts action RPG.</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>Real-time rendering</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>Render engines</value></data>
   <data name="Soft_Category_Architecture" xml:space="preserve"><value>Architecture and CAD</value></data>

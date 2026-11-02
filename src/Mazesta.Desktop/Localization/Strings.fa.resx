@@ -2112,6 +2112,7 @@
   <data name="Soft_Note_Bf6" xml:space="preserve"><value>EA روشن بودن TPM 2.0 و UEFI Secure Boot و پشتیبانی سیستم از HVCI و VBS را لازم می‌داند (برای ضدتقلب)؛ ویندوز ۱۱ پیشنهاد می‌شود. اینجا بررسی نمی‌شود.</value></data>
   <data name="Soft_Note_Ssd" xml:space="preserve"><value>ناشر SSD را لازم می‌داند.</value></data>
   <data name="Soft_Note_Wukong" xml:space="preserve"><value>ارقام ناشر با DLSS، FSR یا XeSS روشن آزموده شده‌اند (با افزایش وضوح، نه رزولوشن اصلی). برای سطح پیشنهادی SSD لازم است.</value></data>
+  <data name="Soft_Note_Upscaled" xml:space="preserve"><value>اهداف ناشر با افزایش وضوح روشن (DLSS، FSR یا XeSS) است، نه رزولوشن اصلی. ناشر SSD را لازم می‌داند.</value></data>
   <data name="Soft_Purpose_Solidworks" xml:space="preserve"><value>طراحی مکانیکی: قطعه، مونتاژ، نقشه و شبیه‌سازی.</value></data>
   <data name="Soft_Purpose_Fusion" xml:space="preserve"><value>CAD، CAM و شبیه‌سازی در یک برنامه: طراحی، مسیر ابزار ماشین‌کاری و چاپ سه‌بعدی.</value></data>
   <data name="Soft_Purpose_Sap2000" xml:space="preserve"><value>تحلیل و طراحی عمومی سازه: پل، برج و سازه‌های صنعتی.</value></data>
@@ -2136,6 +2137,12 @@
   <data name="Soft_Purpose_EldenRing" xml:space="preserve"><value>نقش‌آفرینی اکشن جهان‌باز.</value></data>
   <data name="Soft_Purpose_Bg3" xml:space="preserve"><value>نقش‌آفرینی؛ پرده‌های پایانی آن به پردازنده فشار می‌آورند.</value></data>
   <data name="Soft_Purpose_Wukong" xml:space="preserve"><value>نقش‌آفرینی اکشن؛ برای کارت گرافیک سنگین.</value></data>
+  <data name="Soft_Purpose_CrimsonDesert" xml:space="preserve"><value>اکشن و ماجرایی جهان‌باز؛ سنگین، با SSD.</value></data>
+  <data name="Soft_Purpose_Re9" xml:space="preserve"><value>وحشت و بقا.</value></data>
+  <data name="Soft_Purpose_FirstLight" xml:space="preserve"><value>اکشن و ماجرایی مخفی‌کاری.</value></data>
+  <data name="Soft_Purpose_Onimusha" xml:space="preserve"><value>اکشن شمشیرزنی.</value></data>
+  <data name="Soft_Purpose_Mw4" xml:space="preserve"><value>تیراندازی: داستانی و چندنفره.</value></data>
+  <data name="Soft_Purpose_PhantomBlade" xml:space="preserve"><value>نقش‌آفرینی اکشن رزمی.</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>رندر بلادرنگ و ویژوالایز</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>موتورهای رندر</value></data>
   <data name="Soft_Category_Architecture" xml:space="preserve"><value>معماری و طراحی</value></data>

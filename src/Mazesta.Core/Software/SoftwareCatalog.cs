@@ -169,9 +169,9 @@ public static class SoftwareCatalog
         new("premiere", "Premiere Pro 2025", "Adobe", SoftCategory.Video, SoftGpu.Any,
             [Min(8, 2, cpu: "Intel 6th gen · Ryzen 1000+ (AVX2)"), Rec(16, 8, cpu: "Intel 11th gen · Ryzen 3000+", scale: "Soft_Scale_Hd"), High(32, 8, scale: "Soft_Scale_4k")],
             "helpx.adobe.com/premiere-pro/system-requirements.html", null, "Pr", "#2a1466", ["premiere", "premiere pro", "پریمیر", "پرمیر", "پریمیر پرو"], "Soft_Purpose_Premiere"),
-        new("resolve", "DaVinci Resolve 20", "Blackmagic Design", SoftCategory.Video, SoftGpu.Dedicated,
-            [Min(16, 4, gpu: "CUDA · OpenCL · Metal"), Rec(32, 4, scale: "Soft_Scale_Fusion")],
-            "blackmagicdesign.com/products/davinciresolve (system requirements)", null, "Dv", "#3c3c3c", ["davinci", "davinci resolve", "resolve", "داوینچی", "داوینچی ریزالو"], "Soft_Purpose_Resolve"),
+        new("resolve", "DaVinci Resolve 21", "Blackmagic Design", SoftCategory.Video, SoftGpu.Dedicated,
+            [Min(16, 4, gpu: "CUDA 12.8 · OpenCL 1.2"), Rec(32, 4, scale: "Soft_Scale_Fusion")],
+            "blackmagicdesign.com (About DaVinci Resolve 21.0.4: minimum system requirements for Windows)", null, "Dv", "#3c3c3c", ["davinci", "davinci resolve", "resolve", "داوینچی", "داوینچی ریزالو"], "Soft_Purpose_Resolve"),
 
         // ——— Graphics ———
         new("photoshop", "Photoshop 2025", "Adobe", SoftCategory.Graphics, SoftGpu.Any,
@@ -239,6 +239,28 @@ public static class SoftwareCatalog
         new("wukong", "Black Myth: Wukong", "Game Science", SoftCategory.Game, SoftGpu.Any,
             [Min(16, gpu: "GTX 1060 6GB · RX 580 8GB · DirectX 11", cpu: "Core i5-8400 · Ryzen 5 1600"), Rec(16, gpu: "RTX 2060 · RX 5700 XT · Arc A750 · DirectX 12", cpu: "Core i7-9700 · Ryzen 5 5500")],
             "store.steampowered.com/app/2358720", null, "BM", "#a8833a", ["wukong", "black myth", "ووکانگ", "بلک میث"], "Soft_Purpose_Wukong", "Soft_Note_Wukong"),
+        // Released in 2026; their Steam pages, checked on 2026-11-03.
+        new("crimsondesert", "Crimson Desert", "Pearl Abyss", SoftCategory.Game, SoftGpu.Any,
+            [Min(16, gpu: "GTX 1060 · RX 5500 XT · DirectX 12", cpu: "Core i5-8500 · Ryzen 5 2600X"), Rec(16, gpu: "RTX 2080 · RX 6700 XT · DirectX 12", cpu: "Core i5-11600K · Ryzen 5 5600")],
+            "store.steampowered.com/app/3321460", null, "CD", "#9b1c1c", ["crimson desert", "کریمسون دزرت", "کریمسون"], "Soft_Purpose_CrimsonDesert", "Soft_Note_Ssd"),
+        new("re9", "Resident Evil Requiem", "CAPCOM", SoftCategory.Game, SoftGpu.Any,
+            [Min(16, 6, gpu: "GTX 1660 6GB · RX 5500 XT 8GB · DirectX 12", cpu: "Core i5-8500 · Ryzen 5 3500", target: "1080p (upscaled from 640p) · 30 FPS"),
+             Rec(16, 8, gpu: "RTX 2060 SUPER 8GB · RX 6600 8GB · DirectX 12", cpu: "Core i7-8700 · Ryzen 5 5500", target: "1080p (upscaled from 720p) · 60 FPS")],
+            "store.steampowered.com/app/3764200", null, "RE", "#7a0d0d", ["resident evil", "resident evil requiem", "re9", "رزیدنت اویل", "رزیدنت ایول", "رزیدنت"], "Soft_Purpose_Re9", "Soft_Note_Upscaled"),
+        new("firstlight", "007 First Light", "IO Interactive", SoftCategory.Game, SoftGpu.Any,
+            [Min(16, gpu: "GTX 1660 · RX 5700", cpu: "Core i5-9500 · Ryzen 5 3500"), Rec(16, gpu: "RTX 3060 Ti · RX 6700 XT", cpu: "Core i5-13500 · Ryzen 5 7600")],
+            "store.steampowered.com/app/3768760", null, "007", "#1a1a1a", ["007", "first light", "007 first light", "جیمز باند", "فرست لایت"], "Soft_Purpose_FirstLight", "Soft_Note_Ssd"),
+        new("onimusha", "Onimusha: Way of the Sword", "CAPCOM", SoftCategory.Game, SoftGpu.Any,
+            [Min(16, 6, gpu: "GTX 1660 6GB · RX 5500 XT 8GB · DirectX 12", cpu: "Core i5-8400 · Ryzen 3 3100", target: "1080p (upscaled) · Low · 30 FPS"),
+             Rec(16, 8, gpu: "RTX 2060 SUPER 8GB · RX 6600 8GB · DirectX 12", cpu: "Core i5-10400 · Ryzen 5 3600", target: "1080p (upscaled) · Medium · 60 FPS")],
+            "store.steampowered.com/app/2638890", null, "On", "#5b2a86", ["onimusha", "اونیموشا", "اونی موشا", "انیموشا"], "Soft_Purpose_Onimusha", "Soft_Note_Upscaled"),
+        new("mw4", "Call of Duty: Modern Warfare 4", "Activision", SoftCategory.Game, SoftGpu.Any,
+            [Min(8, gpu: "GTX 970 / 1060 · RX 470 · Arc A580", cpu: "Core i5-6600 · Ryzen 5 1400"), Rec(16, gpu: "RTX 3060 · RX 6600 XT · Arc B580", cpu: "Core i7-8700K · Ryzen 5 3600")],
+            "store.steampowered.com/app/4435490", null, "CoD", "#2b2b2b", ["call of duty", "modern warfare", "modern warfare 4", "mw4","کال آف دیوتی", "کالاف دیوتی", "کال اف دیوتی", "مدرن وارفر"], "Soft_Purpose_Mw4", "Soft_Note_Ssd"),
+        new("phantomblade", "Phantom Blade Zero", "S-GAME", SoftCategory.Game, SoftGpu.Any,
+            [Min(16, 6, gpu: "GTX 1660 6GB · RX 5500 XT 8GB · DirectX 12", cpu: "Core i7-8700K · Ryzen 5 3600", target: "1080p (upscaled) · 30 FPS"),
+             Rec(16, 8, gpu: "RTX 3060 Ti 8GB · RX 6700 XT 12GB · DirectX 12", cpu: "Core i5-10600K · Ryzen 5 5600X", target: "1440p (upscaled) · 60 FPS")],
+            "store.steampowered.com/app/4115450", null, "PB", "#b3202a", ["phantom blade", "phantom blade zero", "فانتوم بلید", "فانتوم بلید زیرو"], "Soft_Purpose_PhantomBlade", "Soft_Note_Upscaled"),
     ];
 
     public static SoftApp? Find(string id) => Apps.FirstOrDefault(a => a.Id == id);

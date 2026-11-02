@@ -112,4 +112,15 @@ public class SoftwareCatalogTests
         Assert.Equal(SoftTierKind.Recommended, SoftwareCatalog.Judge(A("solidworks"), Pc("NVIDIA RTX A2000", 6, 31.8)).Level);
         Assert.Equal(SoftCategory.Mechanical, A("fusion").Category);
     }
+    [Fact] public void The_2026_games_meet_their_recommendation_on_a_3090_and_an_8_GB_ram_machine_misses_it()
+    {
+        var pc = Pc("NVIDIA GeForce RTX 3090", 23.9, 63.9) with { Dx12 = true };
+        foreach (var id in new[] { "phantomblade", "crimsondesert", "re9", "onimusha", "mw4", "firstlight" })
+        {
+            Assert.Equal(SoftTierKind.Recommended, SoftwareCatalog.Judge(A(id), pc).Level);
+            Assert.Contains(SoftwareCatalog.Judge(A(id), Pc("NVIDIA GeForce RTX 3090", 23.9, 7.9) with { Dx12 = true }).Missing, m => m.What == "Ram");
+        }
+        // Crimson Desert's page names cards, not their memory: no VRAM figure.
+        Assert.All(A("crimsondesert").Tiers, t => Assert.Null(t.VramGb));
+    }
 }
