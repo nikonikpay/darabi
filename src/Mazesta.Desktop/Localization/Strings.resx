@@ -1911,6 +1911,20 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Sensors" xml:space="preserve"><value>{0} now:</value></data>
   <data name="Assist_Sensors_None" xml:space="preserve"><value>No reading yet: {0}</value></data>
   <data name="Assist_Sensors_Empty" xml:space="preserve"><value>No sensor of that kind gives a reading on this computer.</value></data>
+  <data name="Assist_HotSpot_None" xml:space="preserve"><value>This card does not report a hot-spot temperature, so there is no hot-spot reading to give.</value></data>
+  <data name="Assist_Heat_Verdict" xml:space="preserve"><value>A reading now is not a verdict: for one, run this part's temperature test on the Tests page. The smart troubleshooting then judges its heat under load (for the graphics card also the hot spot against the core, and the memory).</value></data>
+  <data name="Assist_BitLocker_Some" xml:space="preserve"><value>BitLocker as Windows reports it now. A drive it can lock asks for its 48-digit recovery key after a Windows reinstall, a reset or a BIOS update: have the key first (Microsoft account, Devices, BitLocker recovery keys). The BitLocker box on the storage page is open with the steps.</value></data>
+  <data name="Assist_BitLocker_None" xml:space="preserve"><value>No drive is encrypted with BitLocker, as Windows reports it now:</value></data>
+  <data name="Assist_BitLocker_Unread" xml:space="preserve"><value>Windows did not give BitLocker's state, so it is unknown (it may still be on). Windows' own BitLocker settings show it.</value></data>
+  <data name="Assist_Drives_Bad" xml:space="preserve"><value>{0} drive(s) need a look, by their own health report (SMART):</value></data>
+  <data name="Assist_Drives_Good" xml:space="preserve"><value>No drive reports a problem in its own health report (SMART):</value></data>
+  <data name="Assist_Drive_NoReport" xml:space="preserve"><value>gives no health report, so its health is unknown</value></data>
+  <data name="Assist_Drives_None" xml:space="preserve"><value>Windows listed no drive with a health report, so the drives' health is unknown here.</value></data>
+  <data name="Assist_Drives_Test" xml:space="preserve"><value>This is what the drives say about themselves; the storage tests on the Tests page (SMART, surface scan) check them further.</value></data>
+  <data name="Assist_Tuning_Head" xml:space="preserve"><value>The graphics card's settings as its driver reports them now:</value></data>
+  <data name="Assist_Tuning_Stock" xml:space="preserve"><value>no clock offset or power limit set (stock); a clock cap set by another program cannot be read back</value></data>
+  <data name="Assist_Tuning_Interrupted" xml:space="preserve"><value>At start-up the last automatic undervolt or overclock search was found unfinished on {0}: the card was put back to stock, and that setting is past what this card holds.</value></data>
+  <data name="Assist_Tuning_NoCard" xml:space="preserve"><value>No graphics card could be opened for tuning, so its settings cannot be read.</value></data>
   <data name="Assist_Sensors_Stale" xml:space="preserve"><value>{0} at the last reading, {1} seconds ago (the sensors are not being read now; this is not the state at this moment):</value></data>
   <data name="Assist_Kind_Temperature" xml:space="preserve"><value>Temperatures</value></data>
   <data name="Assist_Kind_Fan" xml:space="preserve"><value>Fans</value></data>
@@ -2425,7 +2439,8 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
 - Tests: processor (stress, Linpack, core by core, FFT, vector), RAM (patterns over nearly all of it, bit fade), drives (speed, SMART, sustained write), graphics card (stress, VRAM with its bandwidth and temperature, 3D scene, AI), video decode and encode (H.264, HEVC, VP9, AV1; 1080p to 8K; 8/10-bit; 4:2:0/4:2:2), power, network. When they end, a window sums up each part's health. I ask on the page before anything starts.
 - Test settings in words, such as "CPU test with variable load, 100% for 20 seconds then 0% for 10", "core by core with 4 cores at a time" or "5 minutes each"; "turn on the advanced view of the tests" shows every setting and the full result.
 - Benchmarks: processor, 7-Zip, memory and its latency, the Iranian-garden 3D scene (normal and ray-traced), ray tracing, AI compute, video, drives, internet speed; compared with other computers with the same parts.
-- Graphics card tuning: automatic undervolt and overclock, the voltage curve, power limit, the card's fan and saved profiles (shown on the page; you start them).
+- Graphics card tuning: automatic undervolt and overclock, the voltage curve, power limit, the card's fan and saved profiles (shown on the page; you start them). "Is my card undervolted?" I answer from the driver itself.
+- Drives and BitLocker: "which drive is failing?" from each drive's own health report, by its name and letter, and "is BitLocker on?" with each drive's state and the recovery-key warning. The graphics card's temperature too, with its hot spot and memory.
 - On-screen overlay: frame rate with 1% and 0.1% lows, temperatures (VRAM and each CCD too), clocks, power, fans, ping; ready-made sets (game, render, troubleshooting) and any single sensor; turn it on or off.
 - Fans, RGB lighting, the background tray monitor and its temperature warnings ("tell me when the CPU passes 85").
 - Hands-on checks: screen pixels, keyboard, mouse, speakers, microphone, laptop battery health.

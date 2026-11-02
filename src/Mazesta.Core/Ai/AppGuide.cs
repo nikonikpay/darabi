@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Complaint, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes, Checkup }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Complaint, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes, Checkup, BitLocker, DriveHealth, GpuTuning }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -27,6 +27,9 @@ public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Pa
 {
     /// <summary>For <see cref="AiIntent.Tests"/>: every test of the areas was asked for ("همشو"), not the usual set.</summary>
     public bool All { get; init; }
+    /// <summary>For <see cref="AiIntent.Sensors"/>: "hotspot" when the hot spot was named (said to be unreported when the card has none), "heat" when
+    /// asked whether a part runs hot (a reading now is no verdict: the temperature test under load is pointed to).</summary>
+    public string? Focus { get; init; }
     /// <summary>For <see cref="AiIntent.Tests"/>: single tests of an area asked for by name ("نوشتن طولانی هارد"), not the area's usual set.</summary>
     public IReadOnlyList<string>? TestIds { get; init; }
     /// <summary>For <see cref="AiIntent.Tests"/>: the parts are to be loaded at the same time ("همزمان").</summary>
@@ -215,6 +218,8 @@ public static class AppGuide
     private static readonly string[] ProblemWords = Lex.List("ProblemWords"), HeatWords = Lex.List("HeatWords"), BuyWords = Lex.List("BuyWords");
     // «چطوره» asks how something is (its state), unlike «چطور» how to do it; a past tense with «highest» asks for what was recorded.
     private static readonly string[] StateWords = Lex.List("StateWords"), PastWords = Lex.List("PastWords"), MaxWords = Lex.List("MaxWords");
+    // The newer features asked about by name: the hot spot, BitLocker, a drive's health, the card's tuning; «شده / is my» asks for a state.
+    private static readonly string[] HotSpotWords = Lex.List("HotSpotWords"), BitLockerWords = Lex.List("BitLockerWords"), TuningWords = Lex.List("TuningWords"), FailWords = Lex.List("FailWords"), IsWords = Lex.List("IsWords");
 
     /// <summary>What a message asks for, when it is plain; <see cref="AiIntent.None"/> leaves it to the model. The order matters: a question of
     /// "how" is answered, not acted on; the reports and the programs have their own words; a part's figure is a question about this computer;
@@ -231,7 +236,7 @@ public static class AppGuide
         // The shop, a price or a computer to buy: the model answers from company_info / ready_systems, never from a page ("کیس گیمینگ" is not the gaming page).
         if (Any(s, BuyWords) && app is null && !go) return new(AiIntent.None);
         // "It gets hot": the temperatures now, of the part named; the model then tells what they mean.
-        if (Any(s, HeatWords) && !go && !not) return new(AiIntent.Sensors, Kind: "Temperature", Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area);
+        if (Any(s, HeatWords) && !go && !not) return new(AiIntent.Sensors, Kind: "Temperature", Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area) { Focus = Any(s, HotSpotWords) ? "hotspot" : "heat" };
 
         // "Tell me when the CPU passes 80": a warning the tray and the app give, at the temperature asked for.
         if (Any(s, AlertWords) && Any(s, WhenWords) && SensorKinds[0].Words.Any(w => Has(s, w)))
@@ -251,6 +256,14 @@ public static class AppGuide
 
         // Drivers ("درایور" also starts with "درایو", a drive): the app checks them and answers; the page is opened to install.
         if ((Has(s, "درایور") || Has(s, "driver") || Has(s, "گیم ردی") || Has(s, "game ready")) && !Any(s, CommandWords) && !(go || page)) return new(AiIntent.Drivers);
+
+        // "Is BitLocker on", "is my drive encrypted": each drive letter's state, read now; a bare "بیت لاکر" still opens Windows' own window.
+        if (Any(s, BitLockerWords) && !go && Words(s) > 2) return new(AiIntent.BitLocker);
+        // "Which drive is failing": each drive's own health report, named; "سلامت هاردم چطوره" stays the SMART test, and a complaint without a question stays one.
+        if (Any(s, TestAreas.First(a => a.Area == "storage").Words) && Any(s, FailWords) && (ask || Has(s, "سالم") || Has(s, "healthy")) && !go && !Any(s, TestWords) && !Any(s, DoWords))
+            return new(AiIntent.DriveHealth);
+        // "Is my card undervolted": what the driver reports on the card now; "اندرولت کن" or the automatic search still opens the tuning page.
+        if (Any(s, TuningWords) && Any(s, IsWords) && !go && !doIt) return new(AiIntent.GpuTuning);
 
         // A Windows command: given from the app's checked list; one that is not there is the model's, and is said to be unchecked.
         if (Any(s, CommandWords))
@@ -312,8 +325,8 @@ public static class AppGuide
         // A reading now (a temperature, a fan, a load) is the sensors', not the specification's.
         if (!go && !test && SensorKinds[0].Words.Any(w => Has(s, w)) && Any(s, MaxWords) && Any(s, PastWords))
             return new(AiIntent.Report, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area, Kind: "Temperature", Index: Any(s, EarlierWords) ? 1 : 0);
-        if (!go && !test && SensorKinds.FirstOrDefault(k => Any(s, k.Words)) is { Kind: not null } sensor && (Any(s, NowWords) || ask))
-            return new(AiIntent.Sensors, Kind: sensor.Kind, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area);
+        if (!go && !test && SensorKinds.FirstOrDefault(k => Any(s, k.Words)) is { Kind: not null } sensor && (Any(s, NowWords) || ask || Any(s, HotSpotWords)))
+            return new(AiIntent.Sensors, Kind: sensor.Kind, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area ?? (Any(s, HotSpotWords) ? "gpu" : null)) { Focus = Any(s, HotSpotWords) ? "hotspot" : null };
         // A benchmark's number is its history, not the part's specification ("آخرین بنچمارک پردازنده چند بود").
         if (!go && !test && ask && !Has(s, "بنچمارک") && !Has(s, "بنچ مارک") && !Has(s, "benchmark") && SpecParts.FirstOrDefault(p => Any(s, p.Words)) is { Part: not null } spec)
             return new(AiIntent.Specs, Part: spec.Part);

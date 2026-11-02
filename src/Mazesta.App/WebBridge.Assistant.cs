@@ -365,6 +365,19 @@ public sealed partial class WebBridge
                     : Loc.Format("Assist_FileReady", d.RootElement.GetProperty("file").GetString() ?? "", d.RootElement.GetProperty("report").GetString() ?? "");
                 return true;
             }
+            // The newer features asked about by name, read now and told by the app: BitLocker's states (its box is opened too), each drive's health, the card's tuning.
+            if (route.Intent is AiIntent.BitLocker or AiIntent.DriveHealth or AiIntent.GpuTuning)
+            {
+                var tuning = _sp.GetRequiredService<Core.Tuning.IGpuTuningProvider>();
+                reply.Text = route.Intent switch
+                {
+                    AiIntent.BitLocker => AssistantReplies.BitLocker(await Task.Run(global::Mazesta.Hardware.Wmi.BitLockerReader.Read, ct).ConfigureAwait(true)),
+                    AiIntent.DriveHealth => AssistantReplies.Drives(await Task.Run(_sp.GetRequiredService<Core.Providers.IDriveHealthProvider>().Read, ct).ConfigureAwait(true)),
+                    _ => AssistantReplies.Tuning(_sp.GetRequiredService<Desktop.ViewModels.TuningRecovery>(), await Task.Run(() => tuning.Devices.Select(d => (d.Name, d.ReadCurrent())).ToList(), ct).ConfigureAwait(true), tuning.UnavailableReasonKey),
+                };
+                if (route.Intent == AiIntent.BitLocker && !ct.IsCancellationRequested) this.Push("assistantNav", new { page = "storage", target = "bitlocker" });
+                return true;
+            }
             // A question with one right answer, from what the app reads: the app writes the answer (see AssistantReplies).
             if (route.Intent is AiIntent.Specs or AiIntent.Sensors or AiIntent.Software or AiIntent.SoftwareList or AiIntent.Report or AiIntent.Dns && First(route, "") is { } calls)
             {
@@ -378,7 +391,7 @@ public sealed partial class WebBridge
                 reply.Text = route.Intent switch
                 {
                     AiIntent.Specs => AssistantReplies.Specs(route.Part ?? "all", results[0]) + (results.Count > 1 && AssistantReplies.PartTests(results[1]) is { Length: > 0 } tested ? "\n\n" + tested : ""),
-                    AiIntent.Sensors => AssistantReplies.Sensors(route.Kind, route.Part, results[0]),
+                    AiIntent.Sensors => AssistantReplies.Sensors(route.Kind, route.Part, results[0], route.Focus),
                     AiIntent.Software or AiIntent.SoftwareList => AssistantReplies.Software(results[0], route.Intent == AiIntent.Software),
                     AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Kind == "Temperature", route.Part),
                     _ => AssistantReplies.Dns(results[0]),

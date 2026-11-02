@@ -72,7 +72,7 @@ internal static class AssistantReplies
     }
 
     /// <param name="part">The part asked about (cpu, gpu, memory, storage, network), or null for all.</param>
-    public static string Sensors(string? kind, string? part, string json)
+    public static string Sensors(string? kind, string? part, string json, string? focus = null)
     {
         using var d = JsonDocument.Parse(json); var r = d.RootElement;
         if (S(r, "error") is { } e) return Loc.Format("Assist_Sensors_None", e);
@@ -98,8 +98,47 @@ internal static class AssistantReplies
         string head = r.TryGetProperty("stale", out var st) && st.ValueKind == JsonValueKind.True
             ? Loc.Format("Assist_Sensors_Stale", Loc.Get("Assist_Kind_" + (kind ?? "All")), N(D(r, "secondsAgo") ?? 0))
             : Loc.Format("Assist_Sensors", Loc.Get("Assist_Kind_" + (kind ?? "All")));
-        return head + "\n" + string.Join("\n", lines);
+        // A hot spot asked for and not reported is said so (many cards and drivers give none), never left out quietly; "does it run hot" gets the
+        // test that judges heat under load, since a reading at the desk is no verdict.
+        bool spot = A(r, "devices").Where(x => S(x, "part") == "Gpu").SelectMany(x => A(x, "sensors")).Any(x => (S(x, "name") ?? "").Replace(" ", "", StringComparison.Ordinal).Contains("hotspot", StringComparison.OrdinalIgnoreCase));
+        string tail = focus == "hotspot" && !spot ? "\n" + Loc.Get("Assist_HotSpot_None") : focus == "heat" ? "\n\n" + Loc.Get("Assist_Heat_Verdict") : "";
+        return head + "\n" + string.Join("\n", lines) + tail;
     }
+
+    /// <summary>Each drive letter's BitLocker state as Windows reports it now, and what it means before a reinstall; unreadable is said so, never "off".</summary>
+    public static string BitLocker(IReadOnlyList<Mazesta.Core.Health.BitLockerVolume>? volumes)
+    {
+        if (volumes is null) return Loc.Get("Assist_BitLocker_Unread");
+        var lines = volumes.Select(v => $"- {v.Letter} {Loc.Get("BitLocker_State_" + v.State)}"
+            + (v.CanLock && v.RecoveryPassword == false && v.State != Mazesta.Core.Health.BitLockerState.WaitingForActivation ? " · " + Loc.Get("BitLocker_NoRecovery") : ""));
+        return Loc.Get(volumes.Any(v => v.CanLock) ? "Assist_BitLocker_Some" : "Assist_BitLocker_None") + "\n" + string.Join("\n", lines);
+    }
+
+    /// <summary>Each drive's own health report (Windows' SMART verdict, NVMe errors, wear), named as the storage page names it, the worst first; a drive
+    /// that reports nothing is listed as such.</summary>
+    public static string Drives(IReadOnlyList<Mazesta.Core.Providers.DriveHealth> drives)
+    {
+        if (drives.Count == 0) return Loc.Get("Assist_Drives_None");
+        var found = Mazesta.Core.Health.Checkup.DriveCheck.Evaluate(drives).OrderByDescending(f => f.Level).ToList();
+        var lines = found.Select(f => $"- {f.Subject}: {Desktop.Services.CheckupText.Title(f)}{Measured(f, " (", ")")}")
+            .Concat(drives.Where(d => found.All(f => f.Subject != d.Label)).Select(d => $"- {d.Label}: {Loc.Get("Assist_Drive_NoReport")}"));
+        int bad = found.Count(f => f.Level >= Mazesta.Core.Health.Checkup.FindingLevel.Attention);
+        return (bad > 0 ? Loc.Format("Assist_Drives_Bad", bad) : Loc.Get("Assist_Drives_Good")) + "\n" + string.Join("\n", lines) + "\n\n" + Loc.Get("Assist_Drives_Test");
+    }
+
+    /// <summary>The graphics card's settings as the driver reports them now, and a search the start-up found unfinished; no card opened is said so.</summary>
+    public static string Tuning(Desktop.ViewModels.TuningRecovery recovery, IReadOnlyList<(string Name, Mazesta.Core.Tuning.GpuTuningSettings Now)> cards, string? unavailableKey)
+    {
+        if (cards.Count == 0) return Loc.Get("Assist_Tuning_NoCard") + (unavailableKey is { } k ? "\n" + Loc.Get(k) : "");
+        var found = Mazesta.Core.Health.Checkup.GpuCheck.Tuning(recovery.Settings is { } s ? (recovery.Card, s) : null, cards);
+        var lines = cards.Select(c => found.FirstOrDefault(f => f.Code == Mazesta.Core.Health.Checkup.FindingCode.GpuTunedNow && f.Subject == c.Name) is { } f
+            ? $"- {c.Name}: {Measured(f, "", "")}" : $"- {c.Name}: {Loc.Get("Assist_Tuning_Stock")}").ToList();
+        if (found.FirstOrDefault(f => f.Code == Mazesta.Core.Health.Checkup.FindingCode.GpuTuneInterrupted) is { } i) lines.Add("\n" + Loc.Format("Assist_Tuning_Interrupted", Measured(i, "", "")));
+        return Loc.Get("Assist_Tuning_Head") + "\n" + string.Join("\n", lines);
+    }
+
+    private static string Measured(Mazesta.Core.Health.Checkup.Finding f, string open, string close)
+        => f.Measures.Count == 0 ? "" : open + string.Join("، ", f.Measures.Select(m => $"{Loc.Get(m.Key)} {Desktop.Services.CheckupText.Value(m)}")) + close;
 
     public static string Software(string json, bool one)
     {

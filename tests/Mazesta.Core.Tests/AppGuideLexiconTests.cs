@@ -22,6 +22,16 @@ public class AppGuideLexiconTests
     [Theory, InlineData("cpu چند درجه است", "cpu"), InlineData("گرم میشه سیستمم", null), InlineData("لپ تاپم خیلی داغ میکنه", null), InlineData("چقدر برق مصرف میکنه", null)]
     public void A_question_of_heat_or_power_reads_the_sensors(string text, string? part) { var r = R(text); Assert.True(r.Intent == AiIntent.Sensors && r.Part == part, $"{text}: {r.Intent} {r.Part}"); }
 
+    [Theory, InlineData("کارت گرافیکم داغه", "heat"), InlineData("is my GPU hot", "heat"), InlineData("هات اسپات کارت گرافیک چنده", "hotspot"), InlineData("دمای هات اسپات", "hotspot"),
+     InlineData("gpu hotspot temperature", "hotspot"), InlineData("what's my GPU temperature", null), InlineData("دمای کارت گرافیکم چنده", null)]
+    public void The_cards_heat_and_hot_spot_read_its_sensors(string text, string? focus) { var r = R(text); Assert.True(r.Intent == AiIntent.Sensors && r.Part == "gpu" && r.Kind == "Temperature" && r.Focus == focus, $"{text}: {r.Intent} {r.Part} {r.Kind} {r.Focus}"); }
+
+    [Theory, InlineData("بیت لاکر روشنه", AiIntent.BitLocker), InlineData("درایوم رمزگذاری شده", AiIntent.BitLocker), InlineData("is bitlocker on", AiIntent.BitLocker), InlineData("بیت لاکر", AiIntent.WinOpen),
+     InlineData("کدوم هارد خرابه", AiIntent.DriveHealth), InlineData("which drive is failing", AiIntent.DriveHealth), InlineData("هارد هام سالمن", AiIntent.DriveHealth), InlineData("سلامت هاردم چطوره", AiIntent.Tests),
+     InlineData("کارتم آندرولت شده", AiIntent.GpuTuning), InlineData("is my gpu overclocked", AiIntent.GpuTuning), InlineData("کارت گرافیکم اورکلاک شده", AiIntent.GpuTuning),
+     InlineData("اندرولت کن", AiIntent.Navigate), InlineData("undervolt my gpu", AiIntent.Navigate)]
+    public void Bitlocker_a_drives_health_and_the_cards_tuning_are_read_and_told(string text, AiIntent intent) => Assert.True(R(text).Intent == intent, $"{text}: {R(text).Intent}");
+
     [Theory, InlineData("کیس گیمینگ پیشنهاد بده"), InlineData("یه کامپیوتر بخرم برای رندرینگ"), InlineData("قیمت چنده"), InlineData("شماره تماس مازستا"), InlineData("سلام"), InlineData("مرسی"), InlineData("تو کی هستی؟")]
     public void The_shop_and_small_talk_are_the_models(string text) => Assert.Equal(AiIntent.None, R(text).Intent);
 
