@@ -21,7 +21,7 @@ public static class DriveCheck
         if (d.TemperatureMaxC is { } t) m.Add(M("Check_M_DriveTempMax", t, Celsius));
         long errors = (d.ReadErrorsUncorrected ?? 0) + (d.WriteErrorsUncorrected ?? 0);
         if (d.BusType == "NVMe" && errors > 0) m.Add(M("Check_M_MediaErrors", errors, None));
-        Finding F(FindingCode c, FindingLevel lv) => new(c, lv, HardwareKind.Storage, m, d.Name);
+        Finding F(FindingCode c, FindingLevel lv) => new(c, lv, HardwareKind.Storage, m, d.Label);
         if (d.Status == "Unhealthy") return F(FindingCode.DriveUnhealthy, FindingLevel.Problem);
         if (DriveAttention.Needs(d)) return F(FindingCode.DriveUnhealthy, FindingLevel.Attention);
         if (life <= LifeProblem) return F(FindingCode.DriveWorn, FindingLevel.Problem);

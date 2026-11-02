@@ -12,14 +12,21 @@ public class SmartCheckTests
     {
         var r = await Run(Ssd(), new DriveHealth("WDC WD20PURZ", "W2", "Healthy", null, null, null, null, null, null));
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Equal(0, r.ErrorCount);
-        Assert.Contains("MSI M390 1TB (S1): Healthy, wear 3%, 38 °C (max 61 °C), power-on 1234 h, uncorrected read/write errors 0/0", r.Detail);
-        Assert.Contains("WDC WD20PURZ (W2): Healthy", r.Detail); Assert.DoesNotContain("wear 0%", r.Detail);   // an unreported counter is left out, never 0
+        Assert.Contains("MSI M390 1TB (NVMe SSD) S/N S1: Healthy, wear 3%, 38 °C (max 61 °C), power-on 1234 h, uncorrected read/write errors 0/0", r.Detail);
+        Assert.Contains("WDC WD20PURZ S/N W2: Healthy", r.Detail); Assert.DoesNotContain("wear 0%", r.Detail);   // an unreported counter is left out, never 0
     }
     [Theory, InlineData("Warning", 0L), InlineData("Unhealthy", 0L), InlineData("Healthy", 7L)]
     public async Task A_warning_an_unhealthy_drive_or_uncorrected_errors_fail_one_error_per_drive(string status, long readErrors)
     {
         var r = await Run(Ssd(status, readErrors), Ssd());
         Assert.Equal(TestOutcome.Failed, r.Outcome); Assert.Equal(1, r.ErrorCount);
+    }
+    [Fact] public async Task The_failing_drive_is_named_first_with_its_kind_size_and_letters()
+    {
+        var hdd = new DriveHealth("WDC WD20PURZ", "W2", "Warning", null, null, null, null, null, null, "SATA", "D: E:", 2_000_398_934_016, "HDD");
+        var r = await Run(Ssd() with { Letters = "C:", SizeBytes = 1_024_209_543_168 }, hdd);
+        Assert.StartsWith("needs attention: WDC WD20PURZ (HDD, 2 TB, D: E:); WDC WD20PURZ (HDD, 2 TB, D: E:) S/N W2: Warning; MSI M390 1TB (NVMe SSD, 1 TB, C:)", r.Detail);
+        Assert.Equal("Samsung 870 (SATA SSD, 500 GB)", new DriveHealth("Samsung 870", null, null, null, null, null, null, null, null, "SATA", null, 500_107_862_016, "SSD").Label);
     }
     // ——— the NVMe drive's own health log ———
     private sealed class Nvme(params NvmeDriveHealth[] logs) : INvmeHealthSource { public IReadOnlyList<NvmeDriveHealth> Read() => logs; }
@@ -30,7 +37,7 @@ public class SmartCheckTests
     {
         var r = await new SmartCheckExecutor(new Drives(Ssd()), new Nvme(new NvmeDriveHealth(0, "MSI M390 1TB", "S1", Log(warning, media))))
             .RunAsync(new TestExecutionRequest(5, new FakeClock(T0), null, null), CancellationToken.None);
-        Assert.Equal(expected, r.Outcome); Assert.Contains("MSI M390 1TB NVMe log: critical warning", r.Detail);
+        Assert.Equal(expected, r.Outcome); Assert.Contains("MSI M390 1TB (NVMe SSD) NVMe log: critical warning", r.Detail);
     }
 
     [Fact] public void Only_new_media_errors_or_a_newly_raised_warning_count_as_a_fault_during_a_test()

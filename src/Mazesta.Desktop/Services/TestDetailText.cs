@@ -120,6 +120,8 @@ public static partial class TestDetailText
         R(@"first mismatch in buffer block (\d+) \(offset (\d+) MiB\) (?:during|while verifying) '(.+)'", "Detail_Mem_Mismatch"),
         R(@"first faded bytes in buffer block (\d+) \(offset (\d+) MiB\) after holding '(.+)'", "Detail_Mem_Faded"),
         // ——— storage ———
+        R(@"drive (\S+)", "Detail_Sto_DriveAt"),
+        R(@"needs attention: (.+)", "Detail_Sto_DriveBad"),
         R(@"sequential unbuffered write-through I/O", "Detail_Sto_Sequential"),
         R(@"random 4K QD1 unbuffered write-through", "Detail_Sto_Random"),
         R(@"write ([\d.]+) MB/s", "Detail_Sto_Write"),

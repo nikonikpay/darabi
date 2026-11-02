@@ -52,7 +52,8 @@ public static class WmiDriveHealthParser
             solid ? (int?)N(c, "Wear") : null,
             Celsius(c, "Temperature"), Celsius(c, "TemperatureMax"),  // 0 °C means "not reported", never a running drive's temperature; 255 (0xFF, a Samsung 990 Pro's answer) is the same "unknown", not 255 °C
             N(c, "ReadErrorsUncorrected"), N(c, "WriteErrorsUncorrected"), N(c, "PowerOnHours"),
-            N(d, "BusType") switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 3 => "ATA", null => null, var b => $"Bus {b}" });
+            N(d, "BusType") switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 3 => "ATA", null => null, var b => $"Bus {b}" }, null,
+            N(d, "Size") is > 0 and var size ? size : null, solid ? "SSD" : N(d, "MediaType") == 3 ? "HDD" : null);
     })];
 
     /// <summary>Whether a SMART instance name ("SCSI\Disk&amp;Ven_WDC&amp;Prod_WD10EZRX-00A3KB0\...") is the drive of that friendly name ("WDC WD10EZRX-00A3KB0").</summary>

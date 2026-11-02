@@ -1862,9 +1862,9 @@ Next: return the memory clock to stock and repeat; check the VRAM temperature an
   <data name="Advice_Storage" xml:space="preserve"><value>Seen: the drive returned wrong or short data, or an I/O error, while being written and read.
 Likely causes: the drive's media or controller; the cable or port (SATA); the board's controller or its driver; the power to the drive.
 Next: read SMART and the storage events in this report; try another cable and port; repeat on another machine if you can. Back up the data first.</value></data>
-  <data name="Advice_Smart" xml:space="preserve"><value>Seen: Windows reports the drive's own health as failing, or it counts uncorrected errors.
-Likely causes: the drive itself, reported by its own monitoring.
-Next: back up the data now; plan to replace the drive; the storage tests can show whether reads and writes still come back right.</value></data>
+  <data name="Advice_Smart" xml:space="preserve"><value>Seen: Windows reports the health of the drive named at the top of the result (model, type, size and drive letters) as failing, or it counts uncorrected errors. The other drives listed are fine.
+Likely causes: that drive itself, reported by its own monitoring.
+Next: back up that drive's data now; plan to replace it; the storage tests on its letter can show whether reads and writes still come back right.</value></data>
   <data name="Advice_Network" xml:space="preserve"><value>Seen: too many echo requests were lost.
 Likely causes: the cable or Wi-Fi signal; the router or the target; the adapter's driver.
 Next: ping the router (gateway) to separate the local link from the internet; try another cable, port or target.</value></data>
@@ -4156,4 +4156,9 @@ Cancel: stop.</value></data>
   <data name="Tuning_FanCurve_Unsupported" xml:space="preserve"><value>This card's fans cannot be set by the program: the driver offers no fan control.</value></data>
   <data name="Help_Tuning_FanCurve_Title" xml:space="preserve"><value>The graphics card's fan on a chart: drag points to say how fast the fans turn at each temperature of the core or the hot spot. Ready-made profiles (silent, standard, performance, full speed) are one click, and your own curve can be saved under a name. The fans return to the card's control when the program closes or when you press Automatic.</value></data>
   <data name="HelpHow_Tuning_FanCurve_Title" xml:space="preserve"><value>Open Tuning and find the fan chart.|Pick a ready-made profile, or drag the points to set the speed at each temperature.|Save your own curve under a name; press Automatic to give the fans back to the card.</value></data>
+  <data name="Log_Smart_Drive" xml:space="preserve"><value>{0}: Windows reports it as {1}.</value></data>
+  <data name="Log_Smart_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}. Back up its data now.</value></data>
+  <data name="Log_Smart_NvmeBad" xml:space="preserve"><value>This drive's own health log reports a critical warning or media errors: {0}. Back up its data now.</value></data>
+  <data name="Detail_Sto_DriveAt" xml:space="preserve"><value>Drive {0}</value></data>
+  <data name="Detail_Sto_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}</value></data>
 </root>

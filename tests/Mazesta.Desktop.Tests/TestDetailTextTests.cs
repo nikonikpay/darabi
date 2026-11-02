@@ -34,6 +34,14 @@ public class TestDetailTextTests
         Assert.Equal([false, true], io.Select(l => l.Latin)); Assert.Equal("The device is not ready.", io[1].Text);
     }
 
+    [Fact] public void Every_drive_line_is_worded_with_the_drive_named()
+    {
+        var lines = TestDetailText.Lines("needs attention: WDC WD20PURZ (HDD, 2 TB, D:); WDC WD20PURZ (HDD, 2 TB, D:) S/N W2: Warning; drive C:\\; write 512.0 MB/s");
+        Assert.All(lines, l => Assert.False(l.Latin));
+        Assert.Equal([Loc.Format("Detail_Sto_DriveBad", "WDC WD20PURZ (HDD, 2 TB, D:)"), Loc.Format("Detail_Sto_Drive", "WDC WD20PURZ (HDD, 2 TB, D:) S/N W2", Loc.Get("Detail_Drive_Warning"), ""),
+            Loc.Format("Detail_Sto_DriveAt", "C:\\"), Loc.Format("Detail_Sto_Write", "512.0")], lines.Select(l => l.Text));
+    }
+
     [Fact] public void The_power_test_names_each_half_and_words_what_follows()
     {
         var lines = TestDetailText.Lines("CPU [Passed]: matrix load 64x64, 4 fixed input sets, every product checked in full against a precomputed checksum; threads=8; GPU [Failed]: GPU Steady compute stress on RTX 4070; dispatches=10");

@@ -69,11 +69,12 @@ public abstract class StorageExecutor : ITestExecutor
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    errors++; details.Add((many ? $"{targets[i]} " : "") + $"I/O error while exercising the drive: {ex.Message}");
-                    if (!many) return new TestRunResult(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors, details[0]);
+                    // Each drive's lines start with its letter, so a failure is never read as another drive's.
+                    errors++; details.Add($"drive {targets[i]}"); details.Add($"I/O error while exercising the drive: {ex.Message}");
+                    if (!many) return new TestRunResult(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors, string.Join("; ", details));
                     continue;
                 }
-                details.Add(many ? $"{targets[i]} {detail}" : detail);
+                details.Add($"drive {targets[i]}"); details.Add(detail);
             }
             var joined = string.Join("; ", details);
             return tested == 0 && errors == 0 ? TestRunResult.Unsupported(Definition.Id, started, joined)
