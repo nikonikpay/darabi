@@ -8,7 +8,7 @@ namespace Mazesta.App;
 /// <c>--selftest=shield</c> blocks a copy of the program in the firewall and leaves a folder out of Defender's scans, reads both back and removes them (see <see cref="SelfTestShield"/>).
 /// <c>--selftest=lights</c> puts the lights out and back from the note, ends and starts their server as a wake does, and runs the effects and a spectrum on every device (see <see cref="SelfTestLights"/>).
 /// <c>--selftest=report</c> sends the usage statistics not sent yet, as the Settings button does, and writes whether the site took them.
-/// <c>--selftest=tests[N][:id,id]</c> runs every test this machine can (or just the listed ones), N seconds each (15 by default), and writes what each result's page would show: its figures and lines, a line
+/// <c>--selftest=bitlocker</c> writes what the storage page's BitLocker box reads, volume by volume. <c>--selftest=tests[N][:id,id]</c> runs every test this machine can (or just the listed ones), N seconds each (15 by default), and writes what each result's page would show: its figures and lines, a line
 /// that is still the executor's English marked <c>[LATIN]</c>.
 /// </summary>
 internal static class SelfTest
@@ -27,6 +27,12 @@ internal static class SelfTest
             if (kind.StartsWith("bench", StringComparison.Ordinal)) { await RunBenchmarks(kind, services, ui, Say); Say("DONE"); return; }
             if (kind == "shield") { await SelfTestShield.RunAsync(Say); Say("DONE"); return; }
             if (kind == "gpufan") { await GpuFan(Say); Say("DONE"); return; }
+            if (kind == "bitlocker")
+            {
+                var volumes = Mazesta.Hardware.Wmi.BitLockerReader.Read();
+                Say(volumes is null ? "not readable" : string.Join(Environment.NewLine, volumes.Select(v => $"{v.Letter} {v.State} canLock={v.CanLock} protection={v.Protection} conversion={v.Conversion} protectors={v.Protectors} recovery={v.RecoveryPassword}")));
+                Say("DONE"); return;
+            }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")
             {
