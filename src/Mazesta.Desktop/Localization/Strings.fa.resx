@@ -883,6 +883,13 @@
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>دیسک</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>
   <data name="Web_NoRuntime" xml:space="preserve"><value>برای نمایش برنامه، WebView2 مایکروسافت اج لازم است. صفحهٔ دریافت آن در سایت مایکروسافت باز شود؟ از همان‌جا نصبش کنید و برنامه را دوباره باز کنید.</value></data>
+  <data name="Web_OldRuntime" xml:space="preserve"><value>نسخهٔ WebView2 مایکروسافت اج روی این کامپیوتر ({0}) قدیمی است و برنامه با آن نمایش داده نمی‌شود. صفحهٔ دریافت نسخهٔ تازه در سایت مایکروسافت باز شود؟ از همان‌جا نصبش کنید و برنامه را دوباره باز کنید.</value></data>
+  <data name="App_StartFailed" xml:space="preserve"><value>مزستا تست باز نشد.
+
+علت آن در این فایل ثبت شد؛ این فایل را برای مزستا بفرستید:
+{0}
+
+{1}</value></data>
   <data name="Web_DemoData" xml:space="preserve"><value>پیش‌نمایش مرورگر: داده‌ی نمونه، نه این سیستم</value></data>
   <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>این سیستم هنوز آزمون جامع نشده است</value></data>
   <data name="Web_Dash_Verdict_Passed" xml:space="preserve"><value>آخرین آزمون جامع: همه‌ی آزمون‌ها موفق</value></data>

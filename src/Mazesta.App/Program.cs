@@ -73,8 +73,29 @@ internal sealed class Program : ApplicationContext
         using var app = new Program();
         Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;   // the overlay is drawn here; it must keep up while other programs load every core
         try { app.Start(overlayOnly, background); Application.Run(app); }
+        catch (Exception e) { app._log?.LogCritical(e, "The app could not start"); Fatal(e, app._paths); return 1; }
         finally { app.End(); }
         return 0;
+    }
+
+    private static int s_fatal;
+    /// <summary>A start that fails says so and leaves its reason in Data\logs (or the temp folder when Data cannot be written), never a silent exit: on
+    /// older Windows 10 a closed app with no window was all a user saw. No box in an unattended self-test: nobody is there to close it.</summary>
+    private static void Fatal(Exception e, AppPaths? paths)
+    {
+        if (Interlocked.Exchange(ref s_fatal, 1) == 1) return;
+        LogProvider?.Flush();
+        string file = "";
+        foreach (string? dir in new[] { paths?.LogsDir, Path.GetTempPath() })
+        {
+            if (dir is null) continue;
+            try { Directory.CreateDirectory(dir); file = Path.Combine(dir, "startup-error.txt");
+                  File.WriteAllText(file, $"{DateTime.Now:O}\nMazesta {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} on {Environment.OSVersion.VersionString}\n\n{e}\n"); break; }
+            catch (Exception w) when (w is IOException or UnauthorizedAccessException) { file = ""; }
+        }
+        if (SelfTest.Requested() is not null) return;
+        try { Loc.SetLanguage(ConfiguredLanguage()); MessageBox.Show(Loc.Format("App_StartFailed", file, e.Message), "Mazesta", MessageBoxButtons.OK, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, Loc.IsRtl ? MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign : 0); }
+        catch (Exception m) when (m is InvalidOperationException or System.ComponentModel.Win32Exception) { }
     }
 
     /// <summary>The language the user chose, read from the config file alone (no store, no services): the right-click actions speak it. Persian when nothing says otherwise.</summary>
@@ -123,7 +144,7 @@ internal sealed class Program : ApplicationContext
         Application.ThreadException += (_, a) => log.LogError(a.Exception, "UI thread exception");
         UiDispatcher.Unhandled += e => log.LogError(e, "Dispatcher exception");
         TaskScheduler.UnobservedTaskException += (_, a) => { log.LogError(a.Exception, "Unobserved task exception"); a.SetObserved(); };
-        AppDomain.CurrentDomain.UnhandledException += (_, a) => { log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); LogProvider?.Flush(); };
+        AppDomain.CurrentDomain.UnhandledException += (_, a) => { log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); LogProvider?.Flush(); if (a.IsTerminating && a.ExceptionObject is Exception x) Fatal(x, paths); };
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, log); _store = store;
         if (paths.Flash) store.ForDisk = c => { var copy = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(System.Text.Json.JsonSerializer.Serialize(c, JsonStore<AppConfig>.Options), JsonStore<AppConfig>.Options)!; copy.SiteKey = ""; KeepFlashKey(paths, c.SiteKey); return copy; };
         var load = store.Load(); var config = load.Value; if (paths.Flash && flashKey.Length > 0) config.SiteKey = flashKey; _config = config; _configCorrupt = load.Outcome == LoadOutcome.Corrupt; FirstRun = load.Outcome == LoadOutcome.Defaulted && !paths.Flash;

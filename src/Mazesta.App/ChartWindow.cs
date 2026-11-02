@@ -65,7 +65,7 @@ public sealed class ChartWindow : Form
             _engine.SnapshotPublished += OnSnapshot;
             core.Navigate($"https://{MainWindow.Host}/chart.html");
         }
-        catch (Exception e) when (e is COMException or IOException or InvalidOperationException) { _log.LogWarning(e, "Chart window could not start"); Close(); }
+        catch (Exception e) when (e is COMException or IOException or InvalidOperationException or NotImplementedException) { _log.LogWarning(e, "Chart window could not start"); Close(); }
     }
 
     private void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)

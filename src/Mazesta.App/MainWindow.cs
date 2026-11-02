@@ -46,10 +46,21 @@ public sealed class MainWindow : Form
         int on = 1; _ = DwmSetWindowAttribute(Handle, 20, ref on, sizeof(int));   // DWMWA_USE_IMMERSIVE_DARK_MODE: the frame matches the ink page
     }
 
+    /// <summary>The oldest WebView2 runtime the window's calls work on (settings 4 and DownloadStarting came with 92); an older one threw NotImplementedException
+    /// past the old catch and left the window on its loading panel for good. Windows 10 without updates still has such runtimes.</summary>
+    private const string MinRuntime = "92.0.902.49";
+
     private async Task StartAsync()
     {
+        string? runtime = null;
+        // Out of Load first: a window closed before its Load has ended never raises FormClosed, so the app went on with no window, holding the
+        // single-instance lock, and every later start only "activated" it - the app seemed not to open at all until the next restart.
+        await Task.Yield();
         try
         {
+            runtime = CoreWebView2Environment.GetAvailableBrowserVersionString();   // throws WebView2RuntimeNotFoundException when there is none
+            if (runtime is null) throw new WebView2RuntimeNotFoundException();
+            if (CoreWebView2Environment.CompareBrowserVersions(runtime, MinRuntime) < 0) { _log.LogError("WebView2 {Version} is older than {Min}", runtime, MinRuntime); OfferRuntime(Desktop.Localization.Loc.Format("Web_OldRuntime", runtime)); return; }
             string args = _config.RenderMode == "software" ? "--disable-gpu --disable-gpu-compositing" : "";
             // For checking the pages in the real app (elevated, real sensors): DevTools on a local port, only when the variable is set.
             if (int.TryParse(Environment.GetEnvironmentVariable("MAZESTA_DEVTOOLS_PORT"), out int port) && port is > 1024 and < 65536)
@@ -91,15 +102,22 @@ public sealed class MainWindow : Form
             _bridge = new WebBridge(core, _services, _paths, _config, _store, _configCorrupt, this, _log);
             core.Navigate($"https://{Host}/index.html");
         }
-        catch (Exception e) when (e is WebView2RuntimeNotFoundException or COMException or IOException)
+        catch (Exception e)
         {
-            _log.LogError(e, "WebView2 could not start");
-            // a machine without the runtime (seen on users' systems) is offered Microsoft's own installer page instead of the same message at every start
-            if (MessageBox.Show(this, Desktop.Localization.Loc.Get("Web_NoRuntime") + "\n\n" + e.Message, "Mazesta", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://go.microsoft.com/fwlink/p/?LinkId=2124703") { UseShellExecute = true }); }
-                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { _log.LogWarning(ex, "The WebView2 download page could not be opened"); }
-            Close();
+            // Anything else here also ends with a message: an uncaught one left the loading panel turning forever, which looked like the app not opening.
+            _log.LogError(e, "WebView2 could not start (runtime {Version})", runtime ?? "none");
+            OfferRuntime((e is NotImplementedException && runtime is not null ? Desktop.Localization.Loc.Format("Web_OldRuntime", runtime) : Desktop.Localization.Loc.Get("Web_NoRuntime")) + "\n\n" + e.Message);
         }
+    }
+
+    /// <summary>A machine without the runtime, or with one too old (seen on users' systems), is offered Microsoft's own installer instead of the same message at every start.</summary>
+    private void OfferRuntime(string text)
+    {
+        var rtl = Desktop.Localization.Loc.IsRtl ? MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign : 0;
+        if (MessageBox.Show(this, text, "Mazesta", MessageBoxButtons.YesNo, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1, rtl) == DialogResult.Yes)
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://go.microsoft.com/fwlink/p/?LinkId=2124703") { UseShellExecute = true }); }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { _log.LogWarning(ex, "The WebView2 download page could not be opened"); }
+        Close();
     }
 
     /// <summary>A second start or the tray asked for the window: restore it if minimised and put it in front.</summary>
