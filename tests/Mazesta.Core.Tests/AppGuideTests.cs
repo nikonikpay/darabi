@@ -46,6 +46,7 @@ public class AppGuideTests
     [Fact] public void A_hands_on_check_is_the_checks_page_not_a_hardware_test()
     {
         Goes("تست میکروفن بگیر", "checks", "mic"); Goes("برو بخش تست کیبورد", "checks", "keys"); Goes("تست ماوس", "checks", "mouse");
+        Goes("تست تاچ اسکرین لپ تاپ", "checks", "touch"); Goes("صفحه لمسی کار نمیکنه", "checks", "touch"); Goes("تست تاچ ال سی دی", "checks", "touch");
     }
     [Fact] public void Pages_are_found_by_the_names_people_use()
     {

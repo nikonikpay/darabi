@@ -2767,6 +2767,16 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Checks_Mouse_Forward" xml:space="preserve"><value>جلو</value></data>
   <data name="Checks_Mouse_Wheel" xml:space="preserve"><value>چرخ:</value></data>
   <data name="Checks_Mouse_Double" xml:space="preserve"><value>دابل‌کلیک‌ها:</value></data>
+  <data name="Checks_Touch" xml:space="preserve"><value>صفحه‌ی لمسی (تاچ)</value></data>
+  <data name="Checks_Touch_Sub" xml:space="preserve"><value>همه‌ی نقطه‌های صفحه و چند انگشت هم‌زمان</value></data>
+  <data name="Checks_Touch_Text" xml:space="preserve"><value>برای لپ‌تاپ و تبلتی که صفحه‌ی لمسی دارد. آزمون را شروع کنید و انگشت را روی کل صفحه بکشید: هر خانه‌ای که لمس شود سبز می‌شود، پس جایی که لمس را نمی‌گیرد خانه‌ی تیره می‌ماند. بعد دو، سه تا ده انگشت را هم‌زمان بگذارید تا ببینید صفحه چند لمس را با هم دنبال می‌کند. این آزمون فقط لمس را می‌بیند، نه ماوس و نه تاچ‌پد را.</value></data>
+  <data name="Checks_Touch_Start" xml:space="preserve"><value>شروع آزمون لمس</value></data>
+  <data name="Checks_Touch_Hint" xml:space="preserve"><value>همه‌ی خانه‌ها را لمس کنید. با Esc یا دکمه‌ی بستن آزمون تمام می‌شود.</value></data>
+  <data name="Checks_Touch_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Checks_Touch_Status" xml:space="preserve"><value>خانه‌ها {0} / {1} · انگشت اکنون {2} · بیشترین {3}</value></data>
+  <data name="Checks_Touch_Result" xml:space="preserve"><value>آخرین آزمون: {0} از {1} خانه لمس شد، تا {2} انگشت هم‌زمان.</value></data>
+  <data name="Checks_Touch_Points" xml:space="preserve"><value>صفحه تا {0} نقطه‌ی لمس گزارش می‌دهد.</value></data>
+  <data name="Checks_Touch_None" xml:space="preserve"><value>این کامپیوتر صفحه‌ی لمسی گزارش نمی‌دهد، پس آزمون لمسی نمی‌بیند.</value></data>
   <data name="Test_Network_Lan" xml:space="preserve"><value>شبکه · LAN با کامپیوتر دوم (سرعت، تأخیر، بررسی داده)</value></data>
   <data name="Test_Option_LanPeer" xml:space="preserve"><value>آدرس کامپیوتر دوم (IP)</value></data>
   <data name="Log_Lan_Start" xml:space="preserve"><value>اتصال به کامپیوتر دوم در {0}: زمان رفت‌وبرگشت در حالت آزاد، سپس آپلود، سپس دانلود هم‌زمان با اندازه‌گیری رفت‌وبرگشت زیر بار.</value></data>

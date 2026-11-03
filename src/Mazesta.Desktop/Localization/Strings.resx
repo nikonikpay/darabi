@@ -2767,6 +2767,16 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Mouse_Forward" xml:space="preserve"><value>Forward</value></data>
   <data name="Checks_Mouse_Wheel" xml:space="preserve"><value>Wheel:</value></data>
   <data name="Checks_Mouse_Double" xml:space="preserve"><value>Double clicks:</value></data>
+  <data name="Checks_Touch" xml:space="preserve"><value>Touch screen</value></data>
+  <data name="Checks_Touch_Sub" xml:space="preserve"><value>every spot of the screen, and several fingers at once</value></data>
+  <data name="Checks_Touch_Text" xml:space="preserve"><value>For laptops and tablets with a touch screen. Start the test and sweep a finger across the whole screen: every square you touch turns green, so a patch that does not react stays a dark square. Then put down two, three, up to ten fingers together to see how many touches the screen follows at once. The test sees only touch, not the mouse or the touchpad.</value></data>
+  <data name="Checks_Touch_Start" xml:space="preserve"><value>Start touch test</value></data>
+  <data name="Checks_Touch_Hint" xml:space="preserve"><value>Touch every square. Esc or Close ends the test.</value></data>
+  <data name="Checks_Touch_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Checks_Touch_Status" xml:space="preserve"><value>Squares {0} / {1} · fingers now {2} · most {3}</value></data>
+  <data name="Checks_Touch_Result" xml:space="preserve"><value>Last test: {0} of {1} squares touched, up to {2} fingers at once.</value></data>
+  <data name="Checks_Touch_Points" xml:space="preserve"><value>The screen reports up to {0} touch points.</value></data>
+  <data name="Checks_Touch_None" xml:space="preserve"><value>This computer reports no touch screen, so the test cannot see any touch.</value></data>
   <data name="Test_Network_Lan" xml:space="preserve"><value>Network · LAN with a partner computer (speed, latency, data check)</value></data>
   <data name="Test_Option_LanPeer" xml:space="preserve"><value>Partner address (IP)</value></data>
   <data name="Log_Lan_Start" xml:space="preserve"><value>Connecting to the LAN partner at {0}: round trip at rest, then upload, then download with the round trip measured under load.</value></data>

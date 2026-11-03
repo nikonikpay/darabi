@@ -24,7 +24,7 @@ const WIDE = { Backspace: 2, Tab: 1.5, Backslash: 1.5, CapsLock: 1.8, Enter: 2.2
 // Full-screen colours for dead or stuck pixels, then a gradient for banding and a fine checkerboard for pixel response.
 const SCREENS = ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#808080", "linear-gradient(90deg, #000, #fff)", "repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 2px 2px"];
 
-const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Webcam: "webcam", Battery: "battery" };
+const CHECK_TARGET = { Display: "display", Touch: "touch", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Webcam: "webcam", Battery: "battery" };
 // The technician's calls are kept (they were lost on leaving the page), so what was checked stays marked.
 const VERDICTS = "mazesta.checks";
 const verdicts = () => { try { return JSON.parse(localStorage.getItem(VERDICTS)) || {}; } catch { return {}; } };
@@ -61,6 +61,49 @@ function display() {
   }
   return card("Display", "eye", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Display_Text")),
     h("div", { class: "btn-row" }, h("button", { class: "btn go", onclick: start }, icon("play"), t("Checks_Display_Start")))));
+}
+
+// The touch screen: a full-screen grid whose squares turn green where a finger passes (the sweep between two readings is filled in, so a fast swipe leaves no gap),
+// and the most fingers seen down together. Only touch pointers count: the mouse and the touchpad would otherwise "pass" a screen that never felt a finger.
+function touch() {
+  const COLS = 14, ROWS = 8, result = h("p", { class: "caption" });
+  const points = h("p", { class: "caption" }, navigator.maxTouchPoints > 0 ? t("Checks_Touch_Points", navigator.maxTouchPoints) : t("Checks_Touch_None"));
+  function start() {
+    const cells = Array.from({ length: COLS * ROWS }, () => h("span")), grid = h("div", { class: "chk-touch-grid" }, cells);
+    const down = new Map(), status = h("span", { class: "lat" });
+    let seen = 0, peak = 0;
+    const show = () => { status.textContent = t("Checks_Touch_Status", seen, cells.length, down.size, peak); };
+    const mark = (x, y) => {
+      const r = grid.getBoundingClientRect(), col = Math.floor(((x - r.left) / r.width) * COLS), row = Math.floor(((y - r.top) / r.height) * ROWS), c = cells[row * COLS + col];
+      if (col >= 0 && col < COLS && c && !c.classList.contains("hit")) { c.classList.add("hit"); seen++; }
+    };
+    const sweep = (from, to) => {
+      const r = grid.getBoundingClientRect(), step = Math.min(r.width / COLS, r.height / ROWS) / 2, n = Math.max(1, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / step));
+      for (let i = 1; i <= n; i++) mark(from.x + ((to.x - from.x) * i) / n, from.y + ((to.y - from.y) * i) / n);
+    };
+    const on = (e) => {
+      if (e.pointerType !== "touch") return;
+      e.preventDefault();
+      const batch = e.type === "pointermove" ? e.getCoalescedEvents?.() : null;   // empty when the browser has nothing finer: the event itself then
+      for (const p of batch?.length ? batch : [e]) {
+        const from = down.get(e.pointerId) || { x: p.clientX, y: p.clientY }, to = { x: p.clientX, y: p.clientY };
+        sweep(from, to); down.set(e.pointerId, to);
+      }
+      peak = Math.max(peak, down.size); show();
+    };
+    const off = (e) => { if (e.pointerType === "touch") { down.delete(e.pointerId); show(); } };
+    for (const type of ["pointerdown", "pointermove"]) grid.addEventListener(type, on);
+    for (const type of ["pointerup", "pointercancel"]) grid.addEventListener(type, off);
+    const close = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); layer.remove(); result.textContent = t("Checks_Touch_Result", seen, cells.length, peak); };
+    const layer = h("div", { class: "chk-touch", tabindex: "0" }, grid,
+      h("div", { class: "chk-touch-bar" }, h("span", {}, t("Checks_Touch_Hint")), status, h("button", { class: "btn", onclick: close }, icon("stop"), t("Checks_Touch_Close"))));
+    layer.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    document.addEventListener("fullscreenchange", function gone() { if (!document.fullscreenElement) { document.removeEventListener("fullscreenchange", gone); if (layer.isConnected) close(); } });
+    document.body.append(layer); show(); layer.focus();
+    layer.requestFullscreen().catch(() => {});
+  }
+  return card("Touch", "arrow", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Touch_Text")),
+    h("div", { class: "btn-row" }, h("button", { class: "btn go", onclick: start }, icon("play"), t("Checks_Touch_Start"))), points, result));
 }
 
 function keyboard(cleanup) {
@@ -262,6 +305,6 @@ function battery(cleanup) {
 export function mount(el) {
   const cleanup = [];
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checks")), h("p", { class: "page-lede" }, t("Checks_Lede")))),
-    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup));
+    h("div", { class: "chk-grid" }, display(), touch(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup));
   return () => cleanup.forEach((f) => f());
 }
