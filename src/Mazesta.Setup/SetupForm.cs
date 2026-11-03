@@ -198,8 +198,8 @@ internal sealed class SetupForm : Form
         var progress = new Progress<(int Percent, string Text)>(Progress);
         try
         {
-            await Task.Run(() => Installer.Install(folder, desktop, foreign, progress));
-            _done = true; _busy = false; _percent = 100; _status = SetupText.Done; _statusKind = "";
+            bool web = await Task.Run(() => Installer.Install(folder, desktop, foreign, progress));
+            _done = true; _busy = false; _percent = 100; _status = web ? SetupText.Done : SetupText.DoneNoWebView; _statusKind = web ? "" : "error";
             Rebuild();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or PlatformNotSupportedException or System.Runtime.InteropServices.COMException or System.Security.SecurityException)

@@ -110,10 +110,19 @@ if ($Only -ne "Mazesta") {
             [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $_.FullName, $_.FullName.Substring($client.Length + 1).Replace($sep, '/'), [IO.Compression.CompressionLevel]::Optimal)
         }
     } finally { $z.Dispose() }
+    # Microsoft's WebView2 bootstrapper rides inside the installer for PCs without the runtime. It changes with Microsoft's releases, so it is checked by its
+    # Authenticode signature (Microsoft's), not a pinned hash; the cache outside the repository is fetched again when that check fails.
+    $webview = [IO.Path]::GetFullPath("../Mazesta-Redist/WebView2/MicrosoftEdgeWebview2Setup.exe", $repo)
+    $signed = { param($f) (Test-Path $f) -and ($s = Get-AuthenticodeSignature $f).Status -eq "Valid" -and $s.SignerCertificate.Subject -like "*O=Microsoft Corporation*" }
+    if (-not (& $signed $webview)) {
+        New-Item -ItemType Directory -Force (Split-Path $webview) | Out-Null
+        Invoke-WebRequest "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile $webview
+        if (-not (& $signed $webview)) { Remove-Item $webview -Force; throw "The WebView2 bootstrapper download is not signed by Microsoft." }
+    }
     $setup = Clear-Output $SetupOutput
     # The installer runs on the .NET Framework that is part of Windows, so it is built, not published self-contained: it adds a few hundred
     # kilobytes to the zip it carries, where a runtime of its own added some 46 MB.
-    dotnet build src/Mazesta.Setup -c Release "-p:PayloadZip=$zip" -p:DebugType=none -p:DebugSymbols=false -p:GenerateDocumentationFile=false -o $setup
+    dotnet build src/Mazesta.Setup -c Release "-p:PayloadZip=$zip" "-p:WebViewSetup=$webview" -p:DebugType=none -p:DebugSymbols=false -p:GenerateDocumentationFile=false -o $setup
     if ($LASTEXITCODE -ne 0) { throw "building the installer failed ($LASTEXITCODE)." }
     Get-ChildItem $setup -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb", ".config" } | Remove-Item -Force
     Remove-Item $zip -Force

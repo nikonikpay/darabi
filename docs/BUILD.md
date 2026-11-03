@@ -14,7 +14,7 @@ pwsh tools/publish.ps1
 |---|---|---|
 | نسخه‌ی مازستایی | `artifacts/Mazesta-Admin/Mazesta-Admin.exe` | خود شرکت (شماره‌ی سرویس، ارسال به سایت) |
 | نسخه‌ی کاربر | `artifacts/Mazesta-Client/Mazesta.exe` | کاربران، بدون ویژگی‌های شرکت (پوشه‌ی بدون نصب) |
-| **نصب‌کننده‌ی کاربر** | `artifacts/Mazesta-Setup/MazestaTestSetup.exe` | **همین فایل را به کاربر بدهید**: نصب برای همه‌ی کاربران در Program Files (دسترسی مدیر یک بار)، با قرارداد، دوزبانه، Start menu، میان‌بر دسکتاپ و ثبت در Installed apps؛ حذف از `Mazesta.exe --uninstall` |
+| **نصب‌کننده‌ی کاربر** | `artifacts/Mazesta-Setup/MazestaTestSetup.exe` | **همین فایل را به کاربر بدهید**: نصب برای همه‌ی کاربران در Program Files (دسترسی مدیر یک بار)، با قرارداد، دوزبانه، Start menu، میان‌بر دسکتاپ و ثبت در Installed apps؛ حذف از `Mazesta.exe --uninstall`؛ اگر WebView2 روی ویندوز نباشد خودش نصبش می‌کند (بوت‌استرپر مایکروسافت داخلش است؛ بدون اینترنت، فایل `MicrosoftEdgeWebView2RuntimeInstallerX64.exe` را کنارش بگذارید) |
 | **برنامه‌ی منشی** | `artifacts/Mazesta-Print/MazestaPrint.exe` | سیستم منشی: فهرست گزارش‌های سایت با شماره‌ی سرویس و چاپ خلاصه (فایل جداگانه، نیازی به برنامه‌ی اصلی ندارد) |
 
 - نصب‌کننده، نسخه‌ی کاربر (`Mazesta-Client`) را بدون پوشه‌ی `Data` داخل خودش می‌گذارد، پس همیشه **بعد از** ساخت نسخه‌ی کاربر ساخته می‌شود (خود اسکریپت این ترتیب را رعایت می‌کند).

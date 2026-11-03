@@ -57,7 +57,8 @@ internal static class Installer
         return !IsRunning();
     }
 
-    public static void Install(string folder, bool desktop, bool foreign, IProgress<(int Percent, string Text)> progress)
+    /// <summary>Installs; false when the WebView2 runtime the app needs is still missing afterwards.</summary>
+    public static bool Install(string folder, bool desktop, bool foreign, IProgress<(int Percent, string Text)> progress)
     {
         folder = Path.GetFullPath(folder);
         using var payload = typeof(Installer).Assembly.GetManifestResourceStream("payload.zip") ?? throw new InvalidOperationException(SetupText.NoPayload);
@@ -101,7 +102,84 @@ internal static class Installer
             key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture));
         }
         if (earlier is not null && perUser) RemoveEarlier(earlier, folder);
-        progress.Report((100, SetupText.Done));
+        bool web = WebViewReady() || InstallWebView(progress);
+        progress.Report((100, web ? SetupText.Done : SetupText.DoneNoWebView));
+        return web;
+    }
+
+    // The WebView2 runtime's client key (the same on every machine); "pv" is its version. The app needs 92.0.902.49 or later (MainWindow.MinRuntime).
+    private const string WebViewKey = @"Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+
+    public static bool WebViewReady()
+    {
+        foreach (var (hive, path) in new[] { (RegistryHive.LocalMachine, @"SOFTWARE\WOW6432Node\" + WebViewKey), (RegistryHive.LocalMachine, @"SOFTWARE\" + WebViewKey), (RegistryHive.CurrentUser, @"Software\" + WebViewKey) })
+        {
+            using var root = Hive(hive); using var key = root.OpenSubKey(path);
+            if (key?.GetValue("pv") is string pv && System.Version.TryParse(pv, out var v) && v >= new System.Version(92, 0, 902, 49)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>Installs the WebView2 runtime the app draws its window with (missing on some Windows 10 PCs). Microsoft's offline installer beside this setup is
+    /// used when it is there and signed by Microsoft (a shop's flash drive, or where Microsoft's servers are slow); otherwise the small bootstrapper this setup
+    /// carries downloads it. A failure does not undo the install: the app then names the missing runtime itself.</summary>
+    private static bool InstallWebView(IProgress<(int Percent, string Text)> progress)
+    {
+        progress.Report((97, SetupText.WebView));
+        string here = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetEntryAssembly()!.Location))!;
+        string? exe = Directory.EnumerateFiles(here, "MicrosoftEdgeWebView2RuntimeInstaller" + (Environment.Is64BitOperatingSystem ? "X64" : "X86") + ".exe").FirstOrDefault(MicrosoftSigned);
+        string? temp = null;
+        try
+        {
+            if (exe is null)
+            {
+                using var boot = typeof(Installer).Assembly.GetManifestResourceStream("webview2.exe");
+                if (boot is null) return false;
+                temp = Path.Combine(Path.GetTempPath(), "mazesta-webview2-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(temp); exe = Path.Combine(temp, "MicrosoftEdgeWebview2Setup.exe");
+                using (var f = File.Create(exe)) boot.CopyTo(f);
+            }
+            using var p = Process.Start(new ProcessStartInfo(exe, "/silent /install") { UseShellExecute = false, CreateNoWindow = true })!;
+            if (!p.WaitForExit(15 * 60 * 1000)) { try { p.Kill(); } catch (InvalidOperationException) { } return false; }
+            return WebViewReady();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { return false; }
+        finally { if (temp is not null) try { Directory.Delete(temp, true); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } }
+    }
+
+    /// <summary>Whether a file's Authenticode signature is intact and Microsoft's: setup runs elevated, so an exe someone left beside it is never run unchecked.</summary>
+    private static bool MicrosoftSigned(string file)
+    {
+        if (Trust.Verify(file) != 0) return false;
+        try { return System.Security.Cryptography.X509Certificates.X509Certificate.CreateFromSignedFile(file).Subject.Contains("O=Microsoft Corporation"); }
+        catch (System.Security.Cryptography.CryptographicException) { return false; }
+    }
+
+    /// <summary>WinVerifyTrust with the Authenticode policy: 0 when the file's signature is valid and its chain trusted.</summary>
+    private static class Trust
+    {
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private struct FileInfo { public int Size; public string Path; public IntPtr Handle, Subject; }
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct Data { public int Size; public IntPtr Policy, Sip; public int Ui, Revocation, Choice; public IntPtr File; public int Action; public IntPtr State; public IntPtr Url; public int Provider, Context; }
+        [System.Runtime.InteropServices.DllImport("wintrust.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern int WinVerifyTrust(IntPtr hwnd, [System.Runtime.InteropServices.In] ref Guid action, [System.Runtime.InteropServices.In] ref Data data);
+        private static readonly Guid Authenticode = new("00AAC56B-CD44-11d0-8CC2-00C04FC295EE");
+
+        public static int Verify(string file)
+        {
+            var fi = new FileInfo { Size = System.Runtime.InteropServices.Marshal.SizeOf<FileInfo>(), Path = file };
+            IntPtr pFile = System.Runtime.InteropServices.Marshal.AllocHGlobal(fi.Size);
+            try
+            {
+                System.Runtime.InteropServices.Marshal.StructureToPtr(fi, pFile, false);
+                var d = new Data { Size = System.Runtime.InteropServices.Marshal.SizeOf<Data>(), Ui = 2, Choice = 1, File = pFile, Action = 1 };   // no UI, a file, verify
+                var g = Authenticode; int r = WinVerifyTrust(IntPtr.Zero, ref g, ref d);
+                d.Action = 2; WinVerifyTrust(IntPtr.Zero, ref g, ref d);   // close the state it opened
+                return r;
+            }
+            finally { System.Runtime.InteropServices.Marshal.DestroyStructure<FileInfo>(pFile); System.Runtime.InteropServices.Marshal.FreeHGlobal(pFile); }
+        }
     }
 
     /// <summary>Copies the Data an earlier per-user copy kept beside its exe into the profile, once: never over data already there, and without the caches.</summary>

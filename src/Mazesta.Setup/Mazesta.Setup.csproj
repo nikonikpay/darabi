@@ -28,4 +28,8 @@
   <ItemGroup Condition="'$(PayloadZip)' != '' And Exists('$(PayloadZip)')">
     <EmbeddedResource Include="$(PayloadZip)" LogicalName="payload.zip" />
   </ItemGroup>
+  <!-- Microsoft's WebView2 bootstrapper (-p:WebViewSetup=<file>, ~2 MB, fetched by tools/publish.ps1): installs the runtime the app needs when a PC lacks it. -->
+  <ItemGroup Condition="'$(WebViewSetup)' != '' And Exists('$(WebViewSetup)')">
+    <EmbeddedResource Include="$(WebViewSetup)" LogicalName="webview2.exe" />
+  </ItemGroup>
 </Project>
