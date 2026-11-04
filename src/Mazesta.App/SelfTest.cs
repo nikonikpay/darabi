@@ -116,7 +116,8 @@ internal static class SelfTest
         // tests60:gpu.steady@cancel=8 - cancelled after 8 s; then the page's own question (is each test still available?) is asked for half a minute.
         int? cancelAfter = null; if (kind.IndexOf("@cancel=", StringComparison.Ordinal) is var cut and >= 0) { cancelAfter = int.Parse(kind[(cut + 8)..], System.Globalization.CultureInfo.InvariantCulture); kind = kind[..cut]; }
         // tests60:gpu.scene.d3d@opt=raytracing:off - that option of the chosen tests set to that value (here: the scene without rays, to compare its power with the ray-traced one).
-        string? optKey = null, optValue = null; if (kind.IndexOf("@opt=", StringComparison.Ordinal) is var opt and >= 0) { var kv = kind[(opt + 5)..].Split(':'); optKey = kv[0]; optValue = kv[1]; kind = kind[..opt]; }
+        // tests60:gpu.scene.d3d@opt=raytracing:off+load:4 - several, joined by '+'.
+        (string Key, string Value)[] opts = []; if (kind.IndexOf("@opt=", StringComparison.Ordinal) is var opt and >= 0) { opts = [.. kind[(opt + 5)..].Split('+').Select(p => p.Split(':')).Select(kv => (kv[0], kv[1]))]; kind = kind[..opt]; }
         string[] only = kind.Contains(':') ? kind[(kind.IndexOf(':') + 1)..].Split(',') : [];   // tests15:gpu.vram,gpu.render - just these
         string count = kind.Contains(':') ? kind[5..kind.IndexOf(':')] : kind[5..];
         string seconds = int.TryParse(count, out int n) && n > 0 ? n.ToString(System.Globalization.CultureInfo.InvariantCulture) : "15";
@@ -132,8 +133,8 @@ internal static class SelfTest
             center.SelectAllCommand.Execute(null);
             if (only.Length > 0) foreach (var r in center.Rows) r.IsSelected &= only.Contains(r.Definition.Id.Value);
             foreach (var r in center.Rows.Where(r => r.IsSelected)) r.DurationText = seconds;
-            if (optKey is not null) foreach (var r in center.Rows.Where(r => r.IsSelected))
-                if (r.Options.FirstOrDefault(o => o.Option.Key == optKey) is { } o) { if (o.IsChoice) o.SelectedChoice = o.Choices.FirstOrDefault(c => c.Value == optValue) ?? o.SelectedChoice; else o.Text = optValue!; }
+            foreach (var (optKey, optValue) in opts) foreach (var r in center.Rows.Where(r => r.IsSelected))
+                if (r.Options.FirstOrDefault(o => o.Option.Key == optKey) is { } o) { if (o.IsChoice) o.SelectedChoice = o.Choices.FirstOrDefault(c => c.Value == optValue) ?? o.SelectedChoice; else o.Text = optValue; }
             if (guardVram is { } vram) { center.ThermalStop = true; center.ThermalLimits = () => new(98, 90, 98, vram, 70, TimeSpan.FromMinutes(1)); }
             _ = center.StartCommand.ExecuteAsync(null);
             return center.Rows.Where(r => r.IsSelected).Select(r => r.Definition.Id.Value).ToList();
