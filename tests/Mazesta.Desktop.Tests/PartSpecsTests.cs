@@ -32,9 +32,9 @@ public class PartSpecsTests
 
     [Fact] public void Power_on_hours_read_as_years_months_days_and_hours()
     {
-        Assert.Equal($"{Loc.Format("Spec_Dur_M", 1)} {Loc.Format("Spec_Dur_D", 5)} {Loc.Format("Spec_Dur_H", 10)} (850 h)", PartSpecs.Hours(850));   // 35 days 10 hours, as Hard Disk Sentinel
-        Assert.Equal($"{Loc.Format("Spec_Dur_Y", 3)} {Loc.Format("Spec_Dur_M", 2)} {Loc.Format("Spec_Dur_D", 17)} {Loc.Format("Spec_Dur_H", 14)} (28,142 h)", PartSpecs.Hours(28142));
-        Assert.Equal($"{Loc.Format("Spec_Dur_D", 2)} (48 h)", PartSpecs.Hours(48)); Assert.Equal("5 h", PartSpecs.Hours(5));
+        Assert.Equal($"{Loc.Format("Spec_Dur_M", 1)} {Loc.Format("Spec_Dur_D", 5)} {Loc.Format("Spec_Dur_H", 10)} (⁦850 h⁩)", PartSpecs.Hours(850));   // 35 days 10 hours, as Hard Disk Sentinel
+        Assert.Equal($"{Loc.Format("Spec_Dur_Y", 3)} {Loc.Format("Spec_Dur_M", 2)} {Loc.Format("Spec_Dur_D", 17)} {Loc.Format("Spec_Dur_H", 14)} (⁦28,142 h⁩)", PartSpecs.Hours(28142));
+        Assert.Equal($"{Loc.Format("Spec_Dur_D", 2)} (⁦48 h⁩)", PartSpecs.Hours(48)); Assert.Equal("5 h", PartSpecs.Hours(5));
     }
 
     [Fact] public void The_cpu_identifier_shows_decimal_and_hex()

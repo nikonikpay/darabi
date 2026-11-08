@@ -1287,7 +1287,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .spec-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 18px; padding: 6px 0 2px; }
 .spec { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; margin: 0; font-size: 12.5px; align-content: start; }
 .spec dt { color: var(--paper-3); }
-.spec dd { margin: 0; font-weight: 700; direction: ltr; unicode-bidi: isolate; text-align: end; }
+.spec dd { margin: 0; font-weight: 700; unicode-bidi: isolate; text-align: end; }   /* a Persian value reads right to left (a leading number stays with its word); Latin values are .lat */
 .spec .spec-h { grid-column: 1 / -1; font-weight: 800; color: var(--paper-2); border-bottom: 1px solid var(--rule); padding-bottom: 3px; }
 .sheet-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .sheet-tools input[type="search"] { flex: 1 1 220px; width: auto; }

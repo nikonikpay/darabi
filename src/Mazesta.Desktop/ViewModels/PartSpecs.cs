@@ -26,7 +26,8 @@ public static class PartSpecs
     {
         long d = h / 24, y = d / 365, m = d % 365 / 30, dd = d % 365 % 30, hh = h % 24;
         var parts = new[] { ("Spec_Dur_Y", y), ("Spec_Dur_M", m), ("Spec_Dur_D", dd), ("Spec_Dur_H", hh) }.Where(p => p.Item2 > 0).Select(p => Loc.Format(p.Item1, p.Item2)).ToList();
-        return h < 24 ? $"{h} h" : $"{string.Join(" ", parts)} ({h.ToString("#,0", CultureInfo.InvariantCulture)} h)";
+        // The raw hours as a left-to-right isolate (U+2066..U+2069), or a right-to-left line reads them "(h 850)".
+        return h < 24 ? $"{h} h" : $"{string.Join(" ", parts)} (⁦{h.ToString("#,0", CultureInfo.InvariantCulture)} h⁩)";
     }
     private static string Size(long bytes) => bytes >= 1 << 20 ? $"{bytes >> 20} MB" : $"{bytes >> 10} KB";
 
