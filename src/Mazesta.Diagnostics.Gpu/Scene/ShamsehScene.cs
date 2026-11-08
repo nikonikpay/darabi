@@ -10,11 +10,11 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 internal sealed unsafe class ShamsehScene : IDisposable
 {
-    [StructLayout(LayoutKind.Sequential)] private struct Constants { public float Ry, Rx, Aspect; public uint Layers, FurLayers; public float Spread, FurLength, Pad; public Vector2 Size, Pad2; }
+    [StructLayout(LayoutKind.Sequential)] private struct Constants { public float Ry, Rx, Aspect; public uint Layers, FurLayers; public float Spread, FurLength, Time; public Vector2 Size, Pad2; }
     /// <summary>The ground's layers and the star's: 48 over the screen measured as much as 128 (RTX 3090, 1080p).</summary>
     public const int Layers = 48, FurLayers = 32;
     /// <summary>Texels of the strands' texture a pixel takes: 7.6 held the clock lowest (1270 MHz at 350 W); 1.9 (cached) gave 1660, 15 gave 1650.</summary>
-    private const float Spread = 7.6f, FurLength = 0.04f;
+    private const float Spread = 7.6f, FurLength = 0.09f;
     private const int StrandSize = 2048, WordSize = 512;
 
     private readonly D3D12Session _s; private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing;
@@ -119,7 +119,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
 
     private Constants At(float time) => new()
     {
-        Ry = time * 0.3f, Rx = 0.12f * MathF.Sin(time * 0.23f), Aspect = Width / (float)Height, Layers = Layers, FurLayers = FurLayers, Spread = Spread, FurLength = FurLength, Size = new(Width, Height)
+        Ry = time * 0.3f, Rx = 0.12f * MathF.Sin(time * 0.23f), Aspect = Width / (float)Height, Layers = Layers, FurLayers = FurLayers, Spread = Spread, FurLength = FurLength, Time = time, Size = new(Width, Height)
     };
 
     /// <summary>The frame at <paramref name="time"/> into render target view <paramref name="rtv"/> (<paramref name="target"/>, which is in <paramref name="state"/> before and after).</summary>

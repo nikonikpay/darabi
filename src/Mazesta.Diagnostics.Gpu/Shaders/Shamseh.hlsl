@@ -9,7 +9,7 @@
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_WRAP, addressV=TEXTURE_ADDRESS_WRAP), " \
            "StaticSampler(s1, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
 
-cbuffer K : register(b0) { float Ry; float Rx; float Aspect; uint Layers; uint FurLayers; float Spread; float FurLength; float Pad; float2 Size; float2 Pad2; };
+cbuffer K : register(b0) { float Ry; float Rx; float Aspect; uint Layers; uint FurLayers; float Spread; float FurLength; float Time; float2 Size; float2 Pad2; };
 struct Vertex { float3 Pos; float3 Normal; float2 Uv; float Material; };
 StructuredBuffer<Vertex> Vertices : register(t3);
 Texture2D<float4> Strands : register(t0);   // random heights, 2048 square, no mips
@@ -58,23 +58,31 @@ float4 SolidPS(Lit i) : SV_Target
     return float4(lerp(c, Gold * 0.12, cut * 0.85), 1);
 }
 
-// ----- the star's fur: the star again for each layer, a step further out along its normals
+// ----- the star's fur: the star again for each layer, a step further out along its normals, the outer layers swaying in a breeze
 [RootSignature(RS)]
 Lit FurVS(uint id : SV_VertexID, uint layer : SV_InstanceID)
 {
     Vertex v = Vertices[id]; Lit o; float h = (layer + 1.0) / FurLayers;
-    o.World = ToWorld(v.Pos + v.Normal * h * FurLength); o.Normal = ToWorld(v.Normal); o.Object = v.Pos; o.Uv = v.Uv; o.Material = 0; o.H = h;
+    o.World = ToWorld(v.Pos + v.Normal * h * FurLength);
+    float3 sway = float3(sin(Time * 1.7 + o.World.y * 4) * 0.6, -1, cos(Time * 1.3 + o.World.x * 3) * 0.4);   // gravity, and the breeze
+    o.World += sway * FurLength * 0.35 * h * h;
+    o.Normal = ToWorld(v.Normal); o.Object = v.Pos; o.Uv = v.Uv; o.Material = 0; o.H = h;
     o.Pos = Project(o.World); return o;
 }
+// Each strand stands in a cell of a grid a few pixels across (its height and place from the strands' texture), round, thinning to its tip,
+// so the shells read as hairs. The sheen still reads the texture finely, which keeps the memory busy here as on the ground.
 [RootSignature(RS)]
 float4 FurPS(Lit i) : SV_Target
 {
     float3 n = normalize(i.Normal), v = normalize(float3(0, 0, 4.2) - i.World);
-    float4 s = Strands.SampleLevel(Wrap, i.Uv * 6 + i.H * 0.19, 0), s2 = Strands.SampleLevel(Wrap, i.Uv * 13.8 + 0.37, 0);
-    float tall = s.r * 0.7 + s2.r * 0.3, a = saturate((tall - (0.22 + 0.6 * i.H)) * 9) * 0.85;
-    float3 base = float3(0.06, 0.62, 0.66) * (0.85 + 0.3 * s.g);
-    float dif = saturate(dot(n, L)) * 0.8 + 0.2, rim = pow(1 - abs(dot(n, v)), 2);
-    float3 c = base * (0.2 + 0.8 * i.H) * dif + base * rim * 0.8 * i.H + float3(0.9, 0.95, 1) * 0.12 * pow(saturate(dot(reflect(-L, n), v)), 6) * i.H;
+    float2 g = i.Uv * 320; float4 r = Strands.Load(int3((int2)floor(g) & 2047, 0));
+    float tall = (0.45 + 0.55 * r.r) * smoothstep(0.37, 0.5, length(i.Object.xy));   // none over the medallion
+    float d = length(frac(g) - (0.3 + 0.4 * r.ba)), radius = 0.45 * saturate(1 - i.H / max(tall, 1e-3));
+    float a = i.H < tall ? saturate((radius - d) / max(fwidth(d), 1e-3)) : 0;
+    float4 s = Strands.SampleLevel(Wrap, i.Uv * 6 + i.H * 0.19, 0);
+    float3 base = lerp(float3(0.02, 0.32, 0.36), float3(0.25, 0.95, 0.9), i.H * i.H) * (0.85 + 0.3 * r.g) * (0.9 + 0.2 * s.g);
+    float dif = saturate(dot(n, L)) * 0.75 + 0.25, rim = pow(1 - abs(dot(n, v)), 2);
+    float3 c = base * (0.15 + 0.85 * i.H) * dif + base * rim * 0.9 * i.H + float3(0.9, 0.95, 1) * 0.25 * pow(saturate(dot(reflect(-L, n), v)), 8) * i.H;
     return float4(c * a, a);
 }
 
@@ -91,16 +99,20 @@ float Seam(float2 p)
     float2 q = abs(frac(p) - 0.5); float a = abs(max(q.x, q.y) - 0.25), b = abs((q.x + q.y) * 0.7071 - 0.3);
     return min(a, b);
 }
+// The ground moves: the girih turns slowly, light runs out along its seams in rings, and waves of wind comb the pile so it catches the light in moving bands.
 [RootSignature(RS)]
 float4 GroundPS(Flat i) : SV_Target
 {
     // each layer reads its own part of the texture, several texels a pixel: what keeps the card's memory busy (see the top of the file)
-    float2 uv = i.Pos.xy * (Spread / 2048) + i.H * float2(0.37, 0.13);
+    float2 uv = i.Pos.xy * (Spread / 2048) + i.H * float2(0.37, 0.13) + Time * float2(0.011, 0.007);
     float4 s = Strands.SampleLevel(Wrap, uv, 0);
-    float cover = saturate((s.r - i.H * 0.85) * 8) * 0.6;
     float2 screen = (i.Pos.xy - Size * 0.5) / Size.y;
-    float glow = 1 - 0.7 * dot(screen, screen), seam = smoothstep(0.012, 0.0, Seam(screen * 3.2)) * (0.4 + 0.6 * i.H);
-    float3 c = lerp(float3(0.015, 0.06, 0.08), float3(0.04, 0.16, 0.19), i.H) * glow * (0.8 + 0.4 * s.g) + Gold * seam * 0.35 * glow;
+    float wind = sin(dot(screen, float2(0.8, 0.6)) * 6 - Time * 1.4) * 0.6 + sin(dot(screen, float2(-0.5, 0.85)) * 4.3 + Time * 0.9) * 0.4;
+    float cover = saturate((s.r - i.H * (0.85 - 0.12 * wind)) * 8) * 0.6;
+    float glow = 1 - 0.6 * dot(screen, screen), r = length(screen);
+    float run = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(r * 10 - Time * 2.2), 6);
+    float seam = smoothstep(0.014, 0.0, Seam(Turn(screen, Time * 0.05) * 3.2)) * (0.4 + 0.6 * i.H) * run;
+    float3 c = lerp(float3(0.015, 0.06, 0.08), float3(0.05, 0.2, 0.23), i.H) * glow * (0.8 + 0.4 * s.g) * (0.75 + 0.5 * wind) + Gold * seam * 0.55 * glow;
     return float4(c * cover, cover);
 }
 
