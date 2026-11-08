@@ -25,6 +25,14 @@ internal static class SelfTest
             File.WriteAllText(file, "");
             if (kind.StartsWith("tests", StringComparison.Ordinal)) { await RunTests(kind, services, ui, Say); Say("DONE"); return; }
             if (kind.StartsWith("bench", StringComparison.Ordinal)) { await RunBenchmarks(kind, services, ui, Say); Say("DONE"); return; }
+            if (kind.StartsWith("watch", StringComparison.Ordinal))   // the card's sensors only, for N seconds, while another program loads it (to compare a fur test's heat with ours)
+            {
+                var engine = services.GetRequiredService<Mazesta.Monitoring.PollingEngine>(); var from = DateTimeOffset.UtcNow;
+                await Task.Delay(TimeSpan.FromSeconds(int.Parse(kind[5..], System.Globalization.CultureInfo.InvariantCulture)));
+                foreach (var (role, name, unit) in new[] { (Mazesta.Core.Hardware.SensorRole.GpuVramTemp, "VRAM", "°C"), (Mazesta.Core.Hardware.SensorRole.GpuCoreTemp, "core", "°C"), (Mazesta.Core.Hardware.SensorRole.GpuHotSpotTemp, "hot spot", "°C"), (Mazesta.Core.Hardware.SensorRole.GpuPower, "power", " W"), (Mazesta.Core.Hardware.SensorRole.GpuCoreClock, "clock", " MHz") })
+                    Say($"FIG  {Mazesta.Diagnostics.Evidence.SensorEvidence.Read(engine, Mazesta.Core.Hardware.HardwareKind.Gpu, role, from, DateTimeOffset.UtcNow)?.Format(name, unit, includeMax: true) ?? name + " not read"}");
+                Say("DONE"); return;
+            }
             if (kind == "shield") { await SelfTestShield.RunAsync(Say); Say("DONE"); return; }
             if (kind == "gpufan") { await GpuFan(Say); Say("DONE"); return; }
             if (kind == "bitlocker")
@@ -32,6 +40,11 @@ internal static class SelfTest
                 var volumes = Mazesta.Hardware.Wmi.BitLockerReader.Read();
                 Say(volumes is null ? "not readable" : string.Join(Environment.NewLine, volumes.Select(v => $"{v.Letter} {v.State} canLock={v.CanLock} protection={v.Protection} conversion={v.Conversion} protectors={v.Protectors} recovery={v.RecoveryPassword}")));
                 Say("DONE"); return;
+            }
+            if (kind == "health" && Program.Uploader is { } uploader)   // the health block the statistics carry (blue screens and restarts with their dates), sending nothing
+            {
+                for (int i = 0; i < 90 && (await uploader.MachineAsync()).ContainsKey("health") is false; i++) await Task.Delay(1000);
+                Say((await uploader.MachineAsync())["health"]?.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }) ?? "no health block"); Say("DONE"); return;
             }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")

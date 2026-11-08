@@ -21,7 +21,7 @@ internal sealed class UsageUploader : IDisposable
     }
 
     /// <summary>The part names - never the computer's own name - the way the shared benchmark results give them.</summary>
-    private async Task<JsonObject> MachineAsync()
+    internal async Task<JsonObject> MachineAsync()
     {
         var inv = await _inventory.GetAsync().ConfigureAwait(false);
         var m = new JsonObject();
@@ -61,7 +61,9 @@ internal sealed class UsageUploader : IDisposable
             if (c.LogReadable || c.DumpsReadable)
             {
                 h["bsod"] = c.Crashes.Count; h["powerLosses"] = c.PowerLosses.Count;
-                h["bsodRecent"] = new JsonArray([.. c.Crashes.Take(5).Select(x => (JsonNode)new JsonObject { ["at"] = x.At.ToString("O"), ["code"] = $"0x{x.Code:X8}", ["name"] = BugCheckCatalog.Find(x.Code)?.Name })]);
+                // dated, newest first, so the site can count them per period (its problem-systems page); a total above the list's length means older ones exist
+                h["powerLossTimes"] = new JsonArray([.. c.PowerLosses.Take(50).Select(x => (JsonNode)x.At.ToString("O"))]);
+                h["bsodRecent"] = new JsonArray([.. c.Crashes.Take(50).Select(x => (JsonNode)new JsonObject { ["at"] = x.At.ToString("O"), ["code"] = $"0x{x.Code:X8}", ["name"] = BugCheckCatalog.Find(x.Code)?.Name })]);
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException) { _logger.LogDebug("Usage statistics: crash history not read: {Message}", e.Message); }
