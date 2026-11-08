@@ -55,7 +55,12 @@ internal sealed class SceneView : IDisposable
     public float[] CheckFrame(float time)
     {
         Drain();
-        var px = _renderer.Capture(time); int w = _renderer.OutWidth, h = _renderer.OutHeight; var sum = new double[Blocks * Blocks * 3]; var count = new int[Blocks * Blocks];
+        return Means(_renderer.Capture(time), _renderer.OutWidth, _renderer.OutHeight);
+    }
+    /// <summary>A picture's 16 x 16 mean colours (see <see cref="CheckFrame"/>).</summary>
+    internal static float[] Means(uint[] px, int w, int h)
+    {
+        var sum = new double[Blocks * Blocks * 3]; var count = new int[Blocks * Blocks];
         Parallel.For(0, Blocks, row =>   // (a band of blocks each: they share no cell, and on the whole picture a single thread was a stutter of its own)
         {
             for (int y = 0; y < h; y++) if (y * Blocks / h == row) for (int x = 0; x < w; x++)

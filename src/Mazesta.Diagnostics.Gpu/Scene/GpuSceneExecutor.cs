@@ -65,7 +65,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     private static readonly TestOption RayTracingPreferred = RayTracing with { Preferred = () => GpuFeatures.RayTracingAvailability(TestOptions.None(Scene!)) is null ? "on" : "off" };
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K load can be
     // tested on any monitor; full screen draws at the screen's own size.
-    private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, "1920x1080",
+    internal static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, "1920x1080",
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",

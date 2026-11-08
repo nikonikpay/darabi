@@ -46,7 +46,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Steady));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Variable));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Pulse));
-        s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Thermal));
+        s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.ShamsehThermalExecutor>();   // gpu.thermal: the star's fur scene, at the card's power limit
         s.AddSingleton<ITestExecutor, GpuVramExecutor>();
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor, GpuAiExecutor>();

@@ -37,6 +37,15 @@ $jobs = @(
     @('GardenRaster.hlsl', 'RoundDownPS', 'ps_6_0', 'GardenRoundDownPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
+    # the temperature test's star (ShamsehScene)
+    @('Shamseh.hlsl', 'SolidVS', 'vs_6_0', 'ShamsehSolidVS.cso'),
+    @('Shamseh.hlsl', 'SolidPS', 'ps_6_0', 'ShamsehSolidPS.cso'),
+    @('Shamseh.hlsl', 'FurVS', 'vs_6_0', 'ShamsehFurVS.cso'),
+    @('Shamseh.hlsl', 'FurPS', 'ps_6_0', 'ShamsehFurPS.cso'),
+    @('Shamseh.hlsl', 'GroundVS', 'vs_6_0', 'ShamsehGroundVS.cso'),
+    @('Shamseh.hlsl', 'GroundPS', 'ps_6_0', 'ShamsehGroundPS.cso'),
+    @('Shamseh.hlsl', 'LensVS', 'vs_6_0', 'ShamsehLensVS.cso'),
+    @('Shamseh.hlsl', 'LensPS', 'ps_6_0', 'ShamsehLensPS.cso'),
     # the garden's frame with ray tracing switched on: the same pixel shaders, RT defined (DXR 1.1 inline ray queries)
     @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_5', 'GardenOpaqueRtPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_5', 'GardenCutoutRtPS.cso', 'RT'),

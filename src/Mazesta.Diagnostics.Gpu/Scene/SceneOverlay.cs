@@ -34,11 +34,15 @@ internal sealed unsafe class SceneOverlay : IDisposable
     /// <summary>The readout's size in pixels of the frame, as last drawn.</summary>
     internal (int Width, int Height) Size => (_width, _used);
 
-    public SceneOverlay(D3D12Session s, ID3D12Resource[] targets, int renderHeight)
+    /// <summary>What the temperature test's readout shows, large: the core and its hot spot, their traces, then the card's other figures. Null was not measured.</summary>
+    public sealed record Heat(string Card, double? Core, double? Hot, IReadOnlyList<float> CoreTrace, IReadOnlyList<float> HotTrace, IReadOnlyList<(string Name, string? Value, string Unit)> Figures, string Status, bool Failing);
+
+    /// <param name="heat">The temperature test's readout (<see cref="UpdateHeat"/>): larger, for reading across the room, as a fur test's is.</param>
+    public SceneOverlay(D3D12Session s, ID3D12Resource[] targets, int renderHeight, bool heat = false)
     {
         _s = s; _targets = targets;
-        _u = Math.Max(10, renderHeight / 90); _margin = _u * 7 / 10;
-        _width = _u * 23; _height = Height(MaxRows); _used = _height;
+        _u = Math.Max(10, renderHeight / (heat ? 54 : 90)); _margin = _u * 7 / 10;
+        _width = _u * (heat ? 21 : 23); _height = heat ? HeatHeight : Height(MaxRows); _used = _height;
         _c = new Canvas(_width, _height);
 
         byte[] vs = D3D12Session.Shader("SceneOverlayVS");
@@ -121,6 +125,54 @@ internal sealed unsafe class SceneOverlay : IDisposable
         _c.Text(x0 + mw, y, x1, y + FootHeight, r.Status, r.Failing ? Fail : Label, u * 13 / 20, r.Failing ? 700 : 400);
         _c.Flush();
         Array.Fill(_fresh, true);   // (copied to each slot's buffer when a frame of that slot is recorded)
+    }
+
+    public void UpdateHeat(Heat r) { lock (_gate) ComposeHeat(r); }
+
+    private const int HeatRows = 8;
+    private int HeatHeight => _margin * 2 + _u + _u * 4 + _u * 3 + _u * 3 / 10 + HeatRows * RowHeight + _u * 3 / 10 + FootHeight;
+
+    private void ComposeHeat(Heat r)
+    {
+        if (!Visible) return;
+        int u = _u, x0 = _margin, x1 = _width - _margin, y = _margin, half = (x1 - x0) / 2;
+        static string N(double? v) => v is { } d ? d.ToString("F0", CultureInfo.InvariantCulture) : "—";
+        _c.Clear();
+        _c.Fill(0, 0, _width, _height, Rule); _c.Fill(1, 1, _width - 1, _height - 1, 0);
+        _c.Text(x0, y, x1, y + u, "MAZESTA · GPU TEMPERATURE", Game, u * 3 / 5, 800);
+        _c.Text(x0, y, x1, y + u, r.Card, Faint, u * 3 / 5, 400, right: true);
+        y += u;
+
+        // the core and its hot spot, as large as the box allows
+        foreach (var (tag, value, hue, x) in new[] { ("GPU", r.Core, GpuHue, x0), ("HOT SPOT", r.Hot, LowHue, x0 + half) })
+        {
+            _c.Text(x, y, x + half, y + u, tag, hue, u * 3 / 5, 800);
+            string v = N(value); int big = u * 3, vw = _c.Measure(v, big, 700);
+            _c.Text(x, y + u * 3 / 5, x + vw + u, y + u * 4, v, White, big, 700);
+            _c.Text(x + vw + u / 6, y + u * 3 / 2, x + half, y + u * 3, "°C", hue, u, 700);
+        }
+        y += u * 4;
+
+        // both over the run, on one scale from 30 °C, so their gap reads as the hot spot's lead
+        float top = 90; foreach (float t in r.HotTrace.Concat(r.CoreTrace)) top = Math.Max(top, t + 5);
+        var core = r.CoreTrace.Select(t => Math.Max(1, t - 30)).ToList(); var hot = r.HotTrace.Select(t => Math.Max(1, t - 30)).ToList();
+        int gw = (x1 - x0 - u / 2) / 2;
+        Trace(x0, y, gw, u * 3, core, top - 30, GpuHue, "GPU °C"); Trace(x1 - gw, y, gw, u * 3, hot, top - 30, LowHue, "HOT °C");
+        y += u * 3 + u * 3 / 10;
+
+        foreach (var (name, value, unit) in r.Figures.Take(HeatRows))
+        {
+            _c.Fill(x0, y, x1, y + 1, Rule);
+            _c.Text(x0, y, x0 + half, y + RowHeight, name, Label, u * 4 / 5, 700, middle: true);
+            int uw = _c.Measure(unit, u * 13 / 20, 700);
+            _c.Text(x0 + half, y, x1 - uw - u / 6, y + RowHeight, value ?? "—", White, u * 23 / 20, 700, right: true, middle: true);
+            _c.Text(x1 - uw, y + u / 6, x1, y + RowHeight, unit, GpuHue, u * 13 / 20, 700, middle: true);
+            y += RowHeight;
+        }
+        _c.Fill(x0, y, x1, y + 1, Rule); y += u * 3 / 10;
+        _c.Text(x0, y, x1, y + FootHeight, r.Status, r.Failing ? Fail : Label, u * 13 / 20, r.Failing ? 700 : 400);
+        _c.Flush(); _used = _height;
+        Array.Fill(_fresh, true);
     }
 
     private int GraphHeight => _u * 2;
@@ -207,11 +259,12 @@ internal sealed class FramePace
 internal sealed unsafe class Canvas : IDisposable
 {
     private readonly IntPtr _dc, _bitmap; private readonly uint* _bits; private readonly int _width, _height;
-    private readonly Dictionary<(int, int), IntPtr> _fonts = [];
+    private readonly Dictionary<(int, int), IntPtr> _fonts = []; private readonly string _face;
 
-    public Canvas(int width, int height)
+    /// <param name="face">The app overlay's face by default; GDI's font mapper falls back to a sans face on a system without it.</param>
+    public Canvas(int width, int height, string face = "Bahnschrift")
     {
-        _width = width; _height = height;
+        _width = width; _height = height; _face = face;
         _dc = CreateCompatibleDC(IntPtr.Zero);
         var info = new BitmapInfo { Size = 40, Width = width, Height = -height, Planes = 1, BitCount = 32 };   // negative height: top-down rows
         _bitmap = CreateDIBSection(_dc, ref info, 0, out var bits, IntPtr.Zero, 0); _bits = (uint*)bits;
@@ -266,9 +319,8 @@ internal sealed unsafe class Canvas : IDisposable
         return GetTextExtentPoint32(_dc, text, text.Length, out var size) ? size.Cx : 0;
     }
 
-    // The app overlay's face; GDI's font mapper falls back to a sans face on a system without it.
     private IntPtr Font(int px, int weight) => _fonts.TryGetValue((px, weight), out var f) ? f
-        : _fonts[(px, weight)] = CreateFont(-px, 0, 0, 0, weight, 0, 0, 0, 1, 0, 0, 4 /* ANTIALIASED_QUALITY */, 0, "Bahnschrift");
+        : _fonts[(px, weight)] = CreateFont(-px, 0, 0, 0, weight, 0, 0, 0, 1, 0, 0, 4 /* ANTIALIASED_QUALITY */, 0, _face);
     private static uint Ref(uint rgb) => (rgb >> 16 & 0xFF) | (rgb & 0xFF00) | (rgb & 0xFF) << 16;   // COLORREF is 0x00BBGGRR
 
     public void Dispose() { foreach (var f in _fonts.Values) DeleteObject(f); DeleteObject(_bitmap); DeleteDC(_dc); }
