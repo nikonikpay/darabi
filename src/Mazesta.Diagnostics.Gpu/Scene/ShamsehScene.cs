@@ -4,17 +4,22 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
 /// The temperature test's picture (Shaders/Shamseh.hlsl): an eight-point star in turquoise velvet, a gold medallion engraved "مازستا / MAZESTA"
-/// at its middle, turning in front of a velvet ground that fills the window. The work is fur drawn as layers blended into a 16-bit frame, which
-/// keeps the card's memory as busy as its cores: what draws a card to its power limit with the clock held well under its boost, as a fur test does.
+/// at its middle, turning in front of a velvet ground that fills the window. The work is fur drawn as layers blended into a float frame (most of them on the
+/// star, read from the cache, so the cores work and the memory is not overheated): what draws a card to its power limit with the clock held well under its boost, as a fur test does.
 /// Drawn into the window's swap chain with no v-sync, the readout laid over it; <see cref="CheckFrame"/> draws a fixed moment off screen for the run's checks.
 /// </summary>
 internal sealed unsafe class ShamsehScene : IDisposable
 {
     [StructLayout(LayoutKind.Sequential)] private struct Constants { public float Ry, Rx, Aspect; public uint Layers, FurLayers; public float Spread, FurLength, Time; public Vector2 Size, Pad2; }
-    /// <summary>The ground's layers and the star's: 48 over the screen measured as much as 128 (RTX 3090, 1080p).</summary>
-    public const int Layers = 48, FurLayers = 32;
-    /// <summary>Texels of the strands' texture a pixel takes: 7.6 held the clock lowest (1270 MHz at 350 W); 1.9 (cached) gave 1660, 15 gave 1650.</summary>
-    private const float Spread = 7.6f, FurLength = 0.09f;
+    /// <summary>
+    /// The ground's layers and the star's. Measured on an RTX 3090 at 1080p, 180 s each, all at its 350 W limit: the ground's texture read at 7.6 texels
+    /// a pixel into a 16-bit frame (the first version) ran the card's memory to 100 C, hotter than FurMark here (91.5 C average, 98 C peak); read at
+    /// one texel a pixel, 24 ground layers and 512 fur layers into an 11-11-10 float frame gave 86.7 C average, 92 C peak, at about 208 FPS (FurMark 217):
+    /// the work moved from the memory to the cores and their caches, as a fur test's does.
+    /// </summary>
+    public const int Layers = 24, FurLayers = 512;
+    private const float Spread = 1f, FurLength = 0.045f;
+    private const Format LightFormat = Format.R11G11B10_Float;
     private const int StrandSize = 2048, WordSize = 512;
 
     private readonly D3D12Session _s; private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing;
@@ -47,8 +52,8 @@ internal sealed unsafe class ShamsehScene : IDisposable
         var strands = new byte[StrandSize * StrandSize * 4]; new Random(7).NextBytes(strands);   // the same strands every run: the check frames compare like with like
         var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var words = Texture(Format.B8G8R8A8_UNorm, WordSize, WordSize, Engraving());
 
-        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R16G16B16A16_Float, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
-            ResourceStates.PixelShaderResource, new ClearValue(Format.R16G16B16A16_Float, Background)));
+        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+            ResourceStates.PixelShaderResource, new ClearValue(LightFormat, Background)));
         _depth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1, 0)));
         _check = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget), ResourceStates.CopySource));
@@ -73,9 +78,9 @@ internal sealed unsafe class ShamsehScene : IDisposable
             RootSignature = _root, VertexShader = vs, PixelShader = D3D12Session.Shader(ps), PrimitiveTopologyType = PrimitiveTopologyType.Triangle, BlendState = blend, RasterizerState = RasterizerDescription.CullNone,
             SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = SampleDescription.Default
         }));
-        _solid = Pipeline(solidVs, "ShamsehSolidPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual), Format.R16G16B16A16_Float);
-        _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, under, Format.R16G16B16A16_Float);
-        _fur = Pipeline(D3D12Session.Shader("ShamsehFurVS"), "ShamsehFurPS", layered, under, Format.R16G16B16A16_Float);
+        _solid = Pipeline(solidVs, "ShamsehSolidPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual), LightFormat);
+        _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, under, LightFormat);
+        _fur = Pipeline(D3D12Session.Shader("ShamsehFurVS"), "ShamsehFurPS", layered, under, LightFormat);
         _lens = Pipeline(D3D12Session.Shader("ShamsehLensVS"), "ShamsehLensPS", BlendDescription.Opaque, DepthStencilDescription.None, Format.R8G8B8A8_UNorm);
     }
 
@@ -187,7 +192,7 @@ internal static class ShamsehMesh
         uint Add(Vector3 p, Vector3 n, Vector2 uv, int m) { v.AddRange([p.X, p.Y, p.Z, n.X, n.Y, n.Z, uv.X, uv.Y, m]); return (uint)(v.Count / 9 - 1); }
         void Quad(uint a, uint b, uint c, uint d) => ix.AddRange([a, b, c, a, c, d]);
 
-        const int Seg = 8, Rings = 16; float tip = 0.6f * MathF.Sqrt(2), inner = 0.6f / MathF.Cos(MathF.PI / 8);
+        const int Seg = 16, Rings = 24; float tip = 0.6f * MathF.Sqrt(2), inner = 0.6f / MathF.Cos(MathF.PI / 8);
         var outline = new List<Vector2>();
         for (int k = 0; k < 16; k++)
         {
@@ -225,7 +230,7 @@ internal static class ShamsehMesh
         }
         uint starIndices = (uint)ix.Count;
 
-        const int Round = 128; const float Radius = 0.35f, Face = 0.23f;
+        const int Round = 256; const float Radius = 0.35f, Face = 0.23f;
         foreach (int side in new[] { 1, -1 })
         {
             uint centre = Add(new(0, 0, side * Face), new(0, 0, side), Vector2.Zero, 1); var ring = new uint[Round];
@@ -249,8 +254,8 @@ internal static class ShamsehMesh
             for (int j = 0; j < path.Count; j++) for (int s = 0; s < sides; s++) Quad(rows[j, s], rows[j, (s + 1) % sides], rows[(j + 1) % path.Count, (s + 1) % sides], rows[(j + 1) % path.Count, s]);
         }
         Vector3[] Circle(float z) => [.. Enumerable.Range(0, Round).Select(j => new Vector3(MathF.Cos(j * MathF.Tau / Round) * Radius, MathF.Sin(j * MathF.Tau / Round) * Radius, z))];
-        Tube(Circle(0.21f), 0.045f, 16); Tube(Circle(-0.21f), 0.045f, 16);
-        Tube([.. outline.Select(p => new Vector3(p, 0))], 0.03f, 12);
+        Tube(Circle(0.21f), 0.045f, 24); Tube(Circle(-0.21f), 0.045f, 24);
+        Tube([.. outline.Select(p => new Vector3(p, 0))], 0.04f, 20);
         return ([.. v], [.. ix], starIndices);
     }
 }

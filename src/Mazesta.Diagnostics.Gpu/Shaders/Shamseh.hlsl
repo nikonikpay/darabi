@@ -53,7 +53,9 @@ float4 SolidPS(Lit i) : SV_Target
         float a = Words.SampleLevel(Clamp, uv, 0).r; float2 g = float2(Words.SampleLevel(Clamp, uv + float2(e, 0), 0).r - a, Words.SampleLevel(Clamp, uv + float2(0, e), 0).r - a);
         n = normalize(n - ToWorld(float3(g * 6 * float2(side, -1), 0))); cut = a;
     }
-    float dif = saturate(dot(n, L)), fres = pow(1 - saturate(dot(n, v)), 5), spec = pow(saturate(dot(n, normalize(L + v))), 90);
+    // the highlight widens where the normal turns fast across a pixel (a thin tube seen edge on), so it does not flicker from frame to frame
+    float3 dn = fwidth(n); float sharp = 90 / (1 + 90 * 6 * dot(dn, dn));
+    float dif = saturate(dot(n, L)), fres = pow(1 - saturate(dot(n, v)), 5), spec = pow(saturate(dot(n, normalize(L + v))), sharp) * saturate(sharp / 30);
     float3 c = Gold * (0.08 + Env(reflect(-v, n)) * lerp(0.7, 1.0, fres)) + Gold * dif * 0.5 + spec * 2.5;
     return float4(lerp(c, Gold * 0.12, cut * 0.85), 1);
 }
@@ -69,20 +71,17 @@ Lit FurVS(uint id : SV_VertexID, uint layer : SV_InstanceID)
     o.Normal = ToWorld(v.Normal); o.Object = v.Pos; o.Uv = v.Uv; o.Material = 0; o.H = h;
     o.Pos = Project(o.World); return o;
 }
-// Each strand stands in a cell of a grid a few pixels across (its height and place from the strands' texture), round, thinning to its tip,
-// so the shells read as hairs. The sheen still reads the texture finely, which keeps the memory busy here as on the ground.
+// The strands are the texture's random heights, filtered, about a pixel and a half each, so neighbouring ones clump into tufts: a strand covers
+// a layer where it is taller than the layer is high, and the many layers make it a dense pile (none over the medallion).
 [RootSignature(RS)]
 float4 FurPS(Lit i) : SV_Target
 {
     float3 n = normalize(i.Normal), v = normalize(float3(0, 0, 4.2) - i.World);
-    float2 g = i.Uv * 320; float4 r = Strands.Load(int3((int2)floor(g) & 2047, 0));
-    float tall = (0.45 + 0.55 * r.r) * smoothstep(0.37, 0.5, length(i.Object.xy));   // none over the medallion
-    float d = length(frac(g) - (0.3 + 0.4 * r.ba)), radius = 0.45 * saturate(1 - i.H / max(tall, 1e-3));
-    float a = i.H < tall ? saturate((radius - d) / max(fwidth(d), 1e-3)) : 0;
-    float4 s = Strands.SampleLevel(Wrap, i.Uv * 6 + i.H * 0.19, 0);
-    float3 base = lerp(float3(0.02, 0.32, 0.36), float3(0.25, 0.95, 0.9), i.H * i.H) * (0.85 + 0.3 * r.g) * (0.9 + 0.2 * s.g);
-    float dif = saturate(dot(n, L)) * 0.75 + 0.25, rim = pow(1 - abs(dot(n, v)), 2);
-    float3 c = base * (0.15 + 0.85 * i.H) * dif + base * rim * 0.9 * i.H + float3(0.9, 0.95, 1) * 0.25 * pow(saturate(dot(reflect(-L, n), v)), 8) * i.H;
+    float4 s = Strands.SampleLevel(Wrap, i.Uv * 0.55, 0), s2 = Strands.SampleLevel(Wrap, i.Uv * 1.27 + 0.37, 0);
+    float tall = s.r * 0.7 + s2.r * 0.3, a = saturate((tall - (0.22 + 0.6 * i.H)) * 9) * 0.85 * smoothstep(0.34, 0.42, length(i.Object.xy));
+    float3 base = float3(0.06, 0.62, 0.66) * (0.85 + 0.3 * s.g);
+    float dif = saturate(dot(n, L)) * 0.8 + 0.2, rim = pow(1 - abs(dot(n, v)), 2);
+    float3 c = base * (0.2 + 0.8 * i.H) * dif + base * rim * 0.8 * i.H + float3(0.9, 0.95, 1) * 0.12 * pow(saturate(dot(reflect(-L, n), v)), 6) * i.H;
     return float4(c * a, a);
 }
 

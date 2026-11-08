@@ -4,7 +4,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
 /// The GPU temperature test: a window on the turning star of <see cref="ShamsehScene"/>, drawn with no v-sync, which keeps the card at its power
-/// limit with the clock held well under its boost (fur layers blended into a 16-bit frame: the card's memory works as hard as its cores), so the
+/// limit with the clock held well under its boost (hundreds of fur layers blended into a float frame), so the
 /// card reaches the heat it would at its worst, with the core, the hot spot and the rest of the card read out large over the picture.
 /// A card that only gets hot is not the pass: every <see cref="CheckSeconds"/> the star is also drawn off screen at one fixed moment and read back,
 /// and that frame must be the first one (<see cref="SceneView.Same"/>) - a card that draws differently when hot has computed wrongly.
@@ -113,7 +113,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         {
             var finished = request.Clock.UtcNow; var node = GpuDevices.SensorNode(request.Engine, session.AdapterName);
             var c = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, node, null); var hs = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, node, null);
-            return SensorEvidence.Join($"Shamseh fur scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, {ShamsehScene.Layers} velvet layers and {ShamsehScene.FurLayers} fur layers into a 16-bit frame",
+            return SensorEvidence.Join($"Shamseh fur scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, {ShamsehScene.Layers} velvet layers and {ShamsehScene.FurLayers} fur layers into a float frame",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", $"check frames={checks}", firstError.Length > 0 ? firstError : null,
                 SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
                 c?.Format("GPU core", "°C", includeMax: true), hs?.Format("GPU hot spot", "°C", includeMax: true),

@@ -3207,7 +3207,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} مگاپیکسل در ثانیه (صحنهٔ خود مازستا؛ امتیاز برنامه‌های تجاری نیست)</value></data>
   <data name="Detail_Gpu_Render" xml:space="preserve"><value>صحنهٔ رهگیری پرتو {0}x{1} با {2} کره و {3} بازتاب، روی {4}</value></data>
   <data name="Detail_Gpu_Scene" xml:space="preserve"><value>صحنهٔ باغ ایرانی با {0}، رسم‌شده در {1}x{2} (پنجره {3}x{4}) روی {5}</value></data>
-  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>صحنهٔ شمسهٔ مخملی، رسم‌شده در {0}x{1} (پنجره {2}x{3}) روی {4}؛ {5} لایهٔ مخمل و {6} لایهٔ پرز روی هم در قاب ۱۶ بیتی</value></data>
+  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>صحنهٔ شمسهٔ مخملی، رسم‌شده در {0}x{1} (پنجره {2}x{3}) روی {4}؛ {5} لایهٔ مخمل و {6} لایهٔ پرز روی هم در قاب HDR</value></data>
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>سطح بار {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} مثلث در {1} شیء؛ مدل وسط صحنه «{2}»</value></data>
   <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>رهگیری پرتو: پرتو دوربین، پرتو سایه به ماه و به هر یک از {0} چراغ نزدیک، بازتاب و شکست تا ۴ بار</value></data>

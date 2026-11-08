@@ -3207,7 +3207,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} megapixels a second (Mazesta's own scene, not a commercial score)</value></data>
   <data name="Detail_Gpu_Render" xml:space="preserve"><value>Ray-traced scene {0}×{1}, {2} spheres, {3} bounces, on {4}</value></data>
   <data name="Detail_Gpu_Scene" xml:space="preserve"><value>The Persian garden scene with {0}, drawn at {1}×{2} (window {3}×{4}) on {5}</value></data>
-  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>The star (shamseh) fur scene, drawn at {0}×{1} (window {2}×{3}) on {4}; {5} velvet layers and {6} fur layers blended into a 16-bit frame</value></data>
+  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>The star (shamseh) fur scene, drawn at {0}×{1} (window {2}×{3}) on {4}; {5} velvet layers and {6} fur layers blended into a float (HDR) frame</value></data>
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>Load level {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} triangles in {1} objects; centre model “{2}”</value></data>
   <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>Ray traced: a camera ray, a shadow ray to the moon and to each of the {0} lamps in reach, reflections and refraction up to 4 bounces</value></data>
