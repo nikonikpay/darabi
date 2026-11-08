@@ -68,7 +68,7 @@ $order = isset($_GET['o']) ? sanitize_key($_GET['o']) : 'last';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
 list($list, $total) = MZC_Stats::systems($q, $order, $per, ($paged - 1) * $per);
 
-echo '<div class="mzc-title"><h2>سیستم‌ها</h2><span class="muted">' . esc_html(number_format_i18n($total)) . ' سیستم</span></div>';
+echo '<div class="mzc-title"><h2>سیستم‌ها</h2><span class="muted">' . esc_html(number_format_i18n($total)) . ' سیستم</span><div class="mzc-actions"><a class="mzc-btn" href="' . esc_url(MZC_Admin::url('mzc-problems')) . '">سیستم‌های مشکل‌دار</a></div></div>';
 echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-systems"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="جستجوی سخت‌افزار: مثلاً 3060، 5900HS، 32 GB، B550، یادداشت… (چند کلمه = همه با هم)"><select name="o">'
     . '<option value="last"' . selected($order, 'last', false) . '>آخرین فعالیت</option><option value="first"' . selected($order, 'first', false) . '>تازه‌ترین نصب</option><option value="n"' . selected($order, 'n', false) . '>بیشترین رویداد</option></select><button class="mzc-btn primary">اعمال</button>' . ($q !== '' && $total ? ' <a class="mzc-btn" href="' . esc_url(MZC_Admin::url('mzc-messages', array('group' => $q))) . '">پیام به این ' . esc_html(number_format_i18n($total)) . ' سیستم</a>' : '') . '</form>';
 echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>سیستم</th><th>پردازنده</th><th>کارت گرافیک</th><th class="n">رم</th><th>ویندوز</th><th>نسخه</th><th class="n">رویداد</th><th>تاریخ نصب</th><th>آخرین فعالیت</th><th>وضعیت</th><th></th></tr></thead><tbody>';

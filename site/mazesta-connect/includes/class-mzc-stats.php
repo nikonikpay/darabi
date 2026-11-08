@@ -291,7 +291,7 @@ final class MZC_Stats
         $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array(); $h = isset($m['health']) && is_array($m['health']) ? $m['health'] : array();
         $w = array(); $day = function ($ts) { return $ts ? MZC_Crm::jdate(MZC_Crm::ymd($ts)) : ''; };
         if (!empty($h['bsod'])) {
-            $d = array(); foreach (isset($h['bsodRecent']) ? $h['bsodRecent'] : array() as $b) { $t = strtotime($b['at']); $d[] = trim($b['code'] . ' ' . $b['name']) . ($t ? ' (' . $day($t) . ')' : ''); }
+            $d = array(); foreach (isset($h['bsodRecent']) ? array_slice((array) $h['bsodRecent'], 0, 5) : array() as $b) { $t = strtotime($b['at']); $d[] = trim($b['code'] . ' ' . $b['name']) . ($t ? ' (' . $day($t) . ')' : ''); }
             $w[] = array('bad', 'صفحهٔ آبی ویندوز (BSOD): ' . number_format_i18n($h['bsod']) . ' بار', implode('، ', $d));
         }
         if (!empty($h['powerLosses'])) { $w[] = array('warn', 'خاموشی یا ری‌استارت ناگهانی: ' . number_format_i18n($h['powerLosses']) . ' بار', 'ویندوز بدون خاموش شدن عادی دوباره روشن شده است (برق، پاور، دکمهٔ ریست یا هنگ کامل).'); }
@@ -322,6 +322,61 @@ final class MZC_Stats
         }
         usort($w, function ($a, $b) { return ($a[0] === 'bad' ? 0 : 1) <=> ($b[0] === 'bad' ? 0 : 1); });
         return $w;
+    }
+
+    /**
+     * The systems with problems since a unix time, worst first: blue screens and sudden restarts (from the dates the app sent with the system: the
+     * newest ones it read from Windows), the app's own crashes (its log uploads) and failed tests and benchmarks (its events). A count the system gave
+     * no dates for is null (an older app sent only lifetime totals, or Windows' history was unreadable), never 0; 'more' lists the kinds whose count is
+     * a lower bound (every date sent fell in the period, and there were more). $kind keeps only systems with that problem (bsod, power, crash, fail);
+     * $order: total, bsod, power, crash, fail, last. Rows: id, sys (the shaped system or null), bsod, power, crash, fail, more, total, last, cause, causes.
+     */
+    public static function problems($since, $q = '', $kind = '', $order = 'total')
+    {
+        $wpdb = self::db(); if (!self::ready()) { return array(); }
+        $at = gmdate('Y-m-d H:i:s', $since); $p = array(); $known = array(); $more = array();
+        $put = function ($id, $k, $n, $ts, $cause) use (&$p) {
+            if (!isset($p[$id])) { $p[$id] = array('bsod' => 0, 'power' => 0, 'crash' => 0, 'fail' => 0, 'last' => 0, 'causes' => array()); }
+            $p[$id][$k] += $n; $p[$id]['last'] = max($p[$id]['last'], $ts);
+            if ($cause !== '') { $p[$id]['causes'][$cause] = (isset($p[$id]['causes'][$cause]) ? $p[$id]['causes'][$cause] : 0) + $n; }
+        };
+        $dated = function ($id, $k, $times, $total, $cause) use ($since, $put, &$more) {
+            $n = 0; foreach ($times as $x) { $t = (int) strtotime((string) $x[0]); if ($t >= $since) { $n++; $put($id, $k, 1, $t, $x[1] !== '' ? $x[1] : $cause); } }
+            if ($n > 0 && $n === count($times) && $n < $total) { $more[$id][] = $k; }
+        };
+        // blue screens and restarts: the dates in the system's newest snapshot (sent again after each run, so a system with any in the period was seen since)
+        foreach ($wpdb->get_results($wpdb->prepare('SELECT id, machine FROM `' . self::t('systems') . '` WHERE last_at >= %s', $at), ARRAY_A) ?: array() as $r) {
+            $m = json_decode((string) $r['machine'], true); $h = is_array($m) && isset($m['health']) && is_array($m['health']) ? $m['health'] : array();
+            if (!isset($h['bsod'])) { continue; }   // Windows' history was not readable there: nothing known
+            $b = isset($h['bsodRecent']) && is_array($h['bsodRecent']) ? $h['bsodRecent'] : array(); $pl = isset($h['powerLossTimes']) && is_array($h['powerLossTimes']) ? $h['powerLossTimes'] : null;
+            $known[$r['id']] = array('bsod' => $b || (int) $h['bsod'] === 0, 'power' => $pl !== null || (isset($h['powerLosses']) && (int) $h['powerLosses'] === 0));
+            $dated($r['id'], 'bsod', array_map(function ($x) { return array(isset($x['at']) ? $x['at'] : '', trim('صفحهٔ آبی ' . (isset($x['code']) ? $x['code'] : '') . ' ' . (isset($x['name']) ? $x['name'] : ''))); }, $b), (int) $h['bsod'], '');
+            if ($pl !== null) { $dated($r['id'], 'power', array_map(function ($x) { return array($x, ''); }, $pl), (int) $h['powerLosses'], 'ری‌استارت یا خاموشی ناگهانی (Kernel-Power 41)'); }
+        }
+        // the app's own crashes, as Windows' error reports of it named the faulting module and the exception
+        foreach ($wpdb->get_results($wpdb->prepare('SELECT sys, at, crashes FROM `' . self::t('logs') . '` WHERE at >= %s AND crashes IS NOT NULL', $at), ARRAY_A) ?: array() as $r) {
+            foreach ((array) json_decode((string) $r['crashes'], true) as $c) {
+                $t = isset($c['at']) ? (int) strtotime($c['at']) : (int) strtotime($r['at'] . ' UTC'); if ($t < $since) { continue; }
+                $put($r['sys'], 'crash', 1, $t, 'کرش برنامه' . (!empty($c['sig3']) ? ' در ' . $c['sig3'] : '') . (!empty($c['sig6']) ? ' (' . $c['sig6'] . ')' : ''));
+            }
+        }
+        // failed tests and benchmarks
+        $res = "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(d, '$.status')), JSON_UNQUOTE(JSON_EXTRACT(d, '$.outcome')))";
+        foreach ($wpdb->get_results($wpdb->prepare('SELECT sys, item, COUNT(*) AS n, MAX(at) AS t FROM `' . self::t('events') . "` WHERE kind IN ('test.run', 'bench.run') AND at >= %s AND $res IN ('Failed', 'Error') GROUP BY sys, item", $at), ARRAY_A) ?: array() as $r) {
+            $put($r['sys'], 'fail', (int) $r['n'], (int) strtotime($r['t'] . ' UTC'), 'ایراد در ' . self::labels('tests', $r['item']));
+        }
+        if (!$p) { return array(); }
+        $keep = $q === '' ? null : array_flip((array) $wpdb->get_col('SELECT id FROM `' . self::t('systems') . '` WHERE ' . self::where($q)));
+        $names = self::names(array_keys($p)); $out = array();
+        foreach ($p as $id => $x) {
+            if (($keep !== null && !isset($keep[$id])) || ($kind !== '' && empty($x[$kind]))) { continue; }
+            foreach (array('bsod', 'power') as $k) { if (!$x[$k] && empty($known[$id][$k])) { $x[$k] = null; } }   // none dated is not none had
+            arsort($x['causes']);
+            $out[] = $x + array('id' => $id, 'sys' => isset($names[$id]) ? $names[$id] : null, 'more' => isset($more[$id]) ? $more[$id] : array(), 'total' => (int) $x['bsod'] + (int) $x['power'] + $x['crash'] + $x['fail'], 'cause' => (string) key($x['causes']));
+        }
+        $by = in_array($order, array('bsod', 'power', 'crash', 'fail', 'last'), true) ? $order : 'total';
+        usort($out, function ($a, $b) use ($by) { return array((int) $b[$by], $b['total'], $b['last']) <=> array((int) $a[$by], $a['total'], $a['last']); });
+        return $out;
     }
 
     /** How many problems the parts sent with a system show (blue screens, drives, setup findings): for the list, without reading its events. */
