@@ -46,6 +46,12 @@ internal static class SelfTest
                 for (int i = 0; i < 90 && (await uploader.MachineAsync()).ContainsKey("health") is false; i++) await Task.Delay(1000);
                 Say((await uploader.MachineAsync())["health"]?.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }) ?? "no health block"); Say("DONE"); return;
             }
+            if (kind == "specs")   // the storage cards as the page gets them (specs.get), to compare with other disk tools
+            {
+                var (inv, d, _) = await services.GetRequiredService<Mazesta.Desktop.Composition.HardwareSnapshot>().DetailsAsync();
+                foreach (var c in PartSpecs.For(Mazesta.Core.Hardware.HardwareKind.Storage, inv, d)) { Say($"== {c.Title}"); foreach (var r in c.Rows) Say($"   {r.Label}: {r.Value}"); }
+                Say("DONE"); return;
+            }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")
             {

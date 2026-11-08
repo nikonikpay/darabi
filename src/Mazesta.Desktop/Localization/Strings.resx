@@ -1814,7 +1814,11 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Timings" xml:space="preserve"><value>Timings</value></data>
   <data name="Spec_Profile_Note" xml:space="preserve"><value>Read from the module's SPD. The highlighted profile is the one with the speed the memory runs at now; the timings in use are not read.</value></data>
   <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>The app cannot read {0} profiles.</value></data>
-  <data name="Spec_PowerOnHours" xml:space="preserve"><value>Power-on hours</value></data>
+  <data name="Spec_PowerOnHours" xml:space="preserve"><value>Power-on time</value></data>
+  <data name="Spec_Dur_Y" xml:space="preserve"><value>{0} y</value></data>
+  <data name="Spec_Dur_M" xml:space="preserve"><value>{0} mo</value></data>
+  <data name="Spec_Dur_D" xml:space="preserve"><value>{0} d</value></data>
+  <data name="Spec_Dur_H" xml:space="preserve"><value>{0} h</value></data>
   <data name="Spec_Temperature" xml:space="preserve"><value>Temperature</value></data>
   <data name="Spec_Wear" xml:space="preserve"><value>Wear (life used)</value></data>
   <data name="Spec_UncorrectedErrors" xml:space="preserve"><value>Uncorrected read / write errors</value></data>

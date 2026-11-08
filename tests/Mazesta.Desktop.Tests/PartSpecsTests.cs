@@ -27,6 +27,16 @@ public class PartSpecsTests
         Assert.DoesNotContain(labels, l => l.Contains("CUDA") || l.Contains("Tensor")); Assert.Equal(architecture, Row(cards[0], "Spec_Architecture"));
     }
 
+    [Fact] public void Data_written_shows_the_binary_figure_other_tools_call_tb()
+    { Assert.Equal("9.12 TB (8.29 TiB)", PartSpecs.Tb(9.12e12)); Assert.Equal("512 GB (477 GiB)", PartSpecs.Tb(512e9)); }
+
+    [Fact] public void Power_on_hours_read_as_years_months_days_and_hours()
+    {
+        Assert.Equal($"{Loc.Format("Spec_Dur_M", 1)} {Loc.Format("Spec_Dur_D", 5)} {Loc.Format("Spec_Dur_H", 10)} (850 h)", PartSpecs.Hours(850));   // 35 days 10 hours, as Hard Disk Sentinel
+        Assert.Equal($"{Loc.Format("Spec_Dur_Y", 3)} {Loc.Format("Spec_Dur_M", 2)} {Loc.Format("Spec_Dur_D", 17)} {Loc.Format("Spec_Dur_H", 14)} (28,142 h)", PartSpecs.Hours(28142));
+        Assert.Equal($"{Loc.Format("Spec_Dur_D", 2)} (48 h)", PartSpecs.Hours(48)); Assert.Equal("5 h", PartSpecs.Hours(5));
+    }
+
     [Fact] public void The_cpu_identifier_shows_decimal_and_hex()
         => Assert.Equal("Family 23 (17h) · Model 113 (71h) · Stepping 0", PartSpecs.Identifier("AMD64 Family 23 Model 113 Stepping 0"));
 

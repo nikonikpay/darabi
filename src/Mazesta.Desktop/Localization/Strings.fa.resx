@@ -1814,7 +1814,11 @@
   <data name="Spec_Timings" xml:space="preserve"><value>تایمینگ</value></data>
   <data name="Spec_Profile_Note" xml:space="preserve"><value>از SPD خود ماژول خوانده شده. پروفایل مشخص‌شده همانی است که سرعتش با سرعت فعلی رم یکی است؛ تایمینگ در حال استفاده خوانده نمی‌شود.</value></data>
   <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>برنامه نمی‌تواند پروفایل‌های {0} را بخواند.</value></data>
-  <data name="Spec_PowerOnHours" xml:space="preserve"><value>ساعات روشن بودن</value></data>
+  <data name="Spec_PowerOnHours" xml:space="preserve"><value>زمان روشن بودن</value></data>
+  <data name="Spec_Dur_Y" xml:space="preserve"><value>{0} سال</value></data>
+  <data name="Spec_Dur_M" xml:space="preserve"><value>{0} ماه</value></data>
+  <data name="Spec_Dur_D" xml:space="preserve"><value>{0} روز</value></data>
+  <data name="Spec_Dur_H" xml:space="preserve"><value>{0} ساعت</value></data>
   <data name="Spec_Temperature" xml:space="preserve"><value>دما</value></data>
   <data name="Spec_Wear" xml:space="preserve"><value>فرسایش (عمر مصرف‌شده)</value></data>
   <data name="Spec_UncorrectedErrors" xml:space="preserve"><value>خطاهای اصلاح‌نشدهٔ خواندن / نوشتن</value></data>

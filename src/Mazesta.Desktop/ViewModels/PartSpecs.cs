@@ -18,7 +18,16 @@ public static class PartSpecs
     private static string Na => Loc.Get("Value_NotAvailable");
     private static string YesNo(bool v) => Loc.Get(v ? "Spec_Yes" : "Spec_No");
     private static string Gb(long bytes, double unit = 1024.0 * 1024 * 1024) => (bytes / unit).ToString(bytes / unit >= 10 ? "F0" : "F1", CultureInfo.InvariantCulture) + " GB";
-    private static string Tb(double bytes) => bytes >= 1e12 ? (bytes / 1e12).ToString("F2", CultureInfo.InvariantCulture) + " TB" : (bytes / 1e9).ToString("F0", CultureInfo.InvariantCulture) + " GB";
+    // The binary figure beside the decimal one: Windows and most disk tools show TiB/GiB labelled "TB"/"GB", so 9.12 TB there reads 8.29.
+    internal static string Tb(double bytes) => bytes >= 1e12 ? $"{(bytes / 1e12).ToString("F2", CultureInfo.InvariantCulture)} TB ({(bytes / (1L << 40)).ToString("F2", CultureInfo.InvariantCulture)} TiB)"
+        : $"{(bytes / 1e9).ToString("F0", CultureInfo.InvariantCulture)} GB ({(bytes / (1L << 30)).ToString("F0", CultureInfo.InvariantCulture)} GiB)";
+    /// <summary>Hours as years, months (30 days), days and hours, zero parts left out, the raw hours kept to compare with other tools.</summary>
+    internal static string Hours(long h)
+    {
+        long d = h / 24, y = d / 365, m = d % 365 / 30, dd = d % 365 % 30, hh = h % 24;
+        var parts = new[] { ("Spec_Dur_Y", y), ("Spec_Dur_M", m), ("Spec_Dur_D", dd), ("Spec_Dur_H", hh) }.Where(p => p.Item2 > 0).Select(p => Loc.Format(p.Item1, p.Item2)).ToList();
+        return h < 24 ? $"{h} h" : $"{string.Join(" ", parts)} ({h.ToString("#,0", CultureInfo.InvariantCulture)} h)";
+    }
     private static string Size(long bytes) => bytes >= 1 << 20 ? $"{bytes >> 20} MB" : $"{bytes >> 10} KB";
 
     /// <summary>Adds a row only when there is a value: a card lists what was read.</summary>
@@ -238,7 +247,7 @@ public static class PartSpecs
         Add(rows, "Spec_LinkNow", Link(d?.Link?.CurrentGen, d?.Link?.CurrentWidth));
         Add(rows, "SystemInfo_Size", s.SizeBytes is { } b ? Gb(b, 1e9) : null);
         Add(rows, "SystemInfo_Health", SystemInfoViewModel.DriveHealth(s.HealthStatus, s.WearPercent));
-        Add(rows, "Spec_PowerOnHours", d?.PowerOnHours ?? (long?)d?.Nvme?.PowerOnHours, suffix: "h");
+        Add(rows, "Spec_PowerOnHours", (d?.PowerOnHours ?? (long?)d?.Nvme?.PowerOnHours) is { } poh ? Hours(poh) : null);
         Add(rows, "Spec_Temperature", d?.TemperatureC is { } t ? t.ToString("F0", CultureInfo.InvariantCulture) + (d.TemperatureMaxC is { } mx ? $" °C (max {mx:F0} °C)" : " °C") : null);
         if (d?.Nvme is { } nv)
         {
