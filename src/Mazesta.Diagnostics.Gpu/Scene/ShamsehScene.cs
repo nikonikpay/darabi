@@ -4,7 +4,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
 /// The temperature test's picture (Shaders/Shamseh.hlsl): an eight-point star in turquoise velvet, a gold medallion engraved "مازستا / MAZESTA"
-/// at its middle, turning in front of a velvet ground that fills the window. The work is fur drawn as layers blended into a float frame (most of them on the
+/// at its middle, swinging in front of an aurora that fills the window. The work is fur drawn as layers blended into a float frame (most of them on the
 /// star, read from the cache, so the cores work and the memory is not overheated): what draws a card to its power limit with the clock held well under its boost, as a fur test does.
 /// Drawn into the window's swap chain with no v-sync, the readout laid over it; <see cref="CheckFrame"/> draws a fixed moment off screen for the run's checks.
 /// </summary>
@@ -122,9 +122,11 @@ internal sealed unsafe class ShamsehScene : IDisposable
         return soft;
     }
 
+    // The star swings a little about facing the camera, never turning edge on: its fur is most of the frame's work, and turning it right round
+    // made that work swing with the area it covered (RTX 3090: 190 FPS face on, 250 edge on). Over this swing (12-23 degrees) the frame rate moves by about 1%.
     private Constants At(float time) => new()
     {
-        Ry = time * 0.3f, Rx = 0.12f * MathF.Sin(time * 0.23f), Aspect = Width / (float)Height, Layers = Layers, FurLayers = FurLayers, Spread = Spread, FurLength = FurLength, Time = time, Size = new(Width, Height)
+        Ry = 0.3f + 0.1f * MathF.Sin(time * 0.35f), Rx = 0.06f * MathF.Sin(time * 0.23f), Aspect = Width / (float)Height, Layers = Layers, FurLayers = FurLayers, Spread = Spread, FurLength = FurLength, Time = time, Size = new(Width, Height)
     };
 
     /// <summary>The frame at <paramref name="time"/> into render target view <paramref name="rtv"/> (<paramref name="target"/>, which is in <paramref name="state"/> before and after).</summary>

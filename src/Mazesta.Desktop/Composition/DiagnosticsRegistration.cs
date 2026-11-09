@@ -79,6 +79,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark, SevenZipBenchmark>();
         s.AddSingleton<IBenchmark, MemoryBenchmark>();
         s.AddSingleton<IBenchmark, GpuSceneBenchmark>();
+        s.AddSingleton<IBenchmark, GpuFurBenchmark>();   // the temperature test's star: frame rate and its steadiness at the power limit
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();
         s.AddSingleton<IBenchmark, GpuVideoBenchmark>();

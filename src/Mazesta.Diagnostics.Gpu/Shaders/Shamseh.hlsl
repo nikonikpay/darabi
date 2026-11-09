@@ -1,5 +1,5 @@
 // The GPU temperature test's scene (ShamsehScene): an eight-point star (shamseh) in turquoise velvet with a gold medallion engraved
-// "مازستا / MAZESTA", turning in front of a velvet ground that fills the screen. Both are fur drawn as layers, each blended over the one
+// "مازستا / MAZESTA", swinging in front of an aurora that fills the screen. Both are drawn as layers, each blended over the one
 // beneath it into a 16-bit target: a layer reads its strands' heights from a random texture at several texels a pixel, so the reads miss the
 // cache and go to the card's memory. Measured on an RTX 3090 at its 350 W limit, that is what holds the core clock as low as a fur test does
 // (about 1270 MHz, against 1660 MHz for the same layers read where neighbouring pixels share texels, and 1720 MHz for arithmetic alone).
@@ -85,34 +85,33 @@ float4 FurPS(Lit i) : SV_Target
     return float4(c * a, a);
 }
 
-// ----- the velvet ground: layers over the whole screen, behind the star (the depth test keeps them off it)
+// ----- the sky behind: an aurora turning in a cone, as layers over the whole screen behind the star (the depth test keeps them off it).
+// Every pixel of every layer does the same work wherever the star is, so the frame's cost hardly changes as it turns.
 struct Flat { float4 Pos : SV_Position; float H : H; };
 [RootSignature(RS)]
 Flat GroundVS(uint id : SV_VertexID, uint layer : SV_InstanceID)
 {
     Flat o; float2 p = float2((id << 1) & 2, id & 2); o.Pos = float4(p * float2(2, -2) + float2(-1, 1), 0.9999, 1); o.H = (layer + 1.0) / Layers; return o;
 }
-// A girih of eight-point stars over the ground, as faint gold seams: the distance to the nearest seam of a square-and-star tiling.
-float Seam(float2 p)
-{
-    float2 q = abs(frac(p) - 0.5); float a = abs(max(q.x, q.y) - 0.25), b = abs((q.x + q.y) * 0.7071 - 0.3);
-    return min(a, b);
-}
-// The ground moves: the girih turns slowly, light runs out along its seams in rings, and waves of wind comb the pile so it catches the light in moving bands.
+// Smooth noise: the strands' random texture read where one texel spans many pixels, so the filter blends it (wrap, so the angle closes on itself).
+float Soft(float2 uv) { return Strands.SampleLevel(Wrap, uv, 0).r; }
 [RootSignature(RS)]
 float4 GroundPS(Flat i) : SV_Target
 {
-    // each layer reads its own part of the texture, several texels a pixel: what keeps the card's memory busy (see the top of the file)
-    float2 uv = i.Pos.xy * (Spread / 2048) + i.H * float2(0.37, 0.13) + Time * float2(0.011, 0.007);
-    float4 s = Strands.SampleLevel(Wrap, uv, 0);
-    float2 screen = (i.Pos.xy - Size * 0.5) / Size.y;
-    float wind = sin(dot(screen, float2(0.8, 0.6)) * 6 - Time * 1.4) * 0.6 + sin(dot(screen, float2(-0.5, 0.85)) * 4.3 + Time * 0.9) * 0.4;
-    float cover = saturate((s.r - i.H * (0.85 - 0.12 * wind)) * 8) * 0.6;
-    float glow = 1 - 0.6 * dot(screen, screen), r = length(screen);
-    float run = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(r * 10 - Time * 2.2), 6);
-    float seam = smoothstep(0.014, 0.0, Seam(Turn(screen, Time * 0.05) * 3.2)) * (0.4 + 0.6 * i.H) * run;
-    float3 c = lerp(float3(0.015, 0.06, 0.08), float3(0.05, 0.2, 0.23), i.H) * glow * (0.8 + 0.4 * s.g) * (0.75 + 0.5 * wind) + Gold * seam * 0.55 * glow;
-    return float4(c * cover, cover);
+    // Looking up into a cone: each layer is one ring of the cone's wall at its own distance, its curtain of light rippling round it as the cone turns.
+    float2 p = (i.Pos.xy - Size * 0.5) / Size.y + float2(0.12 * sin(Time * 0.11), 0.08 * cos(Time * 0.13));
+    float r = length(p), a = atan2(p.y, p.x) / 6.2831853 + 0.5, spin = Time * (0.025 + 0.02 * i.H);
+    float2 q = float2(a * 4 + spin, i.H * 0.6 + Time * 0.01);
+    float n = Soft(q * float2(48, 24) / 2048) * 0.55 + Soft(q * float2(140, 60) / 2048 + 0.31) * 0.3 + Soft(q * float2(420, 90) / 2048 + 0.67) * 0.15;
+    float ring = lerp(0.18, 1.25, i.H) * (0.85 + 0.35 * n);
+    float band = exp(-pow((r - ring) * (16 - 7 * i.H), 2));
+    float rays = 0.45 + 0.55 * Soft(float2(a * 900 + spin * 200, Time * 0.4) / 2048);   // the curtain's folds, streaming along the wall
+    float4 grain = Strands.SampleLevel(Wrap, i.Pos.xy * (Spread / 2048) + i.H * float2(0.37, 0.13), 0);   // a texel a pixel, a layer at a time: as before, the memory's share
+    float3 hue = lerp(float3(0.1, 1.0, 0.55), float3(0.55, 0.25, 1.0), smoothstep(0.35, 0.9, i.H + 0.3 * (n - 0.5)));
+    float arc = smoothstep(0.5, 0.75, Soft(q * float2(20, 10) / 2048 + 0.13));   // the curtains come and go round the ring: separate arcs, sky between
+    float cover = saturate(band * band * arc * rays * rays * (0.7 + 0.3 * grain.r) * 0.45);
+    float3 c = hue * (0.6 + 1.6 * band * rays) + float3(0.6, 0.9, 1) * pow(grain.g, 40) * 0.6 * (1 - band);   // a few stars between the curtains
+    return float4(c * cover, max(cover, 0.002));
 }
 
 // ----- the lens: the light to the screen's colours

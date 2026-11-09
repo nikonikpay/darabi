@@ -57,7 +57,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0;
-        List<float> coreTrace = [], hotTrace = []; int refreshing = 0;
+        var readout = new FurReadout(scene, request.Engine, gpu, card); double checkTime = 0, lastFps = 0;
         try
         {
             while (total.Elapsed < duration)
@@ -67,7 +67,8 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                 if (window.OverlayKey()) scene.Overlay.Visible = !scene.Overlay.Visible;
                 if (reference is null || lastCheck.Elapsed.TotalSeconds >= CheckSeconds)
                 {
-                    var sum = scene.CheckFrame(CheckTime); checks++; lastCheck.Restart();
+                    long checkStart = Stopwatch.GetTimestamp(); var sum = scene.CheckFrame(CheckTime); checks++; lastCheck.Restart();
+                    checkTime += Stopwatch.GetElapsedTime(checkStart).TotalSeconds;   // left out of the frame rate: the figure is the scene's own pace
                     if (reference is null) reference = sum;
                     else if (!SceneView.Same(sum, reference)) { errors++; if (firstError.Length == 0) firstError = $"check frame {checks} differs from the first one (same scene, same moment)"; }
                 }
@@ -75,45 +76,27 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                 frames++; updateFrames++;
                 if (updateClock.Elapsed.TotalSeconds >= 0.5)
                 {
-                    double fps = updateFrames / updateClock.Elapsed.TotalSeconds; updateFrames = 0; updateClock.Restart();
+                    // a half second with a check frame in it is not the scene's pace (the card idles while the check is read back): the last figure stands
+                    if (checkTime == 0 || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
+                    double fps = lastFps; updateFrames = 0; updateClock.Restart(); checkTime = 0;
                     window.Title = $"Mazesta — GPU temperature — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
-                    Readout(fps);
+                    readout.Show(fps, request.Clock.UtcNow, $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · {w} × {h} · errors {errors}", errors > 0);
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
                 }
             }
         }
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe()); }
-        finally { while (Volatile.Read(ref refreshing) == 1) Thread.Sleep(1); }   // (the scene is disposed on leaving: the readout is not left being drawn)
+        finally { readout.Wait(); }   // (the scene is disposed on leaving: the readout is not left being drawn)
         if (closed) return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, SensorEvidence.Join("the test window was closed before the time was up", Describe()));
         if (reference is { } r && !SceneView.Same(scene.CheckFrame(CheckTime), r)) { errors++; if (firstError.Length == 0) firstError = "the final check frame differs from the first one"; }   // the end, when the card is hottest, is checked too
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
         return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe());
 
-        // only what was read in the last seconds is shown: a figure this card does not report is a dash
-        void Readout(double fps)
-        {
-            var now = request.Clock.UtcNow; var engine = request.Engine;
-            double? Now(SensorRole role) => GpuSceneExecutor.Latest(engine, gpu, role, now);
-            double? core = Now(SensorRole.GpuCoreTemp), hot = Now(SensorRole.GpuHotSpotTemp);
-            if (core is { } c) Keep(coreTrace, (float)c); if (hot is { } t) Keep(hotTrace, (float)t);
-            static string? F(double? v, string format) => v?.ToString(format, CultureInfo.InvariantCulture);
-            (string, string?, string)[] figures =
-            [
-                ("VRAM", F(Now(SensorRole.GpuVramTemp), "F0"), "°C"), ("POWER", F(Now(SensorRole.GpuPower), "F0"), "W"), ("CLOCK", F(Now(SensorRole.GpuCoreClock), "F0"), "MHz"),
-                ("MEMORY", F(Now(SensorRole.GpuMemoryClock), "F0"), "MHz"), ("VOLTAGE", F(Now(SensorRole.GpuVoltage), "F3"), "V"), ("FAN", F(Now(SensorRole.GpuFanPercent), "F0"), "%"),
-                ("LOAD", F(Now(SensorRole.GpuLoad3D) ?? Now(SensorRole.GpuLoadD3D3D), "F0"), "%"), ("FPS", F(fps, "F0"), ""),
-            ];
-            var heat = new SceneOverlay.Heat(card, core, hot, [.. coreTrace], [.. hotTrace], figures, $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · {w} × {h} · errors {errors}", errors > 0);
-            if (Interlocked.Exchange(ref refreshing, 1) == 1) return;   // laying out text takes milliseconds: off the frame's thread, one at a time
-            Task.Run(() => { try { scene.Overlay.UpdateHeat(heat); } catch (Exception) { } finally { Volatile.Write(ref refreshing, 0); } });
-        }
-        static void Keep(List<float> trace, float v) { trace.Add(v); if (trace.Count > FramePace.Kept * 2) trace.RemoveAt(0); }
-
         string Describe()
         {
             var finished = request.Clock.UtcNow; var node = GpuDevices.SensorNode(request.Engine, session.AdapterName);
             var c = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, node, null); var hs = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, node, null);
-            return SensorEvidence.Join($"Shamseh fur scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, {ShamsehScene.Layers} velvet layers and {ShamsehScene.FurLayers} fur layers into a float frame",
+            return SensorEvidence.Join($"Shamseh fur scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, {ShamsehScene.Layers} aurora layers and {ShamsehScene.FurLayers} fur layers into a float frame",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", $"check frames={checks}", firstError.Length > 0 ? firstError : null,
                 SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
                 c?.Format("GPU core", "°C", includeMax: true), hs?.Format("GPU hot spot", "°C", includeMax: true),
@@ -124,4 +107,33 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, node, null)?.Format("GPU memory clock", " MHz", includeMax: true));
         }
     }
+}
+
+/// <summary>The star's large readout, shared by the temperature test and its benchmark: core and hot spot with their traces, then the card's other
+/// figures. Only what was read in the last seconds is shown: a figure this card does not report is a dash. Laid out off the frame's thread, one at a time.</summary>
+internal sealed class FurReadout(ShamsehScene scene, Mazesta.Monitoring.PollingEngine? engine, HardwareNode? gpu, string card)
+{
+    private readonly List<float> _core = [], _hot = []; private int _refreshing;
+
+    public void Show(double fps, DateTimeOffset now, string status, bool failing)
+    {
+        double? Now(SensorRole role) => GpuSceneExecutor.Latest(engine, gpu, role, now);
+        double? core = Now(SensorRole.GpuCoreTemp), hot = Now(SensorRole.GpuHotSpotTemp);
+        if (core is { } c) Keep(_core, (float)c); if (hot is { } t) Keep(_hot, (float)t);
+        static string? F(double? v, string format) => v?.ToString(format, CultureInfo.InvariantCulture);
+        (string, string?, string)[] figures =
+        [
+            ("VRAM", F(Now(SensorRole.GpuVramTemp), "F0"), "°C"), ("POWER", F(Now(SensorRole.GpuPower), "F0"), "W"), ("CLOCK", F(Now(SensorRole.GpuCoreClock), "F0"), "MHz"),
+            ("MEMORY", F(Now(SensorRole.GpuMemoryClock), "F0"), "MHz"), ("VOLTAGE", F(Now(SensorRole.GpuVoltage), "F3"), "V"), ("FAN", F(Now(SensorRole.GpuFanPercent), "F0"), "%"),
+            ("LOAD", F(Now(SensorRole.GpuLoad3D) ?? Now(SensorRole.GpuLoadD3D3D), "F0"), "%"), ("FPS", F(fps, "F0"), ""),
+        ];
+        var heat = new SceneOverlay.Heat(card, core, hot, [.. _core], [.. _hot], figures, status, failing);
+        if (Interlocked.Exchange(ref _refreshing, 1) == 1) return;   // laying out text takes milliseconds
+        Task.Run(() => { try { scene.Overlay.UpdateHeat(heat); } catch (Exception) { } finally { Volatile.Write(ref _refreshing, 0); } });
+    }
+
+    /// <summary>Before the scene is disposed: the readout is not left being drawn.</summary>
+    public void Wait() { while (Volatile.Read(ref _refreshing) == 1) Thread.Sleep(1); }
+
+    private static void Keep(List<float> trace, float v) { trace.Add(v); if (trace.Count > FramePace.Kept * 2) trace.RemoveAt(0); }
 }

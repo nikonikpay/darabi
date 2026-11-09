@@ -3211,7 +3211,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} مگاپیکسل در ثانیه (صحنهٔ خود مازستا؛ امتیاز برنامه‌های تجاری نیست)</value></data>
   <data name="Detail_Gpu_Render" xml:space="preserve"><value>صحنهٔ رهگیری پرتو {0}x{1} با {2} کره و {3} بازتاب، روی {4}</value></data>
   <data name="Detail_Gpu_Scene" xml:space="preserve"><value>صحنهٔ باغ ایرانی با {0}، رسم‌شده در {1}x{2} (پنجره {3}x{4}) روی {5}</value></data>
-  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>صحنهٔ شمسهٔ مخملی، رسم‌شده در {0}x{1} (پنجره {2}x{3}) روی {4}؛ {5} لایهٔ مخمل و {6} لایهٔ پرز روی هم در قاب HDR</value></data>
+  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>صحنهٔ شمسهٔ مخملی، رسم‌شده در {0}x{1} (پنجره {2}x{3}) روی {4}؛ {5} لایهٔ شفق و {6} لایهٔ پرز روی هم در قاب HDR</value></data>
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>سطح بار {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} مثلث در {1} شیء؛ مدل وسط صحنه «{2}»</value></data>
   <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>رهگیری پرتو: پرتو دوربین، پرتو سایه به ماه و به هر یک از {0} چراغ نزدیک، بازتاب و شکست تا ۴ بار</value></data>
@@ -3856,6 +3856,13 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Bench_Gpu_Video_Enc_hevc_2160p_10b_420" xml:space="preserve"><value>انکود HEVC (4K، 10 بیت، 4:2:0)</value></data>
   <data name="Bench_Gpu_Video_Enc_av1_1080p_8b_420" xml:space="preserve"><value>انکود AV1 (1080p، 8 بیت، 4:2:0)</value></data>
   <data name="Bench_Gpu_Video_Enc_av1_2160p_10b_420" xml:space="preserve"><value>انکود AV1 (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Fur" xml:space="preserve"><value>گرافیک — شمسهٔ پرزدار (توان کامل، دما)</value></data>
+  <data name="Bench_Fur_Fps" xml:space="preserve"><value>نرخ فریم (شمسهٔ پرزدار)</value></data>
+  <data name="Bench_Fur_FpsLow" xml:space="preserve"><value>کندترین نیم‌ثانیه</value></data>
+  <data name="Bench_Fur_FpsHigh" xml:space="preserve"><value>سریع‌ترین نیم‌ثانیه</value></data>
+  <data name="Bench_Fur_Spread" xml:space="preserve"><value>نوسان نرخ فریم</value></data>
+  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>همان شمسهٔ تست دما به‌صورت بنچمارک: صدها لایهٔ پرز و شفقی که می‌چرخد، بدون v-sync رسم می‌شوند و کارت گرافیک را مثل تست‌های پرز در حد توانش نگه می‌دارند. نرخ فریم، میزان ثابت ماندن آن (کندترین و سریع‌ترین نیم‌ثانیه پس از پنج ثانیهٔ اول و فاصلهٔ آن‌ها) و توان، فرکانس‌ها و دماهای کارت، از جمله VRAM، را می‌دهد. کارتی که با داغ شدن کند شود، نوسان بیشتری نشان می‌دهد.</value></data>
+  <data name="HelpHow_Bench_Gpu_Fur" xml:space="preserve"><value>بازی‌ها و برنامه‌های سنگین را ببندید.|بنچمارک شمسهٔ پرزدار را تیک بزنید؛ اگر وضوحی غیر از 1920x1080 می‌خواهید انتخاب کنید.|اجرا کنید و شمسه را ببینید: دماها، توان و FPS بزرگ روی صفحه است.|نرخ فریم و نوسان آن را با کارت‌های هم‌مدل مقایسه کنید.</value></data>
   <data name="Test_Gpu_VideoDecode" xml:space="preserve"><value>کارت گرافیک · دکود ویدیو (H.264، HEVC، VP9، AV1؛ 1080p تا 8K؛ 8 و 10 بیت؛ 4:2:0 و 4:2:2)</value></data>
   <data name="Test_Gpu_VideoEncode" xml:space="preserve"><value>کارت گرافیک · انکود ویدیو (H.264، HEVC، AV1؛ 1080p و 4K؛ 8 و 10 بیت)</value></data>
   <data name="Detail_Vid_Path" xml:space="preserve"><value>دکود و انکود روی موتور ویدیوی کارت از مسیر ویندوز (Media Foundation، DXVA)</value></data>

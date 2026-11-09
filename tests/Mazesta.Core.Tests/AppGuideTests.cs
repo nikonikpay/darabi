@@ -42,6 +42,7 @@ public class AppGuideTests
         Goes("اندرولت خودکار گرافیک رو انجام بده", "tuning", "autoundervolt"); Goes("دکمه اندرولت خودکار گرافیک رو بزن", "tuning", "autoundervolt");
         Goes("اورکلاک خودکار رو انجام بده", "tuning", "autooverclock"); Goes("منحنی ولتاژ رو نشون بده", "tuning", "curve");
         Goes("برو بخش dns", "tools", "dns");
+        Goes("برو بخش بنچمارک دمای گرافیک", "benchmarks", "bench.gpu.fur"); Goes("برو به بنچمارک فرمارک", "benchmarks", "bench.gpu.fur");
     }
     [Fact] public void A_hands_on_check_is_the_checks_page_not_a_hardware_test()
     {

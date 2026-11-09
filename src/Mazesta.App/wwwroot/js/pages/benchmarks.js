@@ -98,7 +98,7 @@ export function benchList(component = null) {
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), metrics = h("div", { class: "metrics" }), detail = h("details", { class: "rec-more run-more", hidden: true });
     const tags = h("span", { class: "row-tags" });
     const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true }), finds = h("details", { class: "row-checkup rec-more", hidden: true });
-    const row = h("div", { class: "q-row", style: { "--i": i } },
+    const row = h("div", { class: "q-row", style: { "--i": i }, "data-a": r.id },   // the help's and the search's mark of a benchmark (bench.gpu.fur)
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name, tags),
       // Not a <label>: a label hands every click and hover inside it to its first control, which here would be the hours' up arrow.
       h("div", { class: "ctrls" }, h("div", { class: "lbl" }, t("Bench_Duration"), dur.el), run),
