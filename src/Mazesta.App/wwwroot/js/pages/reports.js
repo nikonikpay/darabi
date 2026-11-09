@@ -44,12 +44,23 @@ export function mount(el) {
     } }, t("Reports_Notes_Save"));
     return h("div", { class: "notes", style: { gridColumn: "1 / -1", display: "grid", gap: "8px" } }, service, notes, h("div", {}, save));
   }
+  // Before or after the service: the site puts the report in that place of the service's form and sets the two side by side.
+  function stagePick(r) {
+    const pick = h("select", { class: "field", "data-a": "stage", "aria-label": t("Reports_Stage"), title: t("Reports_Stage"), style: { width: "auto" }, onchange: async () => {
+      pick.disabled = true;
+      try { const x = await call("reports.stage", { id: r.id, value: pick.value }); if (x.error) toast(x.error, "fail"); else toast(t("Reports_Notes_Saved"), "ok"); }
+      catch (e) { toast(String(e.message || e), "fail"); }
+      pick.disabled = false;
+    } }, ...[["", "Reports_Stage_None"], ["Before", "Reports_Stage_Before"], ["After", "Reports_Stage_After"]].map(([v, k]) => h("option", { value: v }, t(k))));
+    pick.value = r.stage || "";
+    return pick;
+  }
   function update(s) {
     if (boot.staff && s.source) sourceLine.textContent = s.source.own ? t("Reports_Source_Own") : t("Reports_Source_Current", s.source.path);
     if (boot.staff && s.source && s.source.own && !s.source.usual && !s.items.length) sourceLine.textContent = t("Reports_Source_Missing");
     compare.disabled = !s.canCompare; remove.disabled = !s.canDelete; status.textContent = s.status || "";
     if (s.making !== making) { making = s.making; for (const b of list.querySelectorAll("button[data-summary]")) b.disabled = making; }
-    const key = JSON.stringify([s.source, s.items.map((i) => [i.id, i.selected, i.site, i.service, i.notes])]);
+    const key = JSON.stringify([s.source, s.items.map((i) => [i.id, i.selected, i.site, i.service, i.notes, i.stage])]);
     if (key === shown) return; shown = key;
     count.textContent = s.items.length ? t("Web_Group_Count", s.items.length, s.items.filter((i) => i.selected).length) : "";
     if (!s.items.length) { list.replaceChildren(h("p", { class: "caption" }, t("Reports_Empty"))); return; }
@@ -58,7 +69,7 @@ export function mount(el) {
       return h("div", { class: "report" },
         h("input", { type: "checkbox", class: "check", checked: r.selected, "aria-label": t("Reports_CompareHint"), onchange: (e) => call("reports.select", { id: r.id, value: e.target.checked }) }),
         h("span", { class: `pill ${BADGE[r.badge] || "none"}` }, r.verdict), h("span", { class: "title" }, r.title),
-        h("div", { class: "acts" }, summary, act("html", r.id, "Reports_Html"), act("pdf", r.id, "Reports_Pdf"), act("text", r.id, "Reports_Text"), act("json", r.id, "Reports_Json"),
+        h("div", { class: "acts" }, boot.staff ? stagePick(r) : null, summary, act("html", r.id, "Reports_Html"), act("pdf", r.id, "Reports_Pdf"), act("text", r.id, "Reports_Text"), act("json", r.id, "Reports_Json"),
           act("folder", r.id, "Reports_Folder"),
           boot.staff ? h("button", { class: "btn", "data-a": "send-site", onclick: (e) => send(r.id, e.currentTarget) }, t("Site_Report_Send")) : null,
           boot.staff && r.site ? h("button", { class: "btn quiet", onclick: () => call("site.open", { url: r.site }) }, t("Site_Report_Open")) : null,

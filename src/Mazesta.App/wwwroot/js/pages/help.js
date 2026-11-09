@@ -12,7 +12,7 @@ const TOPICS = [
   ["dashboard", null, "Nav_Dashboard"],
   ["monitoring", null, "Nav_Monitoring"], ["system", null, "Nav_SystemInfo"], ["cpu", null, "Nav_Cpu"], ["gpu", null, "Nav_Gpu"], ["ram", null, "Dashboard_Ram"],
   ["storage", null, "Nav_Storage"], ["storage", "bitlocker", "BitLocker_Title"], ["network", null, "Nav_Network"],
-  ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["benchmarks", "bench.gpu.fur", "Bench_Gpu_Fur"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"],
+  ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["benchmarks", "bench.gpu.fur", "Bench_Gpu_Fur"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"], ["checks", "send", "Checks_Send_Title"],
   ["apps", null, "Nav_Apps"], ["ai", null, "Nav_Ai"],
   ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"], ["play", "gameboost", "GameBoost_Title"], ["games", null, "Nav_Games"], ["overlay", null, "Nav_Overlay"],
   ["tuning", null, "Nav_Tuning"], ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "fancurve", "Tuning_FanCurve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"],

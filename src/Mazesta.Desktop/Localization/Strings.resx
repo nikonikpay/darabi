@@ -487,6 +487,10 @@
   <data name="Reports_Notes_Save" xml:space="preserve"><value>Save</value></data>
   <data name="Reports_Notes_Saved" xml:space="preserve"><value>Saved into the report</value></data>
   <data name="Reports_Notes_Failed" xml:space="preserve"><value>The report could not be saved: {0}</value></data>
+  <data name="Reports_Stage" xml:space="preserve"><value>Before or after the service</value></data>
+  <data name="Reports_Stage_None" xml:space="preserve"><value>Not marked</value></data>
+  <data name="Reports_Stage_Before" xml:space="preserve"><value>Before service</value></data>
+  <data name="Reports_Stage_After" xml:space="preserve"><value>After service</value></data>
   <data name="Reports_Empty" xml:space="preserve"><value>No report yet. Reports of test runs and benchmarks are saved here automatically.</value></data>
   <data name="Reports_Html" xml:space="preserve"><value>Open report (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>Save / open PDF</value></data>
@@ -2695,6 +2699,22 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Problem" xml:space="preserve"><value>Problem</value></data>
   <data name="Checks_Reset" xml:space="preserve"><value>Reset</value></data>
   <data name="Checks_Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="Checks_Note" xml:space="preserve"><value>Note</value></data>
+  <data name="Checks_Clear" xml:space="preserve"><value>Clear for the next customer</value></data>
+  <data name="Checks_Send_Title" xml:space="preserve"><value>Send to the service form</value></data>
+  <data name="Checks_Send_Sub" xml:space="preserve"><value>The calls above, with a note each, into the site's service form, before or after the work</value></data>
+  <data name="Checks_Send_Button" xml:space="preserve"><value>Send</value></data>
+  <data name="Checks_Send_Done" xml:space="preserve"><value>Saved in service {0}'s form ({1} items)</value></data>
+  <data name="Checks_Send_Empty" xml:space="preserve"><value>Nothing is marked yet: mark at least one part as fine or faulty.</value></data>
+  <data name="Checks_Send_NoStage" xml:space="preserve"><value>Choose whether this is before or after the service.</value></data>
+  <data name="Checks_Wifi" xml:space="preserve"><value>Wi-Fi</value></data>
+  <data name="Checks_Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="Checks_Usb" xml:space="preserve"><value>USB ports</value></data>
+  <data name="Checks_VideoOut" xml:space="preserve"><value>Video out (HDMI)</value></data>
+  <data name="Checks_Lan" xml:space="preserve"><value>Wired network (LAN)</value></data>
+  <data name="Checks_Body" xml:space="preserve"><value>Hinges, body and screws</value></data>
+  <data name="Help_Checks_Send_Title" xml:space="preserve"><value>The hands-on calls of this page, and of the parts it cannot exercise (Wi-Fi, Bluetooth, USB, video out, LAN, the body), each with a short note, go into the service form with the number in the top bar, as before or after the service. The site shows the two side by side, so it is clear what worked when the device came in and when it left. Clear the page for the next customer.</value></data>
+  <data name="HelpHow_Checks_Send_Title" xml:space="preserve"><value>Type the service number in the top bar (it fills in here).|Mark each part as fine or faulty on its card, or in the list here, with a short note where something is wrong.|Choose before or after the service and press Send.|After the customer leaves, press Clear so the next device starts empty.</value></data>
   <data name="Checks_Display" xml:space="preserve"><value>Display</value></data>
   <data name="Checks_Display_Sub" xml:space="preserve"><value>dead or stuck pixels, banding</value></data>
   <data name="Checks_Display_Text" xml:space="preserve"><value>The screen fills with black, white, red, green, blue and grey, then a gradient and a fine checkerboard. Look closely for a dot that stays dark or lit, uneven light at the edges, or steps in the gradient.</value></data>
@@ -4001,7 +4021,7 @@ Cancel: stop.</value></data>
   <data name="Help_Nav_Shield" xml:space="preserve"><value>Block a program from the internet in the Windows firewall, or keep a file or folder out of Defender's scans; also turn the firewall or Defender off and on, and add these to Explorer's right-click menu.</value></data>
   <data name="Help_Nav_Updates" xml:space="preserve"><value>How Windows gets its updates: ready profiles, from Windows' default to updates turned off. Default takes every change made here away; restart after switching.</value></data>
   <data name="Help_Nav_Drivers" xml:space="preserve"><value>The graphics card's driver against its maker's newest, the board's drivers from its maker, the drivers Windows Update offers, and devices without a working driver. Nothing is installed until you press it.</value></data>
-  <data name="Help_Nav_Reports" xml:space="preserve"><value>Every test run kept as a report: open it, compare two, add notes and the service number, delete, or send its summary to Mazesta's site.</value></data>
+  <data name="Help_Nav_Reports" xml:space="preserve"><value>Every test run kept as a report: open it, compare two, add notes and the service number, delete, or send its summary to Mazesta's site. Mark a report as before or after the service: the site puts it in the service's form and shows the customer both side by side.</value></data>
   <data name="Help_Nav_Messages" xml:space="preserve"><value>Messages Mazesta sent to this computer or to every system, kept here to read again.</value></data>
   <data name="Help_Nav_Settings" xml:space="preserve"><value>Language, render mode, the background monitor and its warnings, keyboard shortcuts, the data folder, and what is sent to Mazesta's site.</value></data>
   <data name="Help_Nav_AppUpdate" xml:space="preserve"><value>The app's version and its updates from Mazesta's site, and the comparison lists of the benchmarks. Everything is checked against Mazesta's signature first.</value></data>

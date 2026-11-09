@@ -487,6 +487,10 @@
   <data name="Reports_Notes_Save" xml:space="preserve"><value>ذخیره</value></data>
   <data name="Reports_Notes_Saved" xml:space="preserve"><value>در گزارش ذخیره شد</value></data>
   <data name="Reports_Notes_Failed" xml:space="preserve"><value>گزارش ذخیره نشد: {0}</value></data>
+  <data name="Reports_Stage" xml:space="preserve"><value>قبل یا بعد از سرویس</value></data>
+  <data name="Reports_Stage_None" xml:space="preserve"><value>بدون علامت</value></data>
+  <data name="Reports_Stage_Before" xml:space="preserve"><value>قبل از سرویس</value></data>
+  <data name="Reports_Stage_After" xml:space="preserve"><value>بعد از سرویس</value></data>
   <data name="Reports_Empty" xml:space="preserve"><value>هنوز گزارشی ساخته نشده است. گزارش آزمون‌ها و بنچمارک‌ها به‌طور خودکار اینجا ذخیره می‌شود.</value></data>
   <data name="Reports_Html" xml:space="preserve"><value>باز کردن گزارش (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>ذخیره / باز کردن PDF</value></data>
@@ -2695,6 +2699,22 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Checks_Problem" xml:space="preserve"><value>مشکل دارد</value></data>
   <data name="Checks_Reset" xml:space="preserve"><value>از نو</value></data>
   <data name="Checks_Stop" xml:space="preserve"><value>توقف</value></data>
+  <data name="Checks_Note" xml:space="preserve"><value>توضیح</value></data>
+  <data name="Checks_Clear" xml:space="preserve"><value>پاک کردن برای مشتری بعد</value></data>
+  <data name="Checks_Send_Title" xml:space="preserve"><value>ارسال به فرم سرویس</value></data>
+  <data name="Checks_Send_Sub" xml:space="preserve"><value>نتیجهٔ بررسی‌های بالا، هر کدام با توضیح، قبل یا بعد از سرویس در فرم سرویس سایت</value></data>
+  <data name="Checks_Send_Button" xml:space="preserve"><value>ارسال</value></data>
+  <data name="Checks_Send_Done" xml:space="preserve"><value>در فرم سرویس {0} ثبت شد ({1} مورد)</value></data>
+  <data name="Checks_Send_Empty" xml:space="preserve"><value>هنوز چیزی علامت نخورده است: دست‌کم یک قسمت را «سالم است» یا «مشکل دارد» بزنید.</value></data>
+  <data name="Checks_Send_NoStage" xml:space="preserve"><value>انتخاب کنید که این بررسی قبل از سرویس است یا بعد از آن.</value></data>
+  <data name="Checks_Wifi" xml:space="preserve"><value>وای‌فای</value></data>
+  <data name="Checks_Bluetooth" xml:space="preserve"><value>بلوتوث</value></data>
+  <data name="Checks_Usb" xml:space="preserve"><value>پورت‌های USB</value></data>
+  <data name="Checks_VideoOut" xml:space="preserve"><value>خروجی تصویر (HDMI)</value></data>
+  <data name="Checks_Lan" xml:space="preserve"><value>شبکهٔ کابلی (LAN)</value></data>
+  <data name="Checks_Body" xml:space="preserve"><value>لولا، بدنه و پیچ‌ها</value></data>
+  <data name="Help_Checks_Send_Title" xml:space="preserve"><value>نتیجهٔ بررسی‌های دستی این صفحه و قسمت‌هایی که صفحه نمی‌تواند امتحانشان کند (وای‌فای، بلوتوث، USB، خروجی تصویر، شبکهٔ کابلی و بدنه)، هر کدام با یک توضیح کوتاه، با شمارهٔ سرویسِ نوار بالا در فرم سرویس سایت ثبت می‌شود، به‌عنوان «قبل از سرویس» یا «بعد از سرویس». سایت این دو را کنار هم نشان می‌دهد تا معلوم باشد دستگاه موقع پذیرش و موقع تحویل چه قسمت‌هایی‌اش کار می‌کرد. برای مشتری بعد صفحه را پاک کنید.</value></data>
+  <data name="HelpHow_Checks_Send_Title" xml:space="preserve"><value>شمارهٔ سرویس را در نوار بالا بنویسید (اینجا هم پر می‌شود).|هر قسمت را روی کارت خودش یا در همین فهرست «سالم است» یا «مشکل دارد» بزنید و جایی که ایراد دارد توضیح کوتاه بنویسید.|«قبل از سرویس» یا «بعد از سرویس» را انتخاب کنید و «ارسال» را بزنید.|بعد از رفتن مشتری «پاک کردن برای مشتری بعد» را بزنید تا دستگاه بعدی از صفر شروع شود.</value></data>
   <data name="Checks_Display" xml:space="preserve"><value>نمایشگر</value></data>
   <data name="Checks_Display_Sub" xml:space="preserve"><value>پیکسل سوخته یا ثابت، نوار رنگی</value></data>
   <data name="Checks_Display_Text" xml:space="preserve"><value>صفحه به ترتیب سیاه، سفید، قرمز، سبز، آبی و خاکستری می‌شود و بعد یک طیف رنگ و یک شطرنجی ریز نمایش داده می‌شود. از نزدیک دنبال نقطه‌ای بگردید که تاریک یا روشن می‌ماند، نور ناهمگون در لبه‌ها، یا پله در طیف رنگ.</value></data>
@@ -4001,7 +4021,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Help_Nav_Shield" xml:space="preserve"><value>یک برنامه را در فایروال ویندوز از اینترنت مسدود کنید، یا فایل و پوشه‌ای را از اسکن Defender مستثنا کنید؛ همچنین خاموش و روشن کردن فایروال یا Defender، و افزودن این کارها به منوی راست‌کلیک ویندوز.</value></data>
   <data name="Help_Nav_Updates" xml:space="preserve"><value>اینکه ویندوز آپدیت‌ها را چطور بگیرد: پروفایل‌های آماده، از حالت پیش‌فرض ویندوز تا خاموش کردن آپدیت. «پیش‌فرض» همه‌ی تغییرات اینجا را برمی‌دارد؛ بعد از تغییر ری‌استارت کنید.</value></data>
   <data name="Help_Nav_Drivers" xml:space="preserve"><value>درایور کارت گرافیک در مقایسه با جدیدترین نسخه‌ی سازنده، درایورهای مادربرد از سایت سازنده، درایورهای Windows Update و دستگاه‌هایی که درایور سالم ندارند. تا دکمه را نزنید چیزی نصب نمی‌شود.</value></data>
-  <data name="Help_Nav_Reports" xml:space="preserve"><value>هر اجرای تست به‌صورت گزارش ذخیره می‌شود: باز کنید، دو گزارش را مقایسه کنید، یادداشت و شماره‌ی سرویس اضافه کنید، حذف کنید یا خلاصه‌اش را به سایت مازستا بفرستید.</value></data>
+  <data name="Help_Nav_Reports" xml:space="preserve"><value>هر اجرای تست به‌صورت گزارش ذخیره می‌شود: باز کنید، دو گزارش را مقایسه کنید، یادداشت و شماره‌ی سرویس اضافه کنید، حذف کنید یا خلاصه‌اش را به سایت مازستا بفرستید. هر گزارش را می‌شود «قبل از سرویس» یا «بعد از سرویس» علامت زد: سایت آن را در فرم همان سرویس می‌گذارد و هر دو را کنار هم به مشتری نشان می‌دهد.</value></data>
   <data name="Help_Nav_Messages" xml:space="preserve"><value>پیام‌هایی که مازستا برای این سیستم یا همه‌ی سیستم‌ها فرستاده، که اینجا برای خواندن دوباره می‌مانند.</value></data>
   <data name="Help_Nav_Settings" xml:space="preserve"><value>زبان، حالت نمایش، پایشگر پس‌زمینه و هشدارهایش، میان‌برهای صفحه‌کلید، پوشه‌ی داده‌ها و آنچه به سایت مازستا فرستاده می‌شود.</value></data>
   <data name="Help_Nav_AppUpdate" xml:space="preserve"><value>نسخه‌ی برنامه و آپدیت‌هایش از سایت مازستا، و فهرست‌های مقایسه‌ی بنچمارک. همه‌چیز قبل از استفاده با امضای مازستا بررسی می‌شود.</value></data>

@@ -37,6 +37,9 @@ public sealed partial class WebBridge
             SiteException s => Loc.Format("Site_Err_Site", s.Message),
             _ => Loc.Format("Site_Err_Offline", e.Message),
         };
+        // What the site lines up between a job's before and after report.
+        static List<SiteFigure> Figures(SessionReport r) => [.. ServiceFigures.Of(r, id => BenchmarkRecords.Headline(id) is { } h ? (h.Key, h.HigherIsBetter) : null, SummaryText.For(Loc.IsRtl ? "fa" : "en"))
+            .Select(f => new SiteFigure(f.Key, f.Name, f.Value, f.Unit, f.Higher, f.Outcome))];
         static bool Expected(Exception e) => e is HttpRequestException or TaskCanceledException or SiteException or IOException or UnauthorizedAccessException;
 
         object State() => new
@@ -132,13 +135,34 @@ public sealed partial class WebBridge
                 string summary = report.Kind == ReportKind.Benchmark ? string.Join(" · ", (report.Benchmarks ?? []).Select(b => b.Name))
                     : Loc.Format("Reports_RowCounts", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
                 var receipt = await site.SendReportAsync(_config.SiteKey, new SiteReport(report.Id, Loc.Get("Site_Report_Title"), report.CreatedAt, report.Kind.ToString(), report.Verdict?.ToString(),
-                    machine, report.ServiceNumber, summary, app, html, full, Reporting.DeviceLabel.Of(report.Machine), report.Machine.Computer?.IsPortable, report.ServiceNotes), CancellationToken.None).ConfigureAwait(true);
+                    machine, report.ServiceNumber, summary, app, html, full, Reporting.DeviceLabel.Of(report.Machine), report.Machine.Computer?.IsPortable, report.ServiceNotes,
+                    report.ServiceStage, Figures(report)), CancellationToken.None).ConfigureAwait(true);
                 try { File.WriteAllText(Path.Combine(stored.Folder, SiteReceiptName), JsonSerializer.Serialize(new { url = receipt.Url, link = receipt.Link, at = DateTimeOffset.Now })); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }   // sent all the same; only the mark on the row is lost
                 _log.LogInformation("Report {Id} sent to the site ({Url})", report.Id, receipt.Url);
                 return new { ok = true, url = receipt.Url, link = receipt.Link, updated = receipt.Updated };
             }
             catch (Exception e) when (Expected(e) || e is JsonException) { _log.LogInformation("Report not sent: {Message}", e.Message); return new { error = Say(e) }; }
+        });
+        // The hands-on checks of the Checks page, before or after the service, into the service form with that number.
+        MethodAsync("site.checks", async p =>
+        {
+            StaffOnly();
+            if (_config.SiteKey.Length == 0) return new { error = Loc.Get("Site_Err_NoKey") };
+            string service = Core.Text.PersianDigits.Normalize(Str(p, "service") ?? "").Trim(), stage = ServiceStages.Clean(Str(p, "stage")) ?? "";
+            if (service.Length == 0) return new { error = Loc.Get("Site_Err_NoService") };
+            if (stage.Length == 0) return new { error = Loc.Get("Checks_Send_NoStage") };
+            var items = p.TryGetProperty("items", out var list) && list.ValueKind == JsonValueKind.Array
+                ? list.EnumerateArray().Select(i => new SiteCheck(Str(i, "key") ?? "", Str(i, "name") ?? "", Str(i, "verdict") ?? "", Str(i, "note") is { Length: > 0 } n ? n : null))
+                    .Where(i => i.Key.Length is > 0 and <= 40 && i.Verdict is "ok" or "bad").Take(60).ToList() : [];
+            if (items.Count == 0) return new { error = Loc.Get("Checks_Send_Empty") };
+            try
+            {
+                var r = await site.SendChecksAsync(_config.SiteKey, new SiteChecks(service, stage, items), CancellationToken.None).ConfigureAwait(true);
+                _log.LogInformation("Hands-on checks ({Count}) sent to service {Service} ({Stage})", r.Items, r.Service, stage);
+                return new { ok = true, service = r.Service, items = r.Items };
+            }
+            catch (Exception e) when (Expected(e) || e is JsonException) { return new { error = Say(e) }; }
         });
         Method("site.open", p =>
         {

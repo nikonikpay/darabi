@@ -53,12 +53,20 @@ public sealed class ReportService
     /// carry them. Nothing measured is touched.</summary>
     public StoredReport UpdateNotes(StoredReport stored, string? serviceNumber, string? notes)
     {
-        var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");
         static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
-        var changed = report with { ServiceNumber = Clean(Mazesta.Core.Text.PersianDigits.Normalize(serviceNumber ?? "")), ServiceNotes = Clean(notes?.Replace("\r\n", "\n")) };
+        return Rewrite(stored, r => r with { ServiceNumber = Clean(Mazesta.Core.Text.PersianDigits.Normalize(serviceNumber ?? "")), ServiceNotes = Clean(notes?.Replace("\r\n", "\n")) }, "service number and notes");
+    }
+
+    /// <summary>Marks the report as the test before the service or the one after it (anything else clears the mark).</summary>
+    public StoredReport UpdateStage(StoredReport stored, string? stage) => Rewrite(stored, r => r with { ServiceStage = ServiceStages.Clean(stage) }, "service stage");
+
+    private StoredReport Rewrite(StoredReport stored, Func<SessionReport, SessionReport> change, string what)
+    {
+        var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");
+        var changed = change(report);
         var wording = ReportText.For(Loc.IsRtl ? "fa" : "en");
         var updated = Store.Update(stored, changed, ReportHtml.Write(changed, Font.Value, wording), ReportPlainText.Write(changed, wording));
-        _log.LogInformation("Report {Id}: service number and notes updated", report.Id);
+        _log.LogInformation("Report {Id}: {What} updated", report.Id, what);
         return updated;
     }
 

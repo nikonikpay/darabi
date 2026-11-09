@@ -25,7 +25,7 @@ public sealed partial class WebBridge
             items = reports.Items.Select(r => new
             {
                 id = r.Report.Id, title = r.Title, badge = r.Badge, verdict = r.VerdictText, summary = r.Summary, selected = r.IsSelected,
-                kind = r.Report.Kind.ToString(), service = r.Report.ServiceNumber, notes = r.Report.ServiceNotes, site = SiteUrlOf(r.Report.Folder), created = r.Report.CreatedAt.ToUnixTimeMilliseconds(),
+                kind = r.Report.Kind.ToString(), service = r.Report.ServiceNumber, notes = r.Report.ServiceNotes, stage = r.Report.ServiceStage, site = SiteUrlOf(r.Report.Folder), created = r.Report.CreatedAt.ToUnixTimeMilliseconds(),
             }),
         };
         Mirror("reports", reports, State, reports.Items);
@@ -58,6 +58,14 @@ public sealed partial class WebBridge
         {
             StaffOnly();
             try { service.UpdateNotes(Row(p).Report, Str(p, "service"), Str(p, "notes")); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return new { error = Desktop.Localization.Loc.Format("Reports_Notes_Failed", e.Message) }; }
+            reports.Reload();
+            return new { ok = true };
+        });
+        Method("reports.stage", p =>
+        {
+            StaffOnly();
+            try { service.UpdateStage(Row(p).Report, Str(p, "value")); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return new { error = Desktop.Localization.Loc.Format("Reports_Notes_Failed", e.Message) }; }
             reports.Reload();
             return new { ok = true };

@@ -46,7 +46,8 @@ public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset 
     string? ServiceNumber = null,               // the shop's job number the technician entered (spec 7.1); absent when none was
     IReadOnlyList<WindowPeak>? Peaks = null,   // each test's and benchmark's own peak readings; absent in older reports
     IReadOnlyList<FindingEntry>? Findings = null,
-    string? ServiceNotes = null)   // what the technician did on the customer's system, written before the report goes to the site; absent when none   // the checkup's findings; absent in older reports and where nothing was judged
+    string? ServiceNotes = null,
+    string? ServiceStage = null)   // "Before" or "After" the service, as the technician marked the report; absent when not marked.  // what the technician did on the customer's system, written before the report goes to the site; absent when none   // the checkup's findings; absent in older reports and where nothing was judged
 {
     public const int CurrentSchemaVersion = 1;
     public double DurationSeconds => Math.Max(0, (FinishedAt - StartedAt).TotalSeconds);

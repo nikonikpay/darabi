@@ -14,6 +14,8 @@ public sealed record SummaryRow(string Name, ReportOutcome? Outcome, double Dura
 {
     /// <summary>The benchmark's main figures (name, value, unit) - its result, not the conditions it ran in; empty for a test.</summary>
     public IReadOnlyList<SummaryFigure> Figures { get; init; } = [];
+    /// <summary>The test's or benchmark's id, which a before/after comparison matches rows by.</summary>
+    public string Id { get; init; } = "";
 }
 
 /// <summary>What the power test drew: the CPU package and the GPU, each its highest reading while the test ran (null when the machine did not report it). The total is their sum, so
@@ -48,7 +50,7 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
 
     /// <summary>The metrics a summary prints for a benchmark: what it measured about the part (speed, latency, frame rate), none of the readings of
     /// the conditions (clocks, temperatures, power) that the full report keeps. In the order the benchmark lists them.</summary>
-    private static readonly HashSet<string> MainFigures = new(StringComparer.Ordinal)
+    internal static readonly HashSet<string> MainFigures = new(StringComparer.Ordinal)
     {
         "Bench_Cpu_Gflops", "Bench_Cpu_PerThread", "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Latency",
         "Bench_Storage_SeqRead", "Bench_Storage_SeqWrite",
@@ -72,8 +74,8 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             .ToDictionary(g => g.Key, g => g.Key == HeatPart.Cpu && g.Any(x => x.Sensor.Role == "CpuPackageTemp" || x.Sensor.Name == "CPU Package")
                 ? g.Where(x => x.Sensor.Role == "CpuPackageTemp" || x.Sensor.Name == "CPU Package").Select(x => x.Sensor).ToList() : g.Select(x => x.Sensor).ToList());
 
-        var runs = r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Name, (ReportOutcome?)t.Outcome, From: t.StartedAt, To: t.FinishedAt, t.DurationSeconds, Figures: (IReadOnlyList<SummaryFigure>)[]))
-            .Concat((r.Benchmarks ?? []).Select(b => (b.Name, (ReportOutcome?)null, From: b.StartedAt ?? b.FinishedAt, To: b.FinishedAt, Math.Max(0, (b.FinishedAt - (b.StartedAt ?? b.FinishedAt)).TotalSeconds), Figures: FiguresOf(b))))
+        var runs = r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Id, t.Name, (ReportOutcome?)t.Outcome, From: t.StartedAt, To: t.FinishedAt, t.DurationSeconds, Figures: (IReadOnlyList<SummaryFigure>)[]))
+            .Concat((r.Benchmarks ?? []).Select(b => (b.Id, b.Name, (ReportOutcome?)null, From: b.StartedAt ?? b.FinishedAt, To: b.FinishedAt, Math.Max(0, (b.FinishedAt - (b.StartedAt ?? b.FinishedAt)).TotalSeconds), Figures: FiguresOf(b))))
             .OrderBy(x => x.From).ToList();
         bool fromTrace = r.Peaks is null;
 
@@ -85,8 +87,8 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             return inside.Count > 0 ? inside.Max(p => p.Value) : null;
         }
 
-        var rows = runs.Select(x => new SummaryRow(x.Name, x.Item2, x.Item5, byPart.Select(kv => (kv.Key, Max: kv.Value.Select(s => PeakIn(s, x.From, x.To)).Where(v => v is not null).Max()))
-            .Where(p => p.Max is not null).ToDictionary(p => p.Key, p => p.Max!.Value)) { Figures = x.Figures }).ToList();
+        var rows = runs.Select(x => new SummaryRow(x.Name, x.Item3, x.Item6, byPart.Select(kv => (kv.Key, Max: kv.Value.Select(s => PeakIn(s, x.From, x.To)).Where(v => v is not null).Max()))
+            .Where(p => p.Max is not null).ToDictionary(p => p.Key, p => p.Max!.Value)) { Figures = x.Figures, Id = x.Id }).ToList();
 
         var thermal = r.Tests.FirstOrDefault(t => t.Id == "gpu.thermal" && t.Outcome != ReportOutcome.NotRun);
         var peaks = byPart.OrderBy(kv => kv.Key).Select(kv =>
@@ -214,6 +216,7 @@ public static class SummaryHtml
         b.Append("<header><div class=\"brand\"><span class=\"mark\">").Append(MazestaLogo.Svg("#0B0B0D", "logo")).Append("</span><div><div class=\"kick\">MAZESTA / TECHNICAL REPORT</div><h1>").Append(E(w.Title)).Append("</h1><div class=\"sub\">").Append(E(w.Subtitle)).Append("</div></div></div><div class=\"meta\"><small>")
          .Append(E(w.Date)).Append("</small><b>").Append(Lt(Stamp(r.CreatedAt, w.IsRtl))).Append("</b>");
         if (r.ServiceNumber is { } service) b.Append("<small>").Append(E(rw.ServiceNumber)).Append("</small><b>").Append(Lt(service)).Append("</b>");
+        if (rw.StageOf(r.ServiceStage) is { } stage) b.Append("<small>").Append(E(stage)).Append("</small>");
         if (!string.IsNullOrWhiteSpace(r.ShopName)) b.Append("<small>").Append(E(r.ShopName)).Append("</small>");
         b.Append("</div></header>");
 

@@ -1428,6 +1428,11 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .chk-text { font-size: 13px; color: var(--paper-2); line-height: 1.7; margin: 10px 0 0; }
 .chk-verdict { display: flex; gap: 8px; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--rule); }
 .chk-verdict .caption { flex: 1; }
+.chk-send { margin-top: 16px; }
+.chk-send-rows { display: grid; gap: 6px; margin-top: 12px; }
+.chk-send-row { display: grid; grid-template-columns: minmax(9em, 14em) auto 1fr; gap: 10px; align-items: center; }
+.chk-send-row .btn-row { margin: 0; }
+@media (max-width: 720px) { .chk-send-row { grid-template-columns: 1fr; } }
 .chk-health { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; margin: 12px 0 6px; --hue: var(--pass); }
 .chk-health b { font-size: 26px; }
 .chk-health .progress { grid-column: 1 / -1; height: 8px; }

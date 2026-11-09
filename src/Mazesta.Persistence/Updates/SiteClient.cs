@@ -6,7 +6,13 @@ namespace Mazesta.Persistence.Updates;
 public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, int? Reports, int? Runs, int? Pending, bool Sharing = false);
 
 /// <summary>A report as the site keeps it: who and what it is about, its one-page summary and (<see cref="Full"/>) the whole report, both HTML with nothing to load or run.</summary>
-public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html, string? Full = null, string? Device = null, bool? Laptop = null, string? Notes = null);
+public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html, string? Full = null, string? Device = null, bool? Laptop = null, string? Notes = null,
+    string? Stage = null, IReadOnlyList<SiteFigure>? Figures = null);   // Stage: "Before"/"After" the service; Figures: what the site compares between the two
+/// <summary>The hands-on checks of one service job, before or after the work (Verdict: "ok" or "bad").</summary>
+public sealed record SiteChecks(string Service, string Stage, IReadOnlyList<SiteCheck> Items);
+public sealed record SiteCheck(string Key, string Name, string Verdict, string? Note);
+public sealed record SiteChecksReceipt(string Service, int Items);
+public sealed record SiteFigure(string Key, string Name, double? Value, string? Unit, bool? Higher, string? Outcome);
 /// <summary>A report in the site's list (what the print program shows): <see cref="Service"/> is the job it was made for, empty when it has none.</summary>
 public sealed record SiteReportItem(string Id, string? Service, string Title, string Machine, string Kind, string? Verdict, string Summary, DateTimeOffset Created, DateTimeOffset Received, string? Device = null, bool? Laptop = null, string? Notes = null);
 public sealed record SiteReportReceipt(string Id, bool Updated, string Url, string? Link);
@@ -43,6 +49,10 @@ public sealed class SiteClient(Uri api, HttpClient http)
 
     public async Task<SiteReportReceipt> SendReportAsync(string key, SiteReport report, CancellationToken ct)
         => Read<SiteReportReceipt>(await SendAsync(HttpMethod.Post, "reports", key, JsonSerializer.Serialize(report, Json), ct).ConfigureAwait(false));
+
+    /// <summary>The hands-on checks go into the service form with that number (the site answers 422 when it has none).</summary>
+    public async Task<SiteChecksReceipt> SendChecksAsync(string key, SiteChecks checks, CancellationToken ct)
+        => Read<SiteChecksReceipt>(await SendAsync(HttpMethod.Post, "checks", key, JsonSerializer.Serialize(checks, Json), ct).ConfigureAwait(false));
 
     /// <summary>The reports the site keeps, newest first; the site's key or its reading key may ask.</summary>
     public async Task<IReadOnlyList<SiteReportItem>> ReportsAsync(string key, CancellationToken ct)

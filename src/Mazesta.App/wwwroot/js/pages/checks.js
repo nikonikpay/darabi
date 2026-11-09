@@ -2,7 +2,8 @@
 // button that double-clicks. The page gives each part a way to be exercised and shows exactly what the computer received; the technician
 // decides. Nothing here is a measurement the app could make on its own, so the page draws no verdict itself.
 import { t } from "../i18n.js";
-import { h, icon } from "../ui.js";
+import { h, icon, toast } from "../ui.js";
+import { boot } from "../app.js";
 import { call } from "../bridge.js";
 
 // A compact full-size layout, by KeyboardEvent.code (the physical key, whatever the keyboard language).
@@ -28,17 +29,22 @@ const CHECK_TARGET = { Display: "display", Touch: "touch", Keys: "keys", Mouse: 
 // The technician's calls are kept (they were lost on leaving the page), so what was checked stays marked.
 const VERDICTS = "mazesta.checks";
 const verdicts = () => { try { return JSON.parse(localStorage.getItem(VERDICTS)) || {}; } catch { return {}; } };
+const NOTES = "mazesta.checks.notes";
+const notes = () => { try { return JSON.parse(localStorage.getItem(NOTES)) || {}; } catch { return {}; } };
+const keep = (name, all) => { try { localStorage.setItem(name, JSON.stringify(all)); } catch { /* not kept */ } };
+// A card and its row in the send box show the same call: each change is told to both.
+const changed = () => document.dispatchEvent(new Event("mz-checks"));
+function setVerdict(key, v) { const all = verdicts(); if (v) all[key] = v; else delete all[key]; keep(VERDICTS, all); changed(); }
+function verdictButtons(key, cleanup) {
+  const ok = h("button", { class: "btn quiet chk-ok", onclick: () => setVerdict(key, verdicts()[key] === "ok" ? "" : "ok") }, icon("check"), t("Checks_Ok"));
+  const bad = h("button", { class: "btn quiet chk-bad", onclick: () => setVerdict(key, verdicts()[key] === "bad" ? "" : "bad") }, icon("alert"), t("Checks_Problem"));
+  const show = () => { const v = verdicts()[key]; ok.classList.toggle("on", v === "ok"); bad.classList.toggle("on", v === "bad"); };
+  document.addEventListener("mz-checks", show); cleanup.push(() => document.removeEventListener("mz-checks", show)); show();
+  return [ok, bad];
+}
+const pageCleanup = [];
 function card(key, ico, body) {
-  const verdict = h("div", { class: "chk-verdict" });
-  let state = "";
-  const pick = (v) => {
-    state = state === v ? "" : v; ok.classList.toggle("on", state === "ok"); bad.classList.toggle("on", state === "bad");
-    const all = verdicts(); if (state) all[key] = state; else delete all[key]; try { localStorage.setItem(VERDICTS, JSON.stringify(all)); } catch { /* not kept */ }
-  };
-  const ok = h("button", { class: "btn quiet chk-ok", onclick: () => pick("ok") }, icon("check"), t("Checks_Ok"));
-  const bad = h("button", { class: "btn quiet chk-bad", onclick: () => pick("bad") }, icon("alert"), t("Checks_Problem"));
-  verdict.append(h("span", { class: "caption" }, t("Checks_YourCall")), ok, bad);
-  if (verdicts()[key]) pick(verdicts()[key]);
+  const verdict = h("div", { class: "chk-verdict" }, h("span", { class: "caption" }, t("Checks_YourCall")), ...verdictButtons(key, pageCleanup));
   return h("section", { class: "panel chk", "data-a": CHECK_TARGET[key] }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(ico)),
     h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, t(`Checks_${key}`)), h("div", { class: "panel-sub fa" }, t(`Checks_${key}_Sub`)))), body, verdict);
 }
@@ -302,9 +308,39 @@ function battery(cleanup) {
   return card("Battery", "bolt", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Battery_Text")), health, facts, h("div", { class: "btn-row" }, start, stop, refresh), result));
 }
 
+// Parts the page cannot exercise but a laptop's or a case's service still has to note, judged by the technician.
+const MORE = ["Wifi", "Bluetooth", "Usb", "VideoOut", "Lan", "Body"];
+// The calls above (and the parts the page cannot exercise), with a note each, sent into the service form before or after the work.
+function sendBox(cleanup) {
+  const keys = [...Object.keys(CHECK_TARGET), ...MORE];
+  const service = h("input", { class: "field", dir: "ltr", value: document.getElementById("svc")?.value || "", placeholder: t("Reports_Notes_Service"), "aria-label": t("Reports_Notes_Service"), style: { width: "12em" } });
+  const stage = h("select", { class: "field", "aria-label": t("Reports_Stage"), style: { width: "auto" } }, h("option", { value: "" }, t("Reports_Stage")),
+    h("option", { value: "Before" }, t("Reports_Stage_Before")), h("option", { value: "After" }, t("Reports_Stage_After")));
+  const rows = keys.map((k) => {
+    const note = h("input", { class: "field", value: notes()[k] || "", placeholder: t("Checks_Note"), "aria-label": t("Checks_Note"), oninput: () => { const all = notes(); if (note.value.trim()) all[k] = note.value; else delete all[k]; keep(NOTES, all); } });
+    const reset = () => { note.value = notes()[k] || ""; };
+    document.addEventListener("mz-checks", reset); cleanup.push(() => document.removeEventListener("mz-checks", reset));
+    return h("div", { class: "chk-send-row" }, h("span", { class: "fa" }, t(`Checks_${k}`)), h("div", { class: "btn-row" }, ...verdictButtons(k, cleanup)), note);
+  });
+  const status = h("p", { class: "caption", style: { minHeight: "1.6em" } });
+  const send = h("button", { class: "btn primary", "data-a": "send-checks", onclick: async () => {
+    const v = verdicts(), n = notes();
+    const items = keys.filter((k) => v[k]).map((k) => ({ key: k, name: t(`Checks_${k}`), verdict: v[k], note: (n[k] || "").trim() }));
+    if (!items.length) { toast(t("Checks_Send_Empty"), "fail"); return; }
+    send.disabled = true;
+    try { const r = await call("site.checks", { service: service.value, stage: stage.value, items }); if (r.error) toast(r.error, "fail"); else { status.textContent = t("Checks_Send_Done", r.service, r.items); toast(status.textContent, "ok"); } }
+    catch (e) { toast(String(e.message || e), "fail"); }
+    send.disabled = false;
+  } }, icon("send"), t("Checks_Send_Button"));
+  const clear = h("button", { class: "btn quiet", onclick: () => { keep(VERDICTS, {}); keep(NOTES, {}); status.textContent = ""; changed(); } }, icon("refresh"), t("Checks_Clear"));
+  return h("section", { class: "panel chk chk-send", "data-a": "send" }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("send")),
+    h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, t("Checks_Send_Title")), h("div", { class: "panel-sub fa" }, t("Checks_Send_Sub")))),
+    h("div", { class: "btn-row" }, service, stage, send, clear), h("div", { class: "chk-send-rows" }, rows), status);
+}
+
 export function mount(el) {
-  const cleanup = [];
+  const cleanup = pageCleanup;
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checks")), h("p", { class: "page-lede" }, t("Checks_Lede")))),
-    h("div", { class: "chk-grid" }, display(), touch(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup));
-  return () => cleanup.forEach((f) => f());
+    h("div", { class: "chk-grid" }, display(), touch(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup), boot.staff ? sendBox(cleanup) : null);
+  return () => { cleanup.forEach((f) => f()); cleanup.length = 0; };
 }

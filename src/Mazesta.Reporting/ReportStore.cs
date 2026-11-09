@@ -2,9 +2,9 @@ namespace Mazesta.Reporting;
 
 /// <summary>A saved report as the list shows it. Benchmarks names the benchmark runs it holds (a benchmark report has no test counts to summarise).</summary>
 public sealed record StoredReport(string Folder, string Id, DateTimeOffset CreatedAt, ReportKind Kind, ReportVerdict? Verdict, ReportCounts Counts, string ShopName, IReadOnlyList<string> Benchmarks,
-    string? ServiceNumber = null, string? ServiceNotes = null)
+    string? ServiceNumber = null, string? ServiceNotes = null, string? ServiceStage = null)
 {
-    internal static StoredReport Of(string folder, SessionReport r) => new(folder, r.Id, r.CreatedAt, r.Kind, r.Verdict, r.Counts, r.ShopName, [.. (r.Benchmarks ?? []).Select(b => b.Name)], r.ServiceNumber, r.ServiceNotes);
+    internal static StoredReport Of(string folder, SessionReport r) => new(folder, r.Id, r.CreatedAt, r.Kind, r.Verdict, r.Counts, r.ShopName, [.. (r.Benchmarks ?? []).Select(b => b.Name)], r.ServiceNumber, r.ServiceNotes, r.ServiceStage);
     public string JsonPath => Path.Combine(Folder, ReportStore.JsonName);
     public string HtmlPath => Path.Combine(Folder, ReportStore.HtmlName);
     public string PdfPath => Path.Combine(Folder, ReportStore.PdfName);

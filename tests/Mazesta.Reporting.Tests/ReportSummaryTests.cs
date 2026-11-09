@@ -180,4 +180,13 @@ public class ReportSummaryTests
         Assert.Matches(@"14\d\d/\d\d/\d\d", html);   // Solar Hijri year, not 2026
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) File.WriteAllText(Path.Combine(dir, "summary-sample.html"), html);
     }
+
+    [Fact] public void The_site_gets_each_tests_outcome_and_each_parts_peak_while_it_ran_never_a_test_that_did_not_run()
+    {
+        var bench = new BenchmarkEntry("bench.gpu.fur", "GPU temperature", T0.AddMinutes(12), [new("FPS", 186, "FPS", "Bench_Fur_Fps"), new("Peak", 72, "°C", "Bench_Fur_Read_TempMax")], null, T0.AddMinutes(11));
+        var f = ServiceFigures.Of(Report() with { Benchmarks = [bench] }, id => id == "bench.gpu.fur" ? ("Bench_Fur_Fps", true) : null, SummaryText.English);
+        Assert.Equal("Failed", f.Single(x => x.Key == "t:GPU 3-D scene").Outcome); Assert.DoesNotContain(f, x => x.Key == "t:Memory");
+        var cpu = f.Single(x => x.Key == "p:CPU stress:Cpu"); Assert.Equal(86, cpu.Value); Assert.False(cpu.Higher);   // the package sensor, its peak in the test's minutes
+        Assert.True(f.Single(x => x.Key == "b:bench.gpu.fur:Bench_Fur_Fps").Higher); Assert.DoesNotContain(f, x => x.Key.EndsWith("TempMax"));   // a reading of the conditions is not a result
+    }
 }
