@@ -117,7 +117,9 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
     private static void Header(StringBuilder b, SessionReport r, ReportText w)
     {
         b.Append("<header>").Append(MazestaLogo.Svg("#201E1E", "logo")).Append("<h1>").Append(E(r.ShopName)).Append(" — ").Append(E(w.TitleOf(r.Kind))).Append("</h1><div class=\"meta\">");
-        if (r.ServiceNumber is { } service) b.Append("<b>").Append(w.ServiceNumber).Append(": ").Append(Lt(service)).Append("</b>").Append(w.StageOf(r.ServiceStage) is { } stage ? " · " + E(stage) : "").Append("<br>");
+        if (r.ServiceNumber is { } service) b.Append("<b>").Append(w.ServiceNumber).Append(": ").Append(Lt(service)).Append("</b>");
+        if (w.StageOf(r.ServiceStage) is { } stage) b.Append(r.ServiceNumber is null ? "" : " · ").Append("<b>").Append(E(stage)).Append("</b>");
+        if (r.ServiceNumber is not null || r.ServiceStage is not null) b.Append("<br>");
         b.Append(w.Started).Append(": ").Append(Lt(ReportFormat.Stamp(r.StartedAt))).Append(" · ").Append(w.Finished).Append(": ").Append(Lt(ReportFormat.Stamp(r.FinishedAt)))
          .Append(" · ").Append(w.Duration).Append(": ").Append(Lt(ReportFormat.Duration(r.DurationSeconds))).Append("<br>").Append(w.ReportId).Append(": ").Append(Lt(r.Id)).Append("</div></header>");
     }

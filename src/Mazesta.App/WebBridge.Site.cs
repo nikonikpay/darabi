@@ -150,7 +150,7 @@ public sealed partial class WebBridge
             StaffOnly();
             if (_config.SiteKey.Length == 0) return new { error = Loc.Get("Site_Err_NoKey") };
             string service = Core.Text.PersianDigits.Normalize(Str(p, "service") ?? "").Trim(), stage = ServiceStages.Clean(Str(p, "stage")) ?? "";
-            if (service.Length == 0) return new { error = Loc.Get("Site_Err_NoService") };
+            if (service.Length == 0) return new { error = Loc.Get("Checks_Send_NoService") };
             if (stage.Length == 0) return new { error = Loc.Get("Checks_Send_NoStage") };
             var items = p.TryGetProperty("items", out var list) && list.ValueKind == JsonValueKind.Array
                 ? list.EnumerateArray().Select(i => new SiteCheck(Str(i, "key") ?? "", Str(i, "name") ?? "", Str(i, "verdict") ?? "", Str(i, "note") is { Length: > 0 } n ? n : null))

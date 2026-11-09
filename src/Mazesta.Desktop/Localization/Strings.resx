@@ -2707,6 +2707,7 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Send_Done" xml:space="preserve"><value>Saved in service {0}'s form ({1} items)</value></data>
   <data name="Checks_Send_Empty" xml:space="preserve"><value>Nothing is marked yet: mark at least one part as fine or faulty.</value></data>
   <data name="Checks_Send_NoStage" xml:space="preserve"><value>Choose whether this is before or after the service.</value></data>
+  <data name="Checks_Send_NoService" xml:space="preserve"><value>Type the service number (in the top bar or here) first.</value></data>
   <data name="Checks_Wifi" xml:space="preserve"><value>Wi-Fi</value></data>
   <data name="Checks_Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
   <data name="Checks_Usb" xml:space="preserve"><value>USB ports</value></data>

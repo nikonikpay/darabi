@@ -2707,6 +2707,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Checks_Send_Done" xml:space="preserve"><value>در فرم سرویس {0} ثبت شد ({1} مورد)</value></data>
   <data name="Checks_Send_Empty" xml:space="preserve"><value>هنوز چیزی علامت نخورده است: دست‌کم یک قسمت را «سالم است» یا «مشکل دارد» بزنید.</value></data>
   <data name="Checks_Send_NoStage" xml:space="preserve"><value>انتخاب کنید که این بررسی قبل از سرویس است یا بعد از آن.</value></data>
+  <data name="Checks_Send_NoService" xml:space="preserve"><value>اول شمارهٔ سرویس را بنویسید (در نوار بالا یا همین‌جا).</value></data>
   <data name="Checks_Wifi" xml:space="preserve"><value>وای‌فای</value></data>
   <data name="Checks_Bluetooth" xml:space="preserve"><value>بلوتوث</value></data>
   <data name="Checks_Usb" xml:space="preserve"><value>پورت‌های USB</value></data>
