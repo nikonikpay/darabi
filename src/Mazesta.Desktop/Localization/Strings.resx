@@ -423,7 +423,7 @@
     <value>GPU · Load Pulses (Coil Whine)</value>
   </data>
   <data name="Test_Gpu_Thermal" xml:space="preserve">
-    <value>GPU · Temperature Test (full power, star scene)</value>
+    <value>GPU · Temperature test (full power)</value>
   </data>
   <data name="Test_Gpu_Vram" xml:space="preserve">
     <value>GPU · VRAM Pattern &amp; Full Verify</value>
@@ -3211,7 +3211,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} megapixels a second (Mazesta's own scene, not a commercial score)</value></data>
   <data name="Detail_Gpu_Render" xml:space="preserve"><value>Ray-traced scene {0}×{1}, {2} spheres, {3} bounces, on {4}</value></data>
   <data name="Detail_Gpu_Scene" xml:space="preserve"><value>The Persian garden scene with {0}, drawn at {1}×{2} (window {3}×{4}) on {5}</value></data>
-  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>The star (shamseh) fur scene, drawn at {0}×{1} (window {2}×{3}) on {4}; {5} aurora layers and {6} fur layers blended into a float (HDR) frame</value></data>
+  <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>The GPU temperature scene, drawn at {0}×{1} (window {2}×{3}) on {4}; {5} aurora layers and {6} fur layers blended into a float (HDR) frame</value></data>
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>Load level {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} triangles in {1} objects; centre model “{2}”</value></data>
   <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>Ray traced: a camera ray, a shadow ray to the moon and to each of the {0} lamps in reach, reflections and refraction up to 4 bounces</value></data>
@@ -3856,13 +3856,22 @@ Cancel: stop.</value></data>
   <data name="Bench_Gpu_Video_Enc_hevc_2160p_10b_420" xml:space="preserve"><value>Encode HEVC (4K, 10-bit, 4:2:0)</value></data>
   <data name="Bench_Gpu_Video_Enc_av1_1080p_8b_420" xml:space="preserve"><value>Encode AV1 (1080p, 8-bit, 4:2:0)</value></data>
   <data name="Bench_Gpu_Video_Enc_av1_2160p_10b_420" xml:space="preserve"><value>Encode AV1 (4K, 10-bit, 4:2:0)</value></data>
-  <data name="Bench_Gpu_Fur" xml:space="preserve"><value>Graphics — fur star (full power, temperature)</value></data>
-  <data name="Bench_Fur_Fps" xml:space="preserve"><value>Frame rate (fur star)</value></data>
-  <data name="Bench_Fur_FpsLow" xml:space="preserve"><value>Slowest half second</value></data>
-  <data name="Bench_Fur_FpsHigh" xml:space="preserve"><value>Quickest half second</value></data>
+  <data name="Bench_Gpu_Fur" xml:space="preserve"><value>GPU temperature</value></data>
+  <data name="Bench_Fur_Fps" xml:space="preserve"><value>Frame rate, average</value></data>
+  <data name="Bench_Fur_FpsLow" xml:space="preserve"><value>Frame rate, lowest (half second)</value></data>
+  <data name="Bench_Fur_FpsHigh" xml:space="preserve"><value>Frame rate, highest (half second)</value></data>
   <data name="Bench_Fur_Spread" xml:space="preserve"><value>Frame rate spread</value></data>
-  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>The temperature test's star as a benchmark: hundreds of fur layers and a turning aurora, drawn with no v-sync, hold the graphics card at its power limit as a fur test does. It gives the frame rate, how steady it stayed (the slowest and quickest half second after the first five, and their spread), and the card's power, clocks and temperatures, VRAM included. A card that slows down as it heats shows a wider spread.</value></data>
-  <data name="HelpHow_Bench_Gpu_Fur" xml:space="preserve"><value>Close games and other heavy programs.|Tick the fur star benchmark; pick the resolution if you want another than 1920x1080.|Run it and watch the star: the large readout shows temperatures, power and FPS.|Compare the frame rate and its spread with other cards of the same model.</value></data>
+  <data name="Bench_Fur_Read_PowerMax" xml:space="preserve"><value>Power, peak</value></data>
+  <data name="Bench_Fur_Read_Power" xml:space="preserve"><value>Power, average</value></data>
+  <data name="Bench_Fur_Read_Clock" xml:space="preserve"><value>GPU clock, average</value></data>
+  <data name="Bench_Fur_Read_VramMax" xml:space="preserve"><value>VRAM temperature, peak</value></data>
+  <data name="Bench_Fur_Read_VramAvg" xml:space="preserve"><value>VRAM temperature, average</value></data>
+  <data name="Bench_Fur_Read_HotMax" xml:space="preserve"><value>Hot spot, peak</value></data>
+  <data name="Bench_Fur_Read_HotAvg" xml:space="preserve"><value>Hot spot, average</value></data>
+  <data name="Bench_Fur_Read_TempMax" xml:space="preserve"><value>GPU temperature, peak</value></data>
+  <data name="Bench_Fur_Read_TempAvg" xml:space="preserve"><value>GPU temperature, average</value></data>
+  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>The GPU temperature test as a benchmark: hundreds of fur layers and a turning aurora, drawn with no v-sync, hold the graphics card at its power limit as a fur test does. It gives the average, highest and lowest frame rate (half seconds, after the first five) and their spread, the GPU, hot spot and VRAM temperatures (average and peak), the clock and the power. A card that slows down as it heats shows a wider spread.</value></data>
+  <data name="HelpHow_Bench_Gpu_Fur" xml:space="preserve"><value>Close games and other heavy programs.|Tick the GPU temperature benchmark; pick the resolution if you want another than 1920x1080.|Run it: the large readout shows temperatures, power and FPS while it runs.|Compare the frame rate and its spread with other cards of the same model.</value></data>
   <data name="Test_Gpu_VideoDecode" xml:space="preserve"><value>GPU · video decode (H.264, HEVC, VP9, AV1; 1080p to 8K; 8/10-bit; 4:2:0/4:2:2)</value></data>
   <data name="Test_Gpu_VideoEncode" xml:space="preserve"><value>GPU · video encode (H.264, HEVC, AV1; 1080p and 4K; 8/10-bit)</value></data>
   <data name="Detail_Vid_Path" xml:space="preserve"><value>Decoded and encoded on the card's video engine through Windows (Media Foundation, DXVA)</value></data>

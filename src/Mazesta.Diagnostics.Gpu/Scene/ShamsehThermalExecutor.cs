@@ -96,7 +96,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         {
             var finished = request.Clock.UtcNow; var node = GpuDevices.SensorNode(request.Engine, session.AdapterName);
             var c = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, node, null); var hs = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, node, null);
-            return SensorEvidence.Join($"Shamseh fur scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, {ShamsehScene.Layers} aurora layers and {ShamsehScene.FurLayers} fur layers into a float frame",
+            return SensorEvidence.Join($"GPU temperature scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, {ShamsehScene.Layers} aurora layers and {ShamsehScene.FurLayers} fur layers into a float frame",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", $"check frames={checks}", firstError.Length > 0 ? firstError : null,
                 SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
                 c?.Format("GPU core", "°C", includeMax: true), hs?.Format("GPU hot spot", "°C", includeMax: true),

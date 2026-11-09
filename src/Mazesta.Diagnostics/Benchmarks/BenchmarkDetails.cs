@@ -35,7 +35,7 @@ public static class BenchmarkDetails
         : key.StartsWith("Bench_Gpu_", StringComparison.Ordinal) ? "Gpu" : key.StartsWith("Bench_Cpu_", StringComparison.Ordinal) ? "Cpu" : key.StartsWith("Bench_Ram_", StringComparison.Ordinal) ? "Ram" : key.StartsWith("Bench_App_", StringComparison.Ordinal) ? "App" : null;
 
     /// <summary>Whether a result is one that can be won: the shares and the RAM's effect (what the score's model says of where the cost lies) are not.</summary>
-    public static bool HasDirection(string key) => !IsCondition(key) && !key.StartsWith("Bench_Scene_Share", StringComparison.Ordinal) && key != "Bench_Scene_RamEffect";
+    public static bool HasDirection(string key) => !IsCondition(key) && !key.StartsWith("Bench_Fur_Read_", StringComparison.Ordinal) && !key.StartsWith("Bench_Scene_Share", StringComparison.Ordinal) && key != "Bench_Scene_RamEffect";
 
     /// <summary>Whether a higher value of a result is the better one: false for times (ms, ns), true for everything else a result counts.</summary>
     public static bool HigherIsBetter(string unit) => unit is not ("ms" or "ns" or "s" or "µs");
