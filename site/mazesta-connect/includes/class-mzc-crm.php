@@ -25,7 +25,7 @@ final class MZC_Crm
 
     public static function boot()
     {
-        foreach (array('customer_save', 'customer_delete', 'build_save', 'build_delete', 'job_save', 'job_delete', 'photo_delete', 'db_wipe', 'db_save', 'db_install', 'sms_save', 'sms_test', 'soft_save') as $a) {
+        foreach (array('customer_save', 'customer_delete', 'build_save', 'build_delete', 'job_save', 'job_delete', 'job_call', 'job_call_delete', 'photo_delete', 'db_wipe', 'db_save', 'db_install', 'sms_save', 'sms_test', 'soft_save') as $a) {
             add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
         }
         add_action('admin_post_mzc_photo', array(__CLASS__, 'act_photo'));
@@ -435,6 +435,8 @@ final class MZC_Crm
         $j['more'] = !empty($j['data']) ? json_decode($j['data'], true) : array();
         $j['photos'] = self::photos('job', $id);
         $j['total'] = self::job_total($j);
+        $j['calls'] = $db->get_results($db->prepare('SELECT * FROM `' . self::t('job_calls') . '` WHERE job_id = %d ORDER BY at, id', (int) $id), ARRAY_A) ?: array();
+        $j['hands_out'] = self::hands_out(isset($j['hands']) ? $j['hands'] : null);
         return $j;
     }
 
@@ -469,7 +471,8 @@ final class MZC_Crm
         }
         $from = "FROM `$j` j JOIN `$c` c ON c.id = j.customer_id WHERE " . implode(' AND ', $where);
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) $from", $args) : "SELECT COUNT(*) $from");
-        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
+        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total,
+            (SELECT k.result FROM `" . self::t('job_calls') . "` k WHERE k.job_id = j.id ORDER BY k.at DESC, k.id DESC LIMIT 1) AS last_call, (SELECT COUNT(*) FROM `" . self::t('job_calls') . "` k WHERE k.job_id = j.id) AS calls $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
             array_merge($args, array((int) $per, (int) (($page - 1) * $per)))), ARRAY_A);
         return array($rows ? $rows : array(), $total);
     }
@@ -498,8 +501,9 @@ final class MZC_Crm
             'soft' => self::soft_in(self::posted_soft(), self::post_long('soft_note', 2000), $was),
             'device_type' => isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : null, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'received_at' => self::date('received_at') ?: gmdate('Y-m-d'),
             'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
-            'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
+            'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'diagnosis' => self::post_long('diagnosis'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
+        $row['report_pre'] = preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_pre', 64)) ? self::post('report_pre', 64) : null;
         $row['checks'] = self::checks_in(isset($_POST['checks']) ? wp_unslash($_POST['checks']) : array(), (string) $row['device_type']);
         $t = self::t('jobs'); $was = $id;
         // all or nothing, as on the build form; the lock keeps two desks from taking the same service number
@@ -531,8 +535,83 @@ final class MZC_Crm
     {
         MZC_Admin::guard('job_delete');
         $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        if ($db && $id) { self::delete_photos('job', $id); $db->delete(self::t('job_parts'), array('job_id' => $id)); $db->delete(self::t('job_pays'), array('job_id' => $id)); $db->delete(self::t('jobs'), array('id' => $id)); }
+        if ($db && $id) { self::delete_photos('job', $id); $db->delete(self::t('job_parts'), array('job_id' => $id)); $db->delete(self::t('job_pays'), array('job_id' => $id)); $db->delete(self::t('job_calls'), array('job_id' => $id)); $db->delete(self::t('jobs'), array('id' => $id)); }
         MZC_Admin::back('mzc-jobs', 'ok:سرویس پاک شد.');
+    }
+
+    /* ---------- calls to the customer about a service ---------- */
+
+    public static $call_reasons = array('ready' => 'آماده شدن و تحویل', 'quote' => 'اعلام هزینه و گرفتن تأیید', 'question' => 'سؤال دربارهٔ دستگاه', 'parts' => 'قطعه و موجودی', 'followup' => 'پیگیری', 'other' => 'سایر');
+    public static $call_results = array('informed' => 'اطلاع داده شد', 'approved' => 'هزینه را تأیید کرد', 'declined' => 'هزینه را تأیید نکرد', 'pickup' => 'وقت تحویل هماهنگ شد', 'callback' => 'خواست بعداً تماس بگیریم',
+        'no_answer' => 'جواب نداد', 'off' => 'خاموش یا در دسترس نبود', 'busy' => 'اشغال بود', 'other' => 'سایر');
+    /** The results after which the customer knows: the rest are tries that did not reach them. */
+    public static $call_reached = array('informed', 'approved', 'declined', 'pickup', 'callback', 'other');
+
+    public static function act_job_call()
+    {
+        MZC_Admin::guard('job_call');
+        $db = self::db(); $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        $reason = isset($_POST['reason'], self::$call_reasons[$_POST['reason']]) ? (string) $_POST['reason'] : 'other';
+        $result = isset($_POST['result'], self::$call_results[$_POST['result']]) ? (string) $_POST['result'] : '';
+        if (!$db || !$id || $result === '' || !$db->get_var($db->prepare('SELECT id FROM `' . self::t('jobs') . '` WHERE id = %d', $id))) { MZC_Admin::back('mzc-jobs', 'err:نتیجهٔ تماس را انتخاب کنید.', array('view' => $id)); }
+        $u = wp_get_current_user();
+        $db->insert(self::t('job_calls'), array('job_id' => $id, 'at' => self::now(), 'reason' => $reason, 'result' => $result, 'note' => self::post('note', 500) ?: null, 'user_id' => $u->ID ?: null, 'who' => $u->display_name ?: null));
+        $db->update(self::t('jobs'), array('updated' => self::now()), array('id' => $id));
+        MZC_Admin::back('mzc-jobs', 'ok:تماس ثبت شد.', array('view' => $id));
+    }
+
+    public static function act_job_call_delete()
+    {
+        MZC_Admin::guard('job_call_delete');
+        $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0; $job = isset($_GET['job']) ? (int) $_GET['job'] : 0;
+        if ($db && $id) { $db->delete(self::t('job_calls'), array('id' => $id, 'job_id' => $job)); }
+        MZC_Admin::back('mzc-jobs', 'ok:تماس پاک شد.', array('view' => $job));
+    }
+
+    /* ---------- the app's hands-on checks (screen, keyboard, ports...), before and after the service ---------- */
+
+    /** The stored checks: array('Before' => array('at' => ..., 'items' => array(key => array(name, verdict, note))), 'After' => ...). */
+    public static function hands_out($json)
+    {
+        $d = is_string($json) && $json !== '' ? json_decode($json, true) : null;
+        return is_array($d) ? array_intersect_key($d, self::$stages) : array();
+    }
+
+    /** Which tick of the "before it leaves" list an app check stands for, by device type: ticked when every check behind it was fine after the service. */
+    private static $hands_ticks = array(
+        'laptop' => array('screen' => array('Display'), 'keyboard' => array('Keys', 'Mouse'), 'usb' => array('Usb'), 'audio' => array('Speakers'), 'webcam' => array('Webcam', 'Mic'), 'wifi' => array('Wifi', 'Bluetooth'), 'battery' => array('Battery'), 'body' => array('Body')),
+        'system' => array('usb' => array('Usb'), 'audio' => array('Speakers'), 'hdmi' => array('VideoOut')),
+    );
+
+    /**
+     * The app's hands-on checks of the service with this number, as the test before the work or the one after it (the newest of each replaces the last).
+     * After the service, every list tick whose checks all came back fine is ticked; nothing is unticked. Returns the number of items kept, or an error text.
+     */
+    public static function hands_in($service, $stage, $items)
+    {
+        $db = self::db(); if (!$db) { return 'CRM آماده نیست.'; }
+        if (!isset(self::$stages[$stage])) { return 'قبل یا بعد از سرویس معلوم نیست.'; }
+        $j = $db->get_row($db->prepare('SELECT id, hands, checks, device_type FROM `' . self::t('jobs') . '` WHERE service_no = %s ORDER BY id DESC LIMIT 1', $service), ARRAY_A);
+        if (!$j) { return 'سرویسی با شمارهٔ ' . $service . ' در CRM نیست.'; }
+        $kept = array();
+        foreach (is_array($items) ? array_slice($items, 0, 60) : array() as $i) {
+            if (!is_array($i) || !isset($i['key'], $i['verdict']) || !is_string($i['key']) || !preg_match('/^[A-Za-z]{1,40}$/', $i['key']) || !in_array($i['verdict'], array('ok', 'bad'), true)) { continue; }
+            $kept[$i['key']] = array('name' => Mazesta_Connect::clip(isset($i['name']) ? $i['name'] : $i['key'], 120), 'verdict' => $i['verdict'], 'note' => Mazesta_Connect::clip(isset($i['note']) ? $i['note'] : '', 300));
+        }
+        if (!$kept) { return 'هیچ بررسی‌ای نرسید.'; }
+        $all = self::hands_out($j['hands']); $all[$stage] = array('at' => self::now(), 'items' => $kept);
+        $row = array('hands' => wp_json_encode($all, JSON_UNESCAPED_UNICODE), 'updated' => self::now());
+        $type = (string) $j['device_type'];
+        if ($stage === 'After' && isset(self::$hands_ticks[$type])) {
+            $c = self::checks_out($j['checks']);
+            foreach (self::$hands_ticks[$type] as $tick => $from) {
+                $seen = array_intersect_key($kept, array_flip($from));
+                if (count($seen) === count($from) && !array_filter($seen, function ($x) { return $x['verdict'] !== 'ok'; }) && !in_array($tick, $c['check'], true)) { $c['check'][] = $tick; }
+            }
+            $row['checks'] = self::checks_in($c, $type);
+        }
+        $db->update(self::t('jobs'), $row, array('id' => (int) $j['id']));
+        return count($kept);
     }
 
     /* ---------- customers: admin actions ---------- */
@@ -669,10 +748,49 @@ final class MZC_Crm
         $out = array();
         foreach (Mazesta_Connect::reports('', 300)[0] as $id => $r) {
             $label = trim(($r['service'] !== '' ? $r['service'] . ' — ' : '') . ($r['device'] !== '' ? $r['device'] : $r['machine']) . ' — ' . gmdate('Y/m/d', (int) strtotime($r['created'])));
-            $out[(string) $id] = array('label' => $label, 'match' => $service !== '' && $r['service'] === $service);
+            $out[(string) $id] = array('label' => $label . (isset(self::$stages[$r['stage']]) ? ' — ' . self::$stages[$r['stage']] : ''), 'match' => $service !== '' && $r['service'] === $service, 'stage' => $r['stage']);
         }
         uasort($out, function ($a, $b) { return (int) $b['match'] <=> (int) $a['match']; });
         return $out;
+    }
+
+    public static $stages = array('Before' => 'قبل از سرویس', 'After' => 'بعد از سرویس');
+
+    /** A report the app marked before or after the service goes into that place of the service with its number: report_pre or report_id. */
+    public static function attach_stage($service, $stage, $report_id)
+    {
+        $db = self::db(); if (!$db || !isset(self::$stages[$stage])) { return; }
+        $col = $stage === 'Before' ? 'report_pre' : 'report_id';
+        $db->query($db->prepare('UPDATE `' . self::t('jobs') . "` SET `$col` = %s, updated = %s WHERE service_no = %s", $report_id, self::now(), $service));
+    }
+
+    private static $outcomes = array('Passed' => 'موفق', 'Failed' => 'ناموفق', 'Cancelled' => 'لغو شد', 'Unsupported' => 'پشتیبانی نمی‌شود', 'Error' => 'خطای تست', 'Inconclusive' => 'نامعین');
+
+    /**
+     * The service's before and after reports side by side: each figure both reports have (a test's outcome, a part's peak temperature during a test,
+     * a benchmark figure), with the change and whether it went the good way (1), the bad way (-1), stayed (0) or has no better side (null).
+     * Nothing is made up: a figure only one report has is left out. Empty when either report has no figures (sent by an app before 0.15.15).
+     */
+    public static function compare($pre, $post)
+    {
+        $a = $pre ? Mazesta_Connect::report_figures($pre) : array(); $b = $post ? Mazesta_Connect::report_figures($post) : array(); $rows = array();
+        $num = function ($v) { return $v === null ? '' : (floor($v) == $v ? number_format($v) : number_format($v, 1)); };
+        foreach ($a as $k => $x) {
+            if (!isset($b[$k])) { continue; } $y = $b[$k];
+            if ($k[0] === 't') {
+                if ($x['outcome'] === null || $y['outcome'] === null) { continue; }
+                $good = $x['outcome'] === $y['outcome'] ? 0 : ($y['outcome'] === 'Passed' ? 1 : ($x['outcome'] === 'Passed' ? -1 : null));
+                $rows[] = array('name' => $y['name'], 'before' => isset(self::$outcomes[$x['outcome']]) ? self::$outcomes[$x['outcome']] : $x['outcome'], 'after' => isset(self::$outcomes[$y['outcome']]) ? self::$outcomes[$y['outcome']] : $y['outcome'], 'change' => '', 'good' => $good, 'kind' => 'test');
+                continue;
+            }
+            if ($x['value'] === null || $y['value'] === null) { continue; }
+            $d = $y['value'] - $x['value']; $h = $y['higher']; $sign = $d > 0 ? '+' : ($d < 0 ? '−' : '');
+            $good = abs($d) < 0.05 ? 0 : ($h === null ? null : (($d > 0) === $h ? 1 : -1));
+            $u = $y['unit'] !== '' ? ' ' . $y['unit'] : '';
+            $rows[] = array('name' => $y['name'], 'before' => $num($x['value']) . $u, 'after' => $num($y['value']) . $u, 'change' => $sign . $num(abs($d)) . $u
+                . ($x['value'] != 0 && $k[0] === 'b' ? ' (' . $sign . number_format(abs($d) / abs($x['value']) * 100, 1) . '%)' : ''), 'good' => $good, 'kind' => $k[0] === 'p' ? 'temp' : 'bench');
+        }
+        return $rows;
     }
 
     /* ---------- settings: the database and the SMS ---------- */
@@ -694,7 +812,7 @@ final class MZC_Crm
         $db = self::db(); if (!$db) { MZC_Admin::back('mzc-settings', 'err:' . MZC_Crm_Db::error()); }
         if (self::post('confirm', 20) !== 'پاک‌کن') { MZC_Admin::back('mzc-settings', 'err:برای پاک کردن، کلمهٔ «پاک‌کن» را دقیق بنویسید.'); }
         foreach ((array) $db->get_col('SELECT file FROM `' . self::t('photos') . '`') as $f) { if (preg_match('/^[a-f0-9]{32}\.(jpg|png|webp)$/', (string) $f)) { @unlink(self::photo_dir() . '/' . $f . '.dat'); } }
-        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items', 'invoices', 'invoice_items', 'payments', 'cheques') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
+        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'job_calls', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items', 'invoices', 'invoice_items', 'payments', 'cheques') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
         $db->query('DELETE FROM `' . self::t('meta') . "` WHERE k = 'import'");
         MZC_Admin::back('mzc-settings', 'ok:همهٔ اطلاعات CRM پاک شد؛ فایل واردسازی را دوباره بارگذاری کنید.');
     }

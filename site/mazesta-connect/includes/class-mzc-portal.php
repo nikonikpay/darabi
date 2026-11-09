@@ -152,9 +152,19 @@ final class MZC_Portal
             $paid = 0; foreach ($j['pays'] as $p) { $paid += (int) $p['amount']; }
             $outJ[] = array('kind' => 'job', 'number' => (string) $j['service_no'], 'software' => MZC_Crm::soft_out($j['soft']), 'soft_open' => self::soft_open('job', $j['status']), 'service' => $j['service_no'], 'device' => $j['device'], 'received' => $j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '', 'closed' => $j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '',
                 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : $j['status'], 'complaint' => $j['complaint'], 'work' => $j['work_done'],
-                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'total' => (int) $j['total'], 'paid' => $paid, 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
+                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'total' => (int) $j['total'], 'paid' => $paid, 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']),
+                'diagnosis' => isset($j['diagnosis']) ? (string) $j['diagnosis'] : '', 'hands' => self::hands($j['hands_out']),
+                'report_pre' => $link(isset($j['report_pre']) ? $j['report_pre'] : ''), 'compare' => !empty($j['report_pre']) && $j['report_id'] ? MZC_Crm::compare($j['report_pre'], $j['report_id']) : array());
         }
         return self::ok(array('name' => $c['name'], 'mobile' => (string) $c['mobile'], 'statuses' => MZC_Crm::$statuses, 'builds' => $outB, 'jobs' => $outJ, 'catalog' => MZC_Crm::software_catalog()));
+    }
+
+    /** The hands-on checks for the customer: each part with its verdict before and after the service ('' where it was not checked). */
+    private static function hands($h)
+    {
+        $out = array(); $keys = array(); foreach ($h as $s) { $keys += $s['items']; }
+        foreach ($keys as $k => $x) { $v = function ($st) use ($h, $k) { return isset($h[$st]['items'][$k]) ? $h[$st]['items'][$k]['verdict'] : ''; }; $out[] = array('name' => $x['name'], 'before' => $v('Before'), 'after' => $v('After'), 'note' => isset($h['After']['items'][$k]) ? $h['After']['items'][$k]['note'] : $x['note']); }
+        return $out;
     }
 
     /** ?mzc_portal_photo=ID with the token in a header (the page fetches it and shows the bytes), only for a photo of the token's own customer. */

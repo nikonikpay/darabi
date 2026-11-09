@@ -164,6 +164,7 @@ final class Mazesta_Connect
             array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_list'), 'permission_callback' => array(__CLASS__, 'need_read_key')),
         ));
         register_rest_route(self::NS, '/reports/(?P<id>[A-Za-z0-9-]{8,64})', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_get'), 'permission_callback' => array(__CLASS__, 'need_read_key')));
+        register_rest_route(self::NS, '/checks', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_checks'), 'permission_callback' => array(__CLASS__, 'need_key')));
         register_rest_route(self::NS, '/featured', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_featured'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/usage', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_usage'), 'permission_callback' => $open));
@@ -339,6 +340,7 @@ final class Mazesta_Connect
             'device' => self::clip(isset($p['device']) ? $p['device'] : '', 190),   // the maker and model Windows names (System Information), as the app read it
             'laptop' => !empty($p['laptop']) ? '1' : '',
             'notes' => self::clip(isset($p['notes']) ? $p['notes'] : '', 4000),   // the work done on the computer, as the technician wrote it
+            'stage' => isset($p['stage']) && in_array($p['stage'], array('Before', 'After'), true) ? $p['stage'] : '',   // the test before the service or the one after it
             'verdict' => self::clip(isset($p['verdict']) ? $p['verdict'] : '', 40),
             'kind' => self::clip(isset($p['kind']) ? $p['kind'] : '', 40),
             'summary' => self::clip(isset($p['summary']) ? $p['summary'] : '', 2000),
@@ -347,16 +349,20 @@ final class Mazesta_Connect
             'received' => self::when(null),
         );
         if (strlen($full) > self::MAX_FULL) { $full = ''; }
-        $done = self::locked(function () use ($id, $row, $html, $full) {
+        $fig = self::figures_in(isset($p['figures']) ? $p['figures'] : null);
+        $done = self::locked(function () use ($id, $row, $html, $full, $fig) {
             $all = self::read('reports');
             $had = isset($all[$id]);
             $row['token'] = $had && !empty($all[$id]['token']) ? $all[$id]['token'] : bin2hex(random_bytes(16));
             if (!self::put('report-' . $id, $html)) { return null; }
             if ($full !== '') { if (!self::put('report-' . $id . '-full', $full)) { return null; } } else { self::remove('report-' . $id . '-full'); }
+            if ($fig) { self::put('report-' . $id . '-fig', wp_json_encode($fig)); } else { self::remove('report-' . $id . '-fig'); }
             $all[$id] = $row;
             return self::write('reports', $all) ? array($had, $row['token']) : null;
         });
         if ($done === null) { return new WP_Error('mazesta_report', 'The report could not be saved.', array('status' => 500)); }
+        // a report marked before or after the service goes into that place of the service with its number (the newest of each wins); the report is kept even when the CRM is not there
+        if ($row['stage'] !== '' && $row['service'] !== '' && class_exists('MZC_Crm')) { MZC_Crm::attach_stage($row['service'], $row['stage'], $id); }
         $c = self::config();
         return self::fresh(array(
             'id' => $id, 'updated' => $done[0],
@@ -365,13 +371,42 @@ final class Mazesta_Connect
         ));
     }
 
+    /** The app's hands-on checks of one service, before or after the work, into its form (MZC_Crm::hands_in). */
+    public static function rest_checks($req)
+    {
+        $p = $req->get_json_params(); $service = self::clip(isset($p['service']) ? $p['service'] : '', 40);
+        if ($service === '' || !class_exists('MZC_Crm')) { return new WP_Error('mazesta_checks', 'The service number is missing.', array('status' => 422)); }
+        $n = MZC_Crm::hands_in($service, isset($p['stage']) ? (string) $p['stage'] : '', isset($p['items']) ? $p['items'] : null);
+        return is_int($n) ? self::fresh(array('service' => $service, 'items' => $n)) : new WP_Error('mazesta_checks', $n, array('status' => 422));
+    }
+
+    /** The figures the app sent for the before/after comparison (MZC_Crm::compare), checked and cut to size; empty when there are none. */
+    private static function figures_in($list)
+    {
+        $out = array();
+        if (!is_array($list)) { return $out; }
+        foreach (array_slice($list, 0, 400) as $f) {
+            if (!is_array($f) || !isset($f['key']) || !is_string($f['key']) || !preg_match('/^[tpb]:[A-Za-z0-9._:\- ]{1,120}$/', $f['key'])) { continue; }
+            $out[$f['key']] = array('name' => self::clip(isset($f['name']) ? $f['name'] : '', 190), 'value' => isset($f['value']) && is_numeric($f['value']) ? (float) $f['value'] : null,
+                'unit' => self::clip(isset($f['unit']) ? $f['unit'] : '', 20), 'higher' => isset($f['higher']) && is_bool($f['higher']) ? $f['higher'] : null,
+                'outcome' => isset($f['outcome']) && is_string($f['outcome']) && preg_match('/^[A-Za-z]{1,20}$/', $f['outcome']) ? $f['outcome'] : null);
+        }
+        return $out;
+    }
+
+    /** A report's comparison figures by key (see figures_in), or an empty array. */
+    public static function report_figures($id)
+    {
+        return preg_match('/^[A-Za-z0-9-]{8,64}$/', (string) $id) ? self::read('report-' . $id . '-fig') : array();
+    }
+
     /** The reports kept here, newest first (what the print program lists): who and what each is about, never the page itself. */
     public static function rest_report_list($req)
     {
         $rows = array();
         foreach (self::reports('', 500, 0, 'received')[0] as $r) {
             $rows[] = array('id' => $r['id'], 'service' => $r['service'], 'title' => $r['title'], 'machine' => $r['machine'], 'device' => $r['device'], 'laptop' => !empty($r['laptop']),
-                'notes' => $r['notes'], 'kind' => $r['kind'], 'verdict' => $r['verdict'], 'summary' => $r['summary'], 'created' => $r['created'], 'received' => $r['received']);
+                'notes' => $r['notes'], 'stage' => $r['stage'], 'kind' => $r['kind'], 'verdict' => $r['verdict'], 'summary' => $r['summary'], 'created' => $r['created'], 'received' => $r['received']);
         }
         return self::fresh(array('reports' => $rows));
     }
@@ -397,7 +432,7 @@ final class Mazesta_Connect
 
     private static function report_shape($id, $r)
     {
-        $r += array('title' => '', 'machine' => '', 'service' => '', 'device' => '', 'laptop' => '', 'notes' => '', 'verdict' => '', 'kind' => '', 'summary' => '', 'app' => '', 'created' => '', 'received' => '', 'token' => '');
+        $r += array('title' => '', 'machine' => '', 'service' => '', 'device' => '', 'laptop' => '', 'notes' => '', 'stage' => '', 'verdict' => '', 'kind' => '', 'summary' => '', 'app' => '', 'created' => '', 'received' => '', 'token' => '');
         return array('id' => $id, 'has_full' => is_file(self::file('report-' . $id . '-full'))) + $r;
     }
 
@@ -1157,7 +1192,7 @@ final class Mazesta_Connect
         self::guard('report_delete');
         $id = self::arg('id');
         if (preg_match('/^[A-Za-z0-9-]{8,64}$/', $id)) {
-            self::locked(function () use ($id) { $all = self::read('reports'); unset($all[$id]); self::write('reports', $all); self::remove('report-' . $id); self::remove('report-' . $id . '-full'); });
+            self::locked(function () use ($id) { $all = self::read('reports'); unset($all[$id]); self::write('reports', $all); self::remove('report-' . $id); self::remove('report-' . $id . '-full'); self::remove('report-' . $id . '-fig'); });
         }
         self::back('reports', 'deleted');
     }
@@ -1307,7 +1342,7 @@ final class Mazesta_Connect
         if (!$rows) { echo '<tr><td colspan="7">هنوز گزارشی از برنامه نرسیده است. در برنامه: گزارش‌ها › ارسال به سایت.</td></tr>'; }
         foreach ($rows as $id => $r) {
             $view = admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode((string) $id));
-            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" class="mzc-ltr-r">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($r['machine']) . '</td>'
+            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong>' . ($r['stage'] !== '' ? ' <span class="description">(' . ($r['stage'] === 'Before' ? 'قبل از سرویس' : 'بعد از سرویس') . ')</span>' : '') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($r['machine']) . '</td>'
                 . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td class="mzc-nowrap">'
                 . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">خلاصه</a> '
                 . ($r['has_full'] ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')

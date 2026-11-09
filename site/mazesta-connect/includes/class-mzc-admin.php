@@ -278,12 +278,67 @@ final class MZC_Admin
         return $o . '</p>' . ($s['note'] !== '' ? '<p dir="auto">' . nl2br(esc_html($s['note'])) . '</p>' : '') . '</div></div>';
     }
 
-    public static function report_select($selected, $service = '')
+    /** $stage: which reports go first for a service's before or after field (the ones the app marked so); the field is report_pre for 'Before'. */
+    public static function report_select($selected, $service = '', $stage = '')
     {
         $opts = MZC_Crm::report_options($service);
-        $out = '<label class="wide">گزارش تست برنامه<select name="report_id"><option value="">— بدون گزارش —</option>';
+        if ($stage !== '') { uasort($opts, function ($a, $b) use ($stage) { return ((int) ($b['match'] && $b['stage'] === $stage)) <=> ((int) ($a['match'] && $a['stage'] === $stage)); }); }
+        $title = $stage === 'Before' ? 'گزارش قبل از سرویس' : ($stage === 'After' ? 'گزارش بعد از سرویس' : 'گزارش تست برنامه');
+        $out = '<label class="wide">' . $title . '<select name="' . ($stage === 'Before' ? 'report_pre' : 'report_id') . '"><option value="">— بدون گزارش —</option>';
         foreach ($opts as $id => $o) { $out .= '<option value="' . esc_attr($id) . '"' . selected($selected, $id, false) . '>' . esc_html(($o['match'] ? '★ ' : '') . $o['label']) . '</option>'; }
-        return $out . '</select><small>گزارش‌هایی که با «ارسال به سایت» از برنامه رسیده‌اند. ★ یعنی شمارهٔ سرویسش با شمارهٔ این فرم یکی است.</small></label>';
+        return $out . '</select><small>گزارش‌هایی که با «ارسال به سایت» از برنامه رسیده‌اند. ★ یعنی شمارهٔ سرویسش با شمارهٔ این فرم یکی است.' . ($stage !== '' ? ' گزارشی که در برنامه «' . MZC_Crm::$stages[$stage] . '» علامت خورده باشد خودش اینجا می‌نشیند.' : '') . '</small></label>';
+    }
+
+    /** The app's hands-on checks of a service, before and after the work side by side; '' when none came. */
+    public static function hands_panel($hands)
+    {
+        if (!$hands) { return ''; }
+        $keys = array(); foreach ($hands as $s) { $keys += $s['items']; }
+        $cell = function ($stage, $k) use ($hands) {
+            if (!isset($hands[$stage]['items'][$k])) { return '<span class="muted">—</span>'; }
+            $x = $hands[$stage]['items'][$k];
+            return self::pill($x['verdict'] === 'ok' ? 'سالم' : 'مشکل دارد', $x['verdict'] === 'ok' ? 'ok' : 'bad') . ($x['note'] !== '' ? ' <span dir="auto">' . esc_html($x['note']) . '</span>' : '');
+        };
+        $when = function ($stage) use ($hands) { return isset($hands[$stage]['at']) ? ' <small class="muted">' . esc_html(MZC_Crm::jtime((int) strtotime($hands[$stage]['at'] . ' UTC'))) . '</small>' : ''; };
+        $out = '<div class="mzc-panel"><header><h3>بررسی‌های دستی (از برنامه)</h3></header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>قسمت</th><th>قبل از سرویس' . $when('Before') . '</th><th>بعد از سرویس' . $when('After') . '</th></tr></thead><tbody>';
+        foreach ($keys as $k => $x) { $out .= '<tr><td dir="auto">' . esc_html($x['name']) . '</td><td>' . $cell('Before', $k) . '</td><td>' . $cell('After', $k) . '</td></tr>'; }
+        return $out . '</tbody></table></div></div>';
+    }
+
+    /** The calls to the customer about a service, oldest first, and the short form that adds one. */
+    public static function calls_panel($j)
+    {
+        $out = '<div class="mzc-panel" id="mzc-calls"><header><h3>تماس با مشتری</h3>' . ($j['calls'] ? self::pill(count($j['calls']) . ' تماس') : '') . '</header><div class="body">';
+        if ($j['calls']) {
+            $out .= '<table class="mzc-table"><thead><tr><th>زمان</th><th>برای</th><th>نتیجه</th><th>توضیح</th><th>تماس‌گیرنده</th><th></th></tr></thead><tbody>';
+            foreach ($j['calls'] as $c) {
+                $reached = in_array($c['result'], MZC_Crm::$call_reached, true);
+                $out .= '<tr><td class="num">' . esc_html(MZC_Crm::jtime((int) strtotime($c['at'] . ' UTC'))) . '</td><td>' . esc_html(isset(MZC_Crm::$call_reasons[$c['reason']]) ? MZC_Crm::$call_reasons[$c['reason']] : $c['reason']) . '</td>'
+                    . '<td>' . self::pill(isset(MZC_Crm::$call_results[$c['result']]) ? MZC_Crm::$call_results[$c['result']] : $c['result'], $reached ? 'ok' : 'warn') . '</td><td dir="auto">' . esc_html((string) $c['note']) . '</td><td>' . esc_html((string) $c['who']) . '</td>'
+                    . '<td><a class="mzc-btn sm danger" href="' . esc_url(self::post_url('job_call_delete', array('id' => (int) $c['id'], 'job' => (int) $j['id']))) . '" onclick="return confirm(\'این تماس پاک شود؟\')">حذف</a></td></tr>';
+            }
+            $out .= '</tbody></table>';
+        } else { $out .= '<p class="muted">هنوز تماسی ثبت نشده است.</p>'; }
+        $opt = function ($list, $pick) { $o = ''; foreach ($list as $k => $l) { $o .= '<option value="' . esc_attr($k) . '"' . selected($pick, $k, false) . '>' . esc_html($l) . '</option>'; } return $o; };
+        $reason = in_array($j['status'], array('ready', 'delivered'), true) ? 'ready' : 'quote';
+        $out .= self::form_open('job_call', 'class="mzc-form mzc-call"') . '<input type="hidden" name="id" value="' . (int) $j['id'] . '"><div class="mzc-fields">'
+            . '<label>برای<select name="reason">' . $opt(MZC_Crm::$call_reasons, $reason) . '</select></label>'
+            . '<label>نتیجهٔ تماس<select name="result" required><option value="">— انتخاب کنید —</option>' . $opt(MZC_Crm::$call_results, '') . '</select></label>'
+            . '<label class="wide">توضیح (چه گفته شد، چه قراری گذاشته شد)<input type="text" name="note" maxlength="500"></label></div><p><button class="mzc-btn primary">ثبت تماس</button></p></form>';
+        return $out . '</div></div>';
+    }
+
+    /** The before/after table of a service (MZC_Crm::compare), or '' when the two reports have no figures in common. */
+    public static function compare_panel($pre, $post)
+    {
+        $rows = $pre && $post ? MZC_Crm::compare($pre, $post) : array();
+        if (!$rows) { return ''; }
+        $out = '<div class="mzc-panel"><header><h3>مقایسهٔ قبل و بعد از سرویس</h3></header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>مورد</th><th class="n">قبل</th><th class="n">بعد</th><th class="n">تغییر</th></tr></thead><tbody>';
+        foreach ($rows as $r) {
+            $mark = $r['good'] === 1 ? ' ' . self::pill('بهتر', 'ok') : ($r['good'] === -1 ? ' ' . self::pill('بدتر', 'bad') : '');
+            $out .= '<tr><td dir="auto">' . esc_html($r['name']) . '</td><td class="n" dir="auto">' . esc_html($r['before']) . '</td><td class="n" dir="auto">' . esc_html($r['after']) . '</td><td class="n"><span dir="ltr">' . esc_html($r['change']) . '</span>' . $mark . '</td></tr>';
+        }
+        return $out . '</tbody></table></div></div>';
     }
 
     /** Where a part row's name box ([data-mzc-pq]) searches the stock as one types; admin.js shows the products (stock, price) under the box and fills the row's id, category and prices from the chosen one. */

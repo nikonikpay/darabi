@@ -29,8 +29,10 @@ if ($add || $edit) {
         . '<label class="chk"><input type="checkbox" name="is_mazesta" value="1"' . checked($j ? (int) $j['is_mazesta'] : 0, 1, false) . '> سیستم مازستا است</label>'
         . '<label class="chk"><input type="checkbox" name="has_warranty" value="1"' . checked($j ? (int) $j['has_warranty'] : 0, 1, false) . '> گارانتی دارد</label>'
         . '<label class="wide">درخواست و مشکل مشتری<textarea name="complaint" rows="3">' . esc_textarea($j ? (string) $j['complaint'] : '') . '</textarea></label>'
+        . '<label class="wide">نتیجهٔ عیب‌یابی (ایرادهایی که پیدا شد)<textarea name="diagnosis" rows="3" placeholder="مثلاً: خمیر سیلیکون خشک شده، فن پر از گردوخاک، کلید E کیبورد قطع است">' . esc_textarea($j && isset($j['diagnosis']) ? (string) $j['diagnosis'] : '') . '</textarea></label>'
         . '<label class="wide">کارهای انجام‌شده<textarea name="work_done" rows="3">' . esc_textarea($j ? (string) $j['work_done'] : '') . '</textarea></label>'
-        . MZC_Admin::report_select($j ? $j['report_id'] : '', $j ? (string) $j['service_no'] : '')
+        . MZC_Admin::report_select($j && isset($j['report_pre']) ? $j['report_pre'] : '', $j ? (string) $j['service_no'] : '', 'Before')
+        . MZC_Admin::report_select($j ? $j['report_id'] : '', $j ? (string) $j['service_no'] : '', 'After')
         . '<label class="wide">یادداشت داخلی<textarea name="notes" rows="2">' . esc_textarea($j ? (string) $j['notes'] : '') . '</textarea></label>' . MZC_Admin::media_field($j ? $j['media'] : '') . '</div>';
     echo '<div class="mzc-field"><span>قطعات اضافه‌شده (از انبار انتخاب کنید؛ تعداد، قیمت فروش و خرید)</span><div class="mzc-rows" id="mzc-parts" data-next="' . ($j ? count($j['parts']) : 0) . '">';
     $row = function ($n, $p) {
@@ -78,13 +80,14 @@ if ($view) {
     $j = MZC_Crm::job($view);
     if (!$j) { echo '<div class="mzc-notice err">سرویس پیدا نشد.</div>'; return; }
     $c = MZC_Crm::customer($j['customer_id']);
+    $reportLinks = function ($rid) { return $rid ? '<a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode($rid))) . '">خلاصهٔ گزارش</a> · <a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&view=full&id=' . rawurlencode($rid))) . '">گزارش کامل</a>' : '—'; };
     echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-jobs')) . '">‹ سرویس‌ها</a><h2 dir="auto">' . esc_html($j['device'] ?: 'سرویس') . '</h2> ' . $pillOf($j['status']) . '</div><div class="mzc-actions">'
         . '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('edit' => $view))) . '">ویرایش</a>'
         . '<a class="mzc-btn danger" href="' . esc_url(MZC_Admin::post_url('job_delete', array('id' => $view))) . '" onclick="return confirm(\'این سرویس پاک شود؟\')">حذف</a></div></div>';
     echo '<div class="mzc-grid2"><div class="mzc-panel"><header><h3>مشخصات</h3></header><div class="body"><dl class="mzc-kv"><dt>مشتری</dt><dd>' . ($c ? '<a href="' . esc_url(MZC_Admin::url('mzc-customers', array('view' => (int) $c['id']))) . '">' . esc_html($c['name']) . '</a> <span class="num muted">' . esc_html($c['mobile']) . '</span>' : '—') . '</dd>'
         . '<dt>شمارهٔ سرویس</dt><dd class="num">' . esc_html($j['service_no'] ?: '—') . '</dd><dt>نوع دستگاه</dt><dd>' . esc_html(isset(MZC_Crm::$device_types[(string) $j['device_type']]) ? MZC_Crm::$device_types[$j['device_type']] : '—') . '</dd>' . ($j['device_serial'] ? '<dt>سریال دستگاه</dt><dd class="num">' . esc_html($j['device_serial']) . '</dd>' : '') . '<dt>تاریخ پذیرش</dt><dd>' . esc_html($j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '—') . '</dd><dt>تاریخ تحویل</dt><dd>' . esc_html($j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '—') . '</dd><dt>موعد تحویل</dt><dd>' . esc_html($j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '—') . '</dd><dt>فاکتور</dt><dd class="num">' . esc_html($j['invoice_no'] ?: '—') . '</dd>'
-        . '<dt>درخواست مشتری</dt><dd dir="auto">' . nl2br(esc_html((string) $j['complaint'])) . '</dd><dt>کارهای انجام‌شده</dt><dd dir="auto">' . nl2br(esc_html((string) $j['work_done'])) . '</dd>'
-        . '<dt>گزارش تست</dt><dd>' . ($j['report_id'] ? '<a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode($j['report_id']))) . '">خلاصهٔ گزارش</a> · <a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&view=full&id=' . rawurlencode($j['report_id']))) . '">گزارش کامل</a>' : '—') . '</dd>'
+        . '<dt>درخواست مشتری</dt><dd dir="auto">' . nl2br(esc_html((string) $j['complaint'])) . '</dd><dt>نتیجهٔ عیب‌یابی</dt><dd dir="auto">' . nl2br(esc_html(isset($j['diagnosis']) ? (string) $j['diagnosis'] : '')) . '</dd><dt>کارهای انجام‌شده</dt><dd dir="auto">' . nl2br(esc_html((string) $j['work_done'])) . '</dd>'
+        . '<dt>گزارش قبل از سرویس</dt><dd>' . $reportLinks(isset($j['report_pre']) ? $j['report_pre'] : '') . '</dd><dt>گزارش بعد از سرویس</dt><dd>' . $reportLinks($j['report_id']) . '</dd>'
         . '<dt>یادداشت داخلی</dt><dd dir="auto">' . nl2br(esc_html((string) $j['notes'])) . '</dd><dt>عکس و فیلم (تلگرام)</dt><dd>' . MZC_Admin::media_links($j['media']) . '</dd></dl></div></div>';
     echo '<div class="mzc-panel"><header><h3>عکس‌ها</h3></header><div class="body">';
     if (!$j['photos']) { echo '<p class="muted">عکسی ثبت نشده است.</p>'; }
@@ -98,6 +101,8 @@ if ($view) {
         . '<tr><td colspan="4"><strong>هزینهٔ نهایی</strong></td><td class="n"><strong>' . esc_html(MZC_Crm::money($j['total'])) . '</strong></td></tr>'
         . ((int) $j['paid'] ? '<tr class="muted"><td colspan="4">هزینه‌های پرداخت‌شده (خرج خودمان، مشتری نمی‌بیند)' . ($j['paid_note'] ? ' — <span dir="auto">' . esc_html($j['paid_note']) . '</span>' : '') . '</td><td class="n">' . esc_html(number_format((int) $j['paid'])) . '</td></tr>' : '')
         . '</tbody></table></div></div>';
+    echo MZC_Admin::calls_panel($j);
+    echo MZC_Admin::compare_panel(isset($j['report_pre']) ? $j['report_pre'] : '', $j['report_id']) . MZC_Admin::hands_panel($j['hands_out']);
     echo MZC_Admin::checks_view($j['checks'], (string) $j['device_type'], 'موارد دریافتی');
     $paidSum = 0; foreach ($j['pays'] as $p) { $paidSum += (int) $p['amount']; }
     if ($j['pays']) {
@@ -130,7 +135,9 @@ $defs = array(
     'status' => array('وضعیت', 1, function ($j) use ($pillOf) { return $pillOf($j['status']); }),
     'received' => array('تاریخ دریافت', 1, function ($j) { return esc_html($j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '—'); }),
     'total' => array('هزینه', 1, function ($j) { return esc_html(number_format((int) $j['total'])); }, 'n'),
-    'report' => array('گزارش', 1, function ($j) { return MZC_Admin::report_link($j['report_id']); }),
+    // the last call to the customer and how many there were: who knows their device is ready and who has still to be reached
+    'call' => array('تماس', 1, function ($j) { return !empty($j['last_call']) ? MZC_Admin::pill((isset(MZC_Crm::$call_results[$j['last_call']]) ? MZC_Crm::$call_results[$j['last_call']] : $j['last_call']) . ((int) $j['calls'] > 1 ? ' (' . (int) $j['calls'] . ')' : ''), in_array($j['last_call'], MZC_Crm::$call_reached, true) ? 'ok' : 'warn') : '<span class="muted">—</span>'; }),
+    'report' => array('گزارش', 1, function ($j) { return (!empty($j['report_pre']) ? '<span class="muted">قبل:</span> ' . MZC_Admin::report_link($j['report_pre']) . ' <span class="muted">بعد:</span> ' : '') . MZC_Admin::report_link($j['report_id']); }),
     'mobile' => array('موبایل', 0, function ($j) { return '<span class="num">' . esc_html($j['customer_mobile']) . '</span>'; }),
     'device' => array('دستگاه', 0, function ($j) { return '<span dir="auto">' . esc_html($j['device'] ?: '—') . '</span>'; }),
     'dtype' => array('نوع دستگاه', 0, function ($j) { return esc_html(isset(MZC_Crm::$device_types[(string) $j['device_type']]) ? MZC_Crm::$device_types[$j['device_type']] : '—'); }),

@@ -140,7 +140,7 @@
     var body = el('div', 'mzcp-split'), dl = el('dl', 'mzcp-kv');
     kv(dl, 'موعد تحویل', j.due); kv(dl, 'تاریخ تحویل', j.closed); kv(dl, 'شمارهٔ فاکتور', j.invoice);
     if (j.recv && j.recv.length) kv(dl, 'وسایل تحویل‌گرفته', j.recv.map(function (x) { return x.name + (x.serial ? ' (' + x.serial + ')' : ''); }).join('، '));
-    kv(dl, 'درخواست شما', j.complaint); kv(dl, 'کارهای انجام‌شده', j.work);
+    kv(dl, 'درخواست شما', j.complaint); kv(dl, 'نتیجهٔ عیب‌یابی', j.diagnosis); kv(dl, 'کارهای انجام‌شده', j.work);
     add(body, dl.children.length ? dl : null);
     if (j.parts.length || j.labor) {
       var bill = el('div', 'mzcp-bill'), rows = j.parts.map(function (p) { return [p.name + (p.months ? ' (گارانتی ' + p.months + ' ماه)' : ''), p.qty.toLocaleString('fa-IR'), money(p.price), money(p.qty * p.price)]; });
@@ -149,7 +149,16 @@
       if (j.total > j.paid) { kv(sums, 'مانده', money(j.total - j.paid)); sums.lastChild.className = sums.lastChild.previousSibling.className = 'due'; }
       add(bill, table(['قطعه / کار', 'تعداد', 'قیمت واحد', 'جمع'], rows), sums); add(body, bill);
     }
-    add(c, body.children.length ? body : null, softList(j.software), j.report ? add(el('div', 'mzcp-actions'), link('گزارش تست', j.report)) : null, photos(j.photos));
+    // the test before the service and the one after it, figure by figure (only what both measured)
+    var cmp = j.compare && j.compare.length ? add(el('div', 'mzcp-compare'), el('h4', '', 'مقایسهٔ قبل و بعد از سرویس'), table(['مورد', 'قبل', 'بعد', 'تغییر'], j.compare.map(function (r) {
+      return [r.name, r.before, r.after, { text: r.change + (r.good === 1 ? ' ✓ بهتر' : r.good === -1 ? ' ✗ بدتر' : ''), cls: r.good === 1 ? 'mzcp-on' : r.good === -1 ? 'mzcp-off' : '' }];
+    }))) : null;
+    var said = { ok: { text: 'سالم', cls: 'mzcp-on' }, bad: { text: 'مشکل دارد', cls: 'mzcp-off' }, '': { text: '—' } };
+    var hands = j.hands && j.hands.length ? add(el('div', 'mzcp-compare'), el('h4', '', 'بررسی قسمت‌ها'), table(['قسمت', 'هنگام پذیرش', 'هنگام تحویل', 'توضیح'], j.hands.map(function (r) {
+      return [r.name, said[r.before] || said[''], said[r.after] || said[''], r.note || ''];
+    }))) : null;
+    var reps = j.report || j.report_pre ? add(el('div', 'mzcp-actions'), j.report_pre ? link('گزارش قبل از سرویس', j.report_pre) : null, j.report ? link(j.report_pre ? 'گزارش بعد از سرویس' : 'گزارش تست', j.report) : null) : null;
+    add(c, body.children.length ? body : null, softList(j.software), cmp, hands, reps, photos(j.photos));
     return c;
   }
 

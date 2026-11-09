@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 16;
+    const SCHEMA = 17;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -177,6 +177,9 @@ final class MZC_Crm_Db
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('app_codes')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, mobile VARCHAR(11) NOT NULL, code_hash CHAR(64) NOT NULL, expires DATETIME NOT NULL, attempts TINYINT NOT NULL DEFAULT 0, created DATETIME NOT NULL, KEY mobile (mobile)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('app_sessions')}` (token_hash CHAR(64) NOT NULL PRIMARY KEY, account_id BIGINT UNSIGNED NOT NULL, install CHAR(32) NOT NULL DEFAULT '', expires DATETIME NOT NULL, created DATETIME NOT NULL, KEY account_id (account_id)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('account_installs')}` (install CHAR(32) NOT NULL PRIMARY KEY, account_id BIGINT UNSIGNED NOT NULL, linked DATETIME NOT NULL, KEY account_id (account_id)) $engine";
+        // schema 17: each call to the customer about a service (why, what came of it, who called)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('job_calls')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, job_id BIGINT UNSIGNED NOT NULL, at DATETIME NOT NULL, reason VARCHAR(20) NOT NULL, result VARCHAR(20) NOT NULL,
+            note VARCHAR(500) NULL, user_id BIGINT UNSIGNED NULL, who VARCHAR(120) NULL, KEY job_id (job_id)) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }
@@ -204,6 +207,8 @@ final class MZC_Crm_Db
         $cols['products'] = array('wc_id' => 'BIGINT UNSIGNED NULL');
         // schema 14: the tick lists of what came in with a device and of the checks before it leaves (MZC_Crm::$checklists)
         $cols['builds'] += array('checks' => 'TEXT NULL'); $cols['jobs'] += array('checks' => 'TEXT NULL');
+        // schema 17: the test report from before the service (report_id stays the one after it, as it always was)
+        $cols['jobs'] += array('report_pre' => 'VARCHAR(64) NULL', 'hands' => 'TEXT NULL', 'diagnosis' => 'TEXT NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {

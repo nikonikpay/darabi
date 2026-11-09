@@ -21,7 +21,7 @@ final class MZC_Rev
     /** The fields as a person reads them in a change list; others by their column name. */
     private static $names = array(
         'customer_id' => 'مشتری', 'invoice_no' => 'شمارهٔ فاکتور', 'title' => 'عنوان', 'sold_at' => 'تاریخ فروش', 'notes' => 'یادداشت', 'status' => 'وضعیت', 'device_type' => 'نوع دستگاه', 'media' => 'لینک عکس و فیلم',
-        'checks' => 'چک‌لیست', 'soft' => 'برنامه‌ها', 'report_id' => 'گزارش تست', 'device' => 'دستگاه', 'device_serial' => 'سریال دستگاه', 'received_at' => 'تاریخ پذیرش', 'closed_at' => 'تاریخ تحویل',
+        'checks' => 'چک‌لیست', 'soft' => 'برنامه‌ها', 'report_id' => 'گزارش بعد از سرویس', 'report_pre' => 'گزارش قبل از سرویس', 'diagnosis' => 'نتیجهٔ عیب‌یابی', 'device' => 'دستگاه', 'device_serial' => 'سریال دستگاه', 'received_at' => 'تاریخ پذیرش', 'closed_at' => 'تاریخ تحویل',
         'due_at' => 'تاریخ قول', 'is_mazesta' => 'خرید از مازستا', 'has_warranty' => 'گارانتی', 'complaint' => 'مشکل', 'work_done' => 'کار انجام‌شده', 'labor_price' => 'هزینهٔ خدمات', 'discount' => 'تخفیف',
         'paid' => 'هزینهٔ پرداخت‌شده', 'paid_note' => 'توضیح هزینه', 'at' => 'تاریخ', 'valid_until' => 'اعتبار تا', 'tax_pct' => 'درصد مالیات', 'total' => 'جمع کل', 'no' => 'شماره', 'void_reason' => 'دلیل ابطال',
         'build_parts' => 'قطعات', 'job_parts' => 'قطعات', 'job_pays' => 'پرداخت‌ها', 'invoice_items' => 'ردیف‌ها',
