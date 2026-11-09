@@ -437,11 +437,11 @@ final class MZC_Stats
             $r['result'] = self::labels('outcomes', $res);
             $r['ok'] = in_array($res, array('Passed', 'Completed'), true) ? true : (in_array($res, array('Failed', 'Error'), true) ? false : null);
             $r['cpuTemp'] = self::first(array(self::num($s, array('cpuTempMax')), $mv('Bench_Cpu_TempMax')));
-            $r['gpuTemp'] = self::first(array(self::num($s, array('gpuTempMax')), $mv('Bench_Gpu_TempMax')));
+            $r['gpuTemp'] = self::first(array(self::num($s, array('gpuTempMax')), $mv('Bench_Gpu_TempMax'), $mv('Bench_Fur_Read_TempMax')));
             $r['cpuClock'] = self::first(array(self::num($s, array('cpuClock')), $mv('Bench_Cpu_Clock')));
-            $r['gpuClock'] = self::first(array(self::num($s, array('gpuClock')), $mv('Bench_Gpu_Clock')));
-            $r['power'] = self::first(array(self::num($s, array('gpuPower')), $mv('Bench_Gpu_Power'), self::num($s, array('cpuPower')), $mv('Bench_Cpu_Power')));
-            $r['fps'] = self::first(array($mv('Bench_Gpu_Rt_Fps'), $mv('Bench_Gpu_Scene_Fps'), $mv('Bench_Scene_GpuFps')));
+            $r['gpuClock'] = self::first(array(self::num($s, array('gpuClock')), $mv('Bench_Gpu_Clock'), $mv('Bench_Fur_Read_Clock')));
+            $r['power'] = self::first(array(self::num($s, array('gpuPower')), $mv('Bench_Gpu_Power'), $mv('Bench_Fur_Read_Power'), self::num($s, array('cpuPower')), $mv('Bench_Cpu_Power')));
+            $r['fps'] = self::first(array($mv('Bench_Gpu_Rt_Fps'), $mv('Bench_Gpu_Scene_Fps'), $mv('Bench_Scene_GpuFps'), $mv('Bench_Fur_Fps')));
             $h = self::labels('headline'); $h = isset($h[$id]) ? $h[$id] : null;
             if ($h && $mv($h[0]) !== null) { $r['score'] = $mv($h[0]); $r['scoreUnit'] = $h[1]; }
             $r['gpu'] = isset($d['options']['gpu']) ? self::short(explode('|', (string) $d['options']['gpu'])[0]) : '';

@@ -429,7 +429,7 @@ final class Mazesta_Connect
     private static $bench_names = array(
         'bench.cpu.multi' => 'پردازنده — چندرشته (همه رشته‌ها)', 'bench.cpu.single' => 'پردازنده — تک‌رشته', 'bench.memory' => 'پهنای‌باند حافظه',
         'bench.storage' => 'ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)', 'bench.gpu.d3d' => 'گرافیک — رندر Direct3D 12', 'bench.gpu.rt' => 'گرافیک — ری‌تریسینگ (DXR)',
-        'bench.gpu.ai' => 'گرافیک — هوش مصنوعی (DirectML)', 'bench.gpu.scene.d3d' => 'گرافیک — باغ ایرانی (Direct3D 12)', 'bench.gpu.scene.rt' => 'گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)',
+        'bench.gpu.ai' => 'گرافیک — هوش مصنوعی (DirectML)', 'bench.gpu.scene.d3d' => 'گرافیک — باغ ایرانی (Direct3D 12)', 'bench.gpu.scene.rt' => 'گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)', 'bench.gpu.fur' => 'دمای گرافیک',
         'bench.ai.llm' => 'مدل زبانی هوش مصنوعی (llama.cpp)', 'bench.network.internet' => 'شبکه — سرعت اینترنت',
     );
 

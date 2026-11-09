@@ -26,9 +26,9 @@ return array(
         'cpu.matrix' => 'پردازنده: ماتریس', 'cpu.singlecore' => 'پردازنده: تک‌هسته', 'cpu.vector' => 'پردازنده: برداری', 'memory.bitfade' => 'رم: Bit-fade', 'memory.pattern' => 'رم: الگو',
         'network.lan' => 'شبکه: LAN', 'network.latency' => 'شبکه: تأخیر', 'network.speed' => 'شبکه: سرعت', 'storage.random4k' => 'ذخیره‌ساز: تصادفی ۴K', 'storage.sequential' => 'ذخیره‌ساز: ترتیبی',
         'storage.smart' => 'ذخیره‌ساز: SMART', 'windows.dism' => 'ویندوز: DISM', 'windows.sfc' => 'ویندوز: SFC', 'power.combined' => 'توان: ترکیبی',
-        'gpu.variable' => 'گرافیک: بار متغیر', 'gpu.pulse' => 'گرافیک: ضربه‌ای', 'gpu.vram' => 'گرافیک: VRAM', 'gpu.render' => 'گرافیک: رندر', 'gpu.ai' => 'گرافیک: هوش مصنوعی',
+        'gpu.variable' => 'گرافیک: بار متغیر', 'gpu.pulse' => 'گرافیک: ضربه‌ای', 'gpu.vram' => 'گرافیک: VRAM', 'gpu.render' => 'گرافیک: رندر', 'gpu.ai' => 'گرافیک: هوش مصنوعی', 'gpu.thermal' => 'گرافیک: دمای گرافیک',
         'bench.cpu.single' => 'بنچ: پردازنده تک‌هسته', 'bench.cpu.multi' => 'بنچ: پردازنده چندهسته', 'bench.memory' => 'بنچ: رم', 'bench.storage' => 'بنچ: ذخیره‌ساز',
-        'bench.gpu.rt' => 'بنچ: ردیابی پرتو', 'bench.gpu.ai' => 'بنچ: هوش مصنوعی کارت', 'bench.gpu.scene.d3d' => 'بنچ: صحنهٔ سه‌بعدی', 'bench.network.internet' => 'بنچ: اینترنت', 'bench.ai.llm' => 'بنچ: مدل زبانی',
+        'bench.gpu.rt' => 'بنچ: ردیابی پرتو', 'bench.gpu.ai' => 'بنچ: هوش مصنوعی کارت', 'bench.gpu.scene.d3d' => 'بنچ: صحنهٔ سه‌بعدی', 'bench.network.internet' => 'بنچ: اینترنت', 'bench.ai.llm' => 'بنچ: مدل زبانی', 'bench.gpu.fur' => 'بنچ: دمای گرافیک',
     ),
     /* the headline figure of a benchmark: the metric key, its unit and a short name */
     // the checkup's findings and their figures, as the app words them (Strings.fa.resx: Check_<code>, Check_M_<key>)
@@ -37,6 +37,6 @@ return array(
     'headline' => array(
         'bench.cpu.single' => array('Bench_Cpu_Gflops', 'GFLOPS'), 'bench.cpu.multi' => array('Bench_Cpu_Gflops', 'GFLOPS'), 'bench.memory' => array('Bench_Mem_Read', 'GB/s'),
         'bench.storage' => array('Bench_Storage_SeqRead', 'MB/s'), 'bench.gpu.rt' => array('Bench_Gpu_Rt_Fps', 'FPS'), 'bench.gpu.ai' => array('Bench_Gpu_Ai_Fp32', ''), 'bench.ai.llm' => array('Bench_Ai_Gen', 'tok/s'),
-        'bench.gpu.scene.d3d' => array('Bench_Scene_ScoreGpu', 'امتیاز'), 'bench.network.internet' => array('Bench_Net_Download', 'Mbps'),
+        'bench.gpu.scene.d3d' => array('Bench_Scene_ScoreGpu', 'امتیاز'), 'bench.network.internet' => array('Bench_Net_Download', 'Mbps'), 'bench.gpu.fur' => array('Bench_Fur_Fps', 'FPS'),
     ),
 );
