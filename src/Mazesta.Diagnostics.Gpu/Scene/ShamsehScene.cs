@@ -15,7 +15,8 @@ internal sealed unsafe class ShamsehScene : IDisposable
     /// The ground's layers and the star's. Measured on an RTX 3090 at 1080p, 180 s each, all at its 350 W limit: the ground's texture read at 7.6 texels
     /// a pixel into a 16-bit frame (the first version) ran the card's memory to 100 C, hotter than FurMark here (91.5 C average, 98 C peak); read at
     /// one texel a pixel, 24 ground layers and 512 fur layers into an 11-11-10 float frame gave 86.7 C average, 92 C peak, at about 208 FPS (FurMark 217):
-    /// the work moved from the memory to the cores and their caches, as a fur test's does.
+    /// the work moved from the memory to the cores and their caches, as a fur test's does. A fur pixel then got two more cached reads and a strand's
+    /// sheen, as FurMark held a 4070 Ti about 6% under our clock at the same power: on the 3090, 60 s at 344 W, 1563 -> 1470 MHz, 192 -> 169 FPS.
     /// </summary>
     public const int Layers = 24, FurLayers = 512;
     private const float Spread = 1f, FurLength = 0.045f;

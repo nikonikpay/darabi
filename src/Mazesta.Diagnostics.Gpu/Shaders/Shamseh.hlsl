@@ -77,11 +77,16 @@ Lit FurVS(uint id : SV_VertexID, uint layer : SV_InstanceID)
 float4 FurPS(Lit i) : SV_Target
 {
     float3 n = normalize(i.Normal), v = normalize(float3(0, 0, 4.2) - i.World);
+    // four reads near the strand's own scale (so they stay in the cache) and a strand's own highlight: more work for the cores per blended pixel,
+    // which holds the clock lower at the power limit, as a fur test's does, without sending more reads to the memory
     float4 s = Strands.SampleLevel(Wrap, i.Uv * 0.55, 0), s2 = Strands.SampleLevel(Wrap, i.Uv * 1.27 + 0.37, 0);
-    float tall = s.r * 0.7 + s2.r * 0.3, a = saturate((tall - (0.22 + 0.6 * i.H)) * 9) * 0.85 * smoothstep(0.34, 0.42, length(i.Object.xy));
-    float3 base = float3(0.06, 0.62, 0.66) * (0.85 + 0.3 * s.g);
+    float4 s3 = Strands.SampleLevel(Wrap, i.Uv * 0.83 + 0.71, 0), s4 = Strands.SampleLevel(Wrap, i.Uv * 0.21 + 0.19, 0);
+    float tall = s.r * 0.6 + s2.r * 0.25 + s3.r * 0.15, a = saturate((tall - (0.22 + 0.6 * i.H)) * 9) * 0.85 * smoothstep(0.34, 0.42, length(i.Object.xy));
+    float3 base = float3(0.06, 0.62, 0.66) * (0.85 + 0.3 * s.g) * (0.9 + 0.2 * s4.b);   // the pile's colour in soft patches
     float dif = saturate(dot(n, L)) * 0.8 + 0.2, rim = pow(1 - abs(dot(n, v)), 2);
-    float3 c = base * (0.2 + 0.8 * i.H) * dif + base * rim * 0.8 * i.H + float3(0.9, 0.95, 1) * 0.12 * pow(saturate(dot(reflect(-L, n), v)), 6) * i.H;
+    // the strand's sheen (Kajiya-Kay): it lies along the strand, which leans out along the normal, bent a little by its own tuft
+    float3 t = normalize(n + (s3.gba - 0.5) * 0.6), hv = normalize(L + v); float th = dot(t, hv), sheen = pow(sqrt(saturate(1 - th * th)), 48);
+    float3 c = base * (0.2 + 0.8 * i.H) * dif + base * rim * 0.8 * i.H + float3(0.9, 0.95, 1) * (0.06 * pow(saturate(dot(reflect(-L, n), v)), 6) + 0.08 * sheen) * i.H;
     return float4(c * a, a);
 }
 
