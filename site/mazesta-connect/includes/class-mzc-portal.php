@@ -163,7 +163,7 @@ final class MZC_Portal
     private static function hands($h)
     {
         $out = array(); $keys = array(); foreach ($h as $s) { $keys += $s['items']; }
-        foreach ($keys as $k => $x) { $v = function ($st) use ($h, $k) { return isset($h[$st]['items'][$k]) ? $h[$st]['items'][$k]['verdict'] : ''; }; $out[] = array('name' => $x['name'], 'before' => $v('Before'), 'after' => $v('After'), 'note' => isset($h['After']['items'][$k]) ? $h['After']['items'][$k]['note'] : $x['note']); }
+        foreach ($keys as $k => $x) { $v = function ($st) use ($h, $k) { return isset($h[$st]['items'][$k]) ? $h[$st]['items'][$k]['verdict'] : ''; }; $out[] = array('name' => $x['name'], 'before' => $v('Before'), 'after' => $v('After'), 'note' => isset($h['After']['items'][$k]) && $h['After']['items'][$k]['note'] !== '' ? $h['After']['items'][$k]['note'] : (isset($h['Before']['items'][$k]) ? $h['Before']['items'][$k]['note'] : '')); }   // the note at hand-over, else the one at intake (what was wrong before it was fixed)
         return $out;
     }
 

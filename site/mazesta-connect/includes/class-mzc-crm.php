@@ -785,7 +785,9 @@ final class MZC_Crm
             }
             if ($x['value'] === null || $y['value'] === null) { continue; }
             $d = $y['value'] - $x['value']; $h = $y['higher']; $sign = $d > 0 ? '+' : ($d < 0 ? '−' : '');
-            $good = abs($d) < 0.05 ? 0 : ($h === null ? null : (($d > 0) === $h ? 1 : -1));
+            // within the sensors' and the runs' own spread (under 1 °C, a benchmark figure under 2%) no side is called better or worse: the numbers still show
+            $still = $k[0] === 'p' ? abs($d) < 1 : ($x['value'] != 0 ? abs($d) / abs($x['value']) < 0.02 : abs($d) < 0.05);
+            $good = $still ? 0 : ($h === null ? null : (($d > 0) === $h ? 1 : -1));
             $u = $y['unit'] !== '' ? ' ' . $y['unit'] : '';
             $rows[] = array('name' => $y['name'], 'before' => $num($x['value']) . $u, 'after' => $num($y['value']) . $u, 'change' => $sign . $num(abs($d)) . $u
                 . ($x['value'] != 0 && $k[0] === 'b' ? ' (' . $sign . number_format(abs($d) / abs($x['value']) * 100, 1) . '%)' : ''), 'good' => $good, 'kind' => $k[0] === 'p' ? 'temp' : 'bench');
