@@ -144,7 +144,7 @@ public sealed class CheckupService
     }
 
     /// <summary>The tests that keep every core busy: only over them is the processor's load and clock judged (one core at a time is another matter).</summary>
-    private static readonly string[] FullCpuTests = ["cpu.stress", "cpu.matrix", "cpu.linpack", "cpu.vector", "cpu.integer", "cpu.fft", "cpu.hash"];
+    private static readonly string[] FullCpuTests = ["cpu.stress", "cpu.matrix", "cpu.linpack", "cpu.vector", "cpu.integer", "cpu.fft", "cpu.hash", "cpu.render"];
     /// <summary>The tests that hold the graphics card at a steady full load (the variable and pulsed ones leave it on purpose).</summary>
     private static readonly string[] FullGpuTests = ["gpu.steady", "gpu.scene.d3d", "gpu.scene.rt"];
     /// <summary>The median load under which a part is said not to have been fully used, as <see cref="CpuCheck"/> draws it.</summary>

@@ -39,6 +39,8 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, LinpackExecutor>();
         s.AddSingleton<ITestExecutor, CpuVectorStressExecutor>();
         s.AddSingleton<ITestExecutor, CpuFftExecutor>();
+        s.AddSingleton<ITestExecutor>(new CpuRenderExecutor(allThreads: true));   // the render benchmark's work as a test: every tile drawn twice and compared
+        s.AddSingleton<ITestExecutor>(new CpuRenderExecutor(allThreads: false));
         s.AddSingleton<ITestExecutor>(sp => CpuCycle.Standard(sp.GetRequiredService<IMemoryProbe>()));
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, MemorySequenceExecutor>();

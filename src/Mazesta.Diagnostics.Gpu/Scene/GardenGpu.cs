@@ -589,7 +589,7 @@ internal sealed unsafe class GardenGpu
     }
 
     /// <summary>A tube of eight sides round a centre line: a stream of water's mesh.</summary>
-    private static GardenMesh Tube((Vector3 At, float Radius)[] path, uint material)
+    internal static GardenMesh Tube((Vector3 At, float Radius)[] path, uint material)
     {
         const int sides = 8; var pos = new Vector3[path.Length * sides]; var normal = new Vector3[pos.Length];
         for (int i = 0; i < path.Length; i++)
@@ -642,7 +642,7 @@ internal sealed unsafe class GardenGpu
     }
 
     /// <summary>A ball of twenty faces, one unit in radius: a droplet's mesh.</summary>
-    private static GardenMesh Ball(uint material)
+    internal static GardenMesh Ball(uint material)
     {
         float phi = (1 + MathF.Sqrt(5)) / 2;
         Vector3[] v = [new(-1, phi, 0), new(1, phi, 0), new(-1, -phi, 0), new(1, -phi, 0), new(0, -1, phi), new(0, 1, phi), new(0, -1, -phi), new(0, 1, -phi), new(phi, 0, -1), new(phi, 0, 1), new(-phi, 0, -1), new(-phi, 0, 1)];

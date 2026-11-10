@@ -43,7 +43,7 @@ public class AppGuideTests
         Goes("اورکلاک خودکار رو انجام بده", "tuning", "autooverclock"); Goes("منحنی ولتاژ رو نشون بده", "tuning", "curve");
         Goes("برو بخش dns", "tools", "dns");
         Goes("برو بخش بنچمارک دمای گرافیک", "benchmarks", "bench.gpu.fur"); Goes("برو به بنچمارک فرمارک", "benchmarks", "bench.gpu.fur");
-        Goes("برو به بنچمارک رندر پردازنده", "benchmarks", "bench.cpu.render.multi"); Goes("برو به بنچمارک سینبنچ", "benchmarks", "bench.cpu.render.multi");
+        Goes("برو به بنچمارک رندر پردازنده", "benchmarks", "bench.cpu.render.multi"); Goes("برو به بنچمارک سینبنچ", "benchmarks", "bench.cpu.render.multi"); Goes("برو به تست رندر پردازنده", "tests");
     }
     [Fact] public void A_hands_on_check_is_the_checks_page_not_a_hardware_test()
     {

@@ -580,8 +580,8 @@
   <data name="Settings_Tray_Disabled" xml:space="preserve"><value>پایشگر پس‌زمینه خاموش شد: متوقف شد و دیگر با ورود به ویندوز شروع نمی‌شود.</value></data>
   <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>تغییر پایشگر پس‌زمینه ممکن نشد: {0}</value></data>
   <data name="Settings_Tray_Restarted" xml:space="preserve"><value>برای اعمال بازه‌های جدید، پایشگر پس‌زمینه دوباره راه‌اندازی شد.</value></data>
-  <data name="Bench_Cpu_Single" xml:space="preserve"><value>پردازنده — تک‌رشته</value></data>
-  <data name="Bench_Cpu_Multi" xml:space="preserve"><value>پردازنده — چندرشته (همه‌ی رشته‌ها)</value></data>
+  <data name="Bench_Cpu_Single" xml:space="preserve"><value>محاسبات ریاضی پردازنده — تک‌رشته</value></data>
+  <data name="Bench_Cpu_Multi" xml:space="preserve"><value>محاسبات ریاضی پردازنده — چندرشته (همه‌ی رشته‌ها)</value></data>
   <data name="Bench_Memory" xml:space="preserve"><value>پهنای‌باند حافظه</value></data>
   <data name="Bench_Storage" xml:space="preserve"><value>ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)</value></data>
   <data name="Bench_Gpu_D3D" xml:space="preserve"><value>گرافیک — رندر Direct3D 12</value></data>
@@ -3898,8 +3898,12 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Bench_Render_Rays" xml:space="preserve"><value>سرعت رندر (پرتو در ثانیه)</value></data>
   <data name="Bench_Render_Samples" xml:space="preserve"><value>نمونه در ثانیه</value></data>
   <data name="Bench_Render_Passes" xml:space="preserve"><value>تعداد گذر روی تصویر</value></data>
-  <data name="Help_Bench_Render_Multi" xml:space="preserve"><value>پردازنده همان کاری را می‌کند که برنامه‌های رندر (مثل V-Ray، Corona و Cinebench) از آن می‌خواهند، نه یک محاسبه‌ی خشک: باغ ایرانی با روش path tracing روی پردازنده رندر می‌شود، به‌صورت تدریجی، در پنجره‌ای که تصویر اول دانه‌دانه است و با هر گذر صاف‌تر می‌شود. مدت اجرا ثابت است، روی یک رشته یا همه‌ی رشته‌ها (دو بنچمارک جدا)، و تعداد پرتو در ثانیه، نمونه در ثانیه و تعداد گذرها را همراه با فرکانس، توان و دما می‌دهد. یک تصویر کوچک آزمایشی قبل و بعد از اجرا رسم می‌شود و باید کاملاً یکی باشد، وگرنه اجرا ناموفق ثبت می‌شود (یعنی پردازنده اشتباه محاسبه کرده، مثل اورکلاک ناپایدار). رندرگیر و صحنه مال خود مازستا است: این عدد سیستم‌ها را در همین برنامه با هم مقایسه می‌کند، نه با برنامه‌های دیگر.</value></data>
+  <data name="Help_Bench_Render_Multi" xml:space="preserve"><value>پردازنده همان کاری را می‌کند که برنامه‌های رندر (مثل V-Ray، Corona و Cinebench) از آن می‌خواهند، نه یک محاسبه‌ی خشک: باغ ایرانی با روش path tracing روی پردازنده رندر می‌شود، به‌صورت تدریجی، در پنجره‌ای که تصویر اول دانه‌دانه است و با هر گذر صاف‌تر می‌شود - نور خورشید و چراغ‌ها با سایه‌ی نرم، نور بازتابیده بین سطح‌ها، سنگ و فلز براق، آب موج‌دار، شیشه‌ی رنگی، فواره، ابر و کوه. مدت اجرا ثابت است، روی یک رشته یا همه‌ی رشته‌ها (دو بنچمارک جدا)، و تعداد پرتو در ثانیه، نمونه در ثانیه و تعداد گذرها را همراه با فرکانس، توان و دما می‌دهد. یک تصویر کوچک آزمایشی قبل و بعد از اجرا رسم می‌شود و باید کاملاً یکی باشد، وگرنه اجرا ناموفق ثبت می‌شود (یعنی پردازنده اشتباه محاسبه کرده، مثل اورکلاک ناپایدار). رندرگیر و صحنه مال خود مازستا است: این عدد سیستم‌ها را در همین برنامه با هم مقایسه می‌کند، نه با برنامه‌های دیگر. همین رندر در صفحه‌ی تست‌ها هم به‌عنوان تست پایداری پردازنده هست: آن‌جا هر تکه از تصویر دو بار رسم می‌شود و هر دو باید دقیقاً یکی باشند.</value></data>
   <data name="HelpHow_Bench_Render_Multi" xml:space="preserve"><value>برنامه‌های دیگر را ببندید.|رندر پردازنده (چندرشته، تک‌رشته یا هر دو) را تیک بزنید و اجرا کنید.|پنجره‌ای باز می‌شود و تصویر کم‌کم صاف می‌شود؛ بستن پنجره اجرا را لغو می‌کند.|تعداد پرتو در ثانیه را با سیستم‌های دیگر با همان پردازنده مقایسه کنید.</value></data>
+  <data name="Test_Cpu_Render" xml:space="preserve"><value>CPU · رندر (path tracing، همه‌ی رشته‌ها)</value></data>
+  <data name="Test_Cpu_Render_Single" xml:space="preserve"><value>CPU · رندر (path tracing، تک‌رشته)</value></data>
+  <data name="Log_CpuRender_Start" xml:space="preserve"><value>{0} رشته باغ را در اندازه‌ی {1}x{2} رندر می‌کنند؛ هر تکه از تصویر دو بار رسم و با هم مقایسه می‌شود.</value></data>
+  <data name="Log_CpuRender_Progress" xml:space="preserve"><value>تا این لحظه {0} گذر؛ {1} تکه مقایسه شد، {2} متفاوت.</value></data>
   <data name="Test_Gpu_VideoDecode" xml:space="preserve"><value>کارت گرافیک · دکود ویدیو (H.264، HEVC، VP9، AV1؛ 1080p تا 8K؛ 8 و 10 بیت؛ 4:2:0 و 4:2:2)</value></data>
   <data name="Test_Gpu_VideoEncode" xml:space="preserve"><value>کارت گرافیک · انکود ویدیو (H.264، HEVC، AV1؛ 1080p و 4K؛ 8 و 10 بیت)</value></data>
   <data name="Detail_Vid_Path" xml:space="preserve"><value>دکود و انکود روی موتور ویدیوی کارت از مسیر ویندوز (Media Foundation، DXVA)</value></data>

@@ -39,4 +39,13 @@ public class CpuRenderTests
         Assert.Contains(pixels, p => (p & 0xFFFFFF) != 0);
     }
 
+    [Fact] public void As_a_test_every_tile_is_drawn_twice_and_a_wrong_one_is_caught()
+    {
+        var sound = new ProgressiveRender(Scene.Value, 80, 80, twice: true);
+        sound.Run(2, TimeSpan.FromSeconds(1), CancellationToken.None);
+        Assert.True(sound.Checked > 0); Assert.Equal(0, sound.Wrong);
+        var spoiled = new ProgressiveRender(Scene.Value, 80, 80, twice: true) { SpoiledTurn = 1 };   // one bit of the second drawing of the first pass
+        spoiled.Run(2, TimeSpan.FromSeconds(1), CancellationToken.None);
+        Assert.InRange(spoiled.Wrong, 1, 4);
+    }
 }
