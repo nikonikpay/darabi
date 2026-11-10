@@ -1,0 +1,3 @@
+# Installed agent skills (third-party copies), not part of the app
+.agents/
+.claude/
