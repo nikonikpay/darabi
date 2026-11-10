@@ -51,8 +51,9 @@ public sealed class GpuFurBenchmark : IBenchmark, ITestAvailability
         }
         finally { readout.Wait(); }
         double wall = total.Elapsed.TotalSeconds, average = n / wall; var to = request.Clock.UtcNow;
-        if (!SceneView.Same(scene.CheckFrame(CheckTime), before))
-            throw new GpuWrongResultException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
+        var after = scene.CheckFrame(CheckTime);
+        if (!SceneView.Same(after, before))
+            throw new GpuWrongResultException($"The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load ({SceneView.Worst(after, before)}).");
         var metrics = new List<BenchmarkMetric> { new("Bench_Fur_Fps", average, "FPS") };
         if (high > 0) metrics.AddRange([new("Bench_Fur_FpsHigh", high, "FPS"), new("Bench_Fur_FpsLow", low, "FPS"), new("Bench_Fur_Spread", (high - low) / average * 100, "%")]);
         // The card's heat, clock and power over the timed run, in the row beside the frame rate (each says whether it is the average or the peak);

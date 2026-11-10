@@ -4238,6 +4238,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Log_Scene_Progress" xml:space="preserve"><value>در حال رسم: الان {0} فریم در ثانیه، {1} ثانیه مانده.</value></data>
   <data name="Log_Scene_Ram" xml:space="preserve"><value>اندازه‌گیری سرعت رم (بخش سوم امتیاز).</value></data>
   <data name="Log_Scene_Check" xml:space="preserve"><value>بررسی اینکه فریم بعد از اجرا با فریم پیش از آن یکی است.</value></data>
+  <data name="Log_Scene_CheckLoose" xml:space="preserve"><value>این کارت پیش از اجرا فریم کنترلی را دو بار پشت‌سرهم یکسان نکشید؛ پس فریم بعد از اجرا چیزی را ثابت نمی‌کند و مقایسه نشد. نتیجه بدون این بررسی ثبت می‌شود.</value></data>
   <data name="Tuning_FanCurve_Title" xml:space="preserve"><value>نمودار فن گرافیک</value></data>
   <data name="Tuning_FanCurve_Sub" xml:space="preserve"><value>دور فن با دمای کارت تغییر می‌کند</value></data>
   <data name="Tuning_FanCurve_Lede" xml:space="preserve"><value>نقطه‌ها را بکشید تا مشخص شود در هر دما فن با چه سرعتی بچرخد؛ بین دو نقطه سرعت به‌صورت خط مستقیم تغییر می‌کند. تا وقتی برنامه باز است فن‌ها را نگه می‌دارد و هنگام بسته شدن به کارت برمی‌گرداند. در ۸۵ درجه روی هسته یا ۱۰۰ درجه روی نقطهٔ داغ، فن‌ها هر چه نمودار بگوید روی دور کامل می‌روند. تا وقتی نمودار روشن است، جای سرعت ثابت فن در بالا را می‌گیرد.</value></data>

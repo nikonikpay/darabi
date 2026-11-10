@@ -74,6 +74,12 @@ internal sealed class SceneView : IDisposable
     }
     /// <summary>Whether two check frames are the same picture: no block's mean colour is more than 2 of 255 levels apart.</summary>
     public static bool Same(float[] a, float[] b) { for (int i = 0; i < a.Length; i++) if (Math.Abs(a[i] - b[i]) > 2f) return false; return true; }
+    /// <summary>Where two check frames part: the most distant block and channel and the two values; so a report says what differed, not only that it did.</summary>
+    public static string Worst(float[] a, float[] b)
+    {
+        int at = 0; for (int i = 1; i < a.Length; i++) if (Math.Abs(a[i] - b[i]) > Math.Abs(a[at] - b[at])) at = i;
+        return $"block {at / 3} of 256, channel {"RGB"[at % 3]}: {a[at]:F1} against {b[at]:F1} of 255";
+    }
 
     /// <summary>Waits for the card first: a run stopped between two frames (Cancel, the window closed) still has one or two on the card, and freeing the
     /// scene's memory under them is a page fault the driver answers by resetting the card, which then vanishes from DirectX until the program restarts.</summary>

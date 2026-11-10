@@ -65,6 +65,7 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         using var sensors = new SceneSensorPace(request.Engine, view.Overlay.Visible);
         var ram = facts?.Invoke();   // what the RAM runs at, for the readout and the result (null where it is not known)
         var before = view.CheckFrame(CheckTime);
+        bool steady = SceneView.Same(before, view.CheckFrame(CheckTime));   // a card whose check frame is not the same twice in a row cannot prove anything by it: its answer is not called wrong
         for (int i = 0; i < 3; i++) view.Present(i * Step);   // warm-up: first-use costs are not measured
         view.Drain();
 
@@ -104,8 +105,10 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         request.Note("Log_Scene_Check");
         // The RAM's own speed in a few seconds, after the timed run (the window is kept alive meanwhile): the score's third part.
         (double Triad, double Latency)? probe = whole && memory is not null ? MeasureRam(window, memory, ct) : null;
-        if (!SceneView.Same(view.CheckFrame(CheckTime), before))
-            throw new GpuWrongResultException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
+        var after = view.CheckFrame(CheckTime);
+        if (!steady) request.Note("Log_Scene_CheckLoose");
+        else if (!SceneView.Same(after, before))
+            throw new GpuWrongResultException($"The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load ({SceneView.Worst(after, before)}).");
         double average = n / wall;
         var sorted = times.Order().ToArray();
         var slowest = sorted.TakeLast(Math.Max(1, sorted.Length / 100)).Average();
