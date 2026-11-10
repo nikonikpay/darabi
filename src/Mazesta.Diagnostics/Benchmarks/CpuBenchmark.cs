@@ -23,10 +23,17 @@ public sealed class CpuBenchmark(bool allThreads) : IBenchmark
         if (ct.IsCancellationRequested) return BenchmarkResult.Cancelled(Definition.Id, started, finished);
 
         List<BenchmarkMetric> metrics = [new("Bench_Cpu_Gflops", gflops, "GFLOPS")];
+        if (allThreads) metrics.AddRange([new("Bench_Cpu_PerThread", gflops / threads, "GFLOPS"), new("Bench_Threads", threads, "")]);
+        AddConditions(metrics, request, allThreads, started, finished);
+        return new(Definition.Id, BenchmarkStatus.Completed, started, finished, metrics, $"matrix {N}x{N} double on {threads} thread(s) for {request.DurationSeconds} s");
+    }
+
+    /// <summary>What the monitor measured of the processor over a run (clock, power, voltage, temperature), for any benchmark that loads it on one thread or on all.</summary>
+    public static void AddConditions(List<BenchmarkMetric> metrics, TestExecutionRequest request, bool allThreads, DateTimeOffset started, DateTimeOffset finished)
+    {
         // One busy thread lifts one core, so its peak clock is the single-thread number; all threads load every core evenly.
         if (allThreads)
         {
-            metrics.AddRange([new("Bench_Cpu_PerThread", gflops / threads, "GFLOPS"), new("Bench_Threads", threads, "")]);
             metrics.AddFirst(request, HardwareKind.Cpu, started, finished, "Bench_Cpu_Clock", Unit.MegaHertz, false, null, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage);
             // A hybrid CPU's two kinds of core run at their own clocks, so each is averaged apart (the monitor names them "P-Core #n" and "E-Core #n").
             metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished, "Bench_Cpu_PClock", Unit.MegaHertz, sensor: s => s.Name.StartsWith("P-Core", StringComparison.Ordinal));
@@ -37,7 +44,6 @@ public sealed class CpuBenchmark(bool allThreads) : IBenchmark
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuVcore, started, finished, "Bench_Cpu_Vcore", Unit.Volt);
         if (SensorEvidence.CpuTemperature(request.Engine, started, finished) is { } temp)
             metrics.AddRange([new("Bench_Cpu_TempAvg", temp.Average, Units.Symbol(Unit.Celsius)), new("Bench_Cpu_TempMax", temp.Max, Units.Symbol(Unit.Celsius))]);
-        return new(Definition.Id, BenchmarkStatus.Completed, started, finished, metrics, $"matrix {N}x{N} double on {threads} thread(s) for {request.DurationSeconds} s");
     }
 
     private static async Task<double> MeasureAsync(int threads, TimeSpan duration, TestExecutionRequest request, CancellationToken ct)

@@ -112,6 +112,7 @@
     "fans": ["کنترل فن", "فن مادربرد", "منحنی فن", "فن", "fan control", "fan curve", "fans", "سایلنت", "حالت سایلنت", "فن کیس", "فن های کیس", "سرعت فن ها"],
     "tuning/autoundervolt": ["اندرولت خودکار", "اندروالت خودکار", "اندر ولت خودکار", "auto undervolt"],
     "tuning/autooverclock": ["اورکلاک خودکار", "اور کلاک خودکار", "auto overclock"],
+    "benchmarks/bench.cpu.render.multi": ["بنچمارک رندر", "رندر پردازنده", "بنچمارک رندر پردازنده", "رندر سی پی یو", "بنچمارک سینبنچ", "سینبنچ", "سینه بنچ", "cinebench", "cpu render", "render benchmark", "path tracing"],
     "benchmarks/bench.gpu.fur": ["بنچمارک دمای گرافیک", "بنچمارک دمای کارت گرافیک", "بنچمارک فرمارک", "بنچمارک دما", "بنچمارک پرز", "بنچمارک شمسه", "شمسه پرزدار", "فرمارک", "فور مارک", "furmark", "fur benchmark"],
     "tuning/curve": ["منحنی ولتاژ", "منحنی فرکانس", "کرو", "منحنی", "voltage curve", "curve"],
     "tuning/profiles": ["پروفایل اورکلاک", "پروفایلها", "پروفایل ها", "profiles"],

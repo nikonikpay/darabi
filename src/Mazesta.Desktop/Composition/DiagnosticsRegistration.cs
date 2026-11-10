@@ -76,6 +76,8 @@ internal static class DiagnosticsRegistration
         // Benchmarks page order: CPU (single thread, then all threads), memory, the GPU workloads, storage, then the internet link.
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: false));
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: true));
+        s.AddSingleton<IBenchmark>(new CpuRenderBenchmark(allThreads: false));   // the processor as a renderer: the garden path-traced, progressively
+        s.AddSingleton<IBenchmark>(new CpuRenderBenchmark(allThreads: true));
         s.AddSingleton<IBenchmark, SevenZipBenchmark>();
         s.AddSingleton<IBenchmark, MemoryBenchmark>();
         s.AddSingleton<IBenchmark, GpuSceneBenchmark>();
