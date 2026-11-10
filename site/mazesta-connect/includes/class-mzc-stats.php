@@ -115,6 +115,27 @@ final class MZC_Stats
         set_transient($key, $res, 600); return $res;
     }
 
+    /** Every ERR/WRN/FTL line of the last N days as a tab-separated download (system, UTC time, line), streamed in slices of 200 uploads so the server holds almost nothing; grouped on the owner's PC by tools/log-kinds.mjs. */
+    public static function act_logs_export()
+    {
+        if (!current_user_can('manage_options')) { wp_die('اجازه این کار را ندارید.', '', array('response' => 403)); }
+        check_admin_referer('mzc_logs_export');
+        $wpdb = self::db(); if (!self::ready()) { wp_die('آمار آماده نیست.'); }
+        $days = isset($_GET['days']) ? max(1, min(self::LOG_DAYS, (int) $_GET['days'])) : 30; $at = gmdate('Y-m-d H:i:s', time() - $days * 86400);
+        @set_time_limit(0); nocache_headers(); header('Content-Type: text/plain; charset=utf-8'); header('Content-Disposition: attachment; filename="mazesta-log-errors-' . $days . 'd.tsv"');
+        $last = PHP_INT_MAX;
+        while (true) {
+            $rows = $wpdb->get_results($wpdb->prepare('SELECT id, sys, at, body FROM `' . self::t('logs') . '` WHERE at >= %s AND id < %d ORDER BY id DESC LIMIT 200', $at, $last), ARRAY_A);
+            if (!$rows) { break; }
+            foreach ($rows as $r) {
+                $last = (int) $r['id'];
+                foreach (explode("\n", (string) $r['body']) as $ln) { if (preg_match('/^\S+ (ERR|WRN|FTL) /', $ln)) { echo $r['sys'], "\t", $r['at'], "\t", rtrim($ln), "\n"; } }
+            }
+            if (count($rows) < 200) { break; }
+        }
+        exit;
+    }
+
     public static function logs($id, $limit = 30)
     {
         $wpdb = self::db(); if (!self::ready()) { return array(); }

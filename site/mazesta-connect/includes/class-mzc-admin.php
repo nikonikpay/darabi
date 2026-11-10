@@ -16,6 +16,7 @@ final class MZC_Admin
         add_action('admin_enqueue_scripts', array(__CLASS__, 'assets'));
         add_action('admin_post_mzc_system_note', array(__CLASS__, 'act_system_note'));
         add_action('admin_post_mzc_cols_save', array(__CLASS__, 'act_cols_save'));
+        add_action('admin_post_mzc_logs_export', array('MZC_Stats', 'act_logs_export'));
         MZC_Crm::boot();
     }
 
