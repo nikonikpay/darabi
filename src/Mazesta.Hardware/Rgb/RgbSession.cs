@@ -31,7 +31,7 @@ public sealed class RgbSession : IDisposable
 
     /// <summary>Connects to the server, starting it first when <paramref name="start"/> (and stopping the makers' programs when <paramref name="stopMakers"/>), waits until
     /// its device scan has settled and gives the headers their lengths (the scene's, else the default).</summary>
-    public async Task<RgbConnect> ConnectAsync(bool start, bool stopMakers, RgbScene scene, CancellationToken ct)
+    public async Task<RgbConnect> ConnectAsync(bool start, bool stopMakers, RgbScene scene, CancellationToken ct, bool retried = false)
     {
         bool fresh = false; ZonesDefaulted = false;
         if (!Client.Connected)
@@ -46,6 +46,9 @@ public sealed class RgbSession : IDisposable
                     var stopped = await Task.Run(Conflicts.StopAll, ct).ConfigureAwait(false);
                     if (stopped.Count > 0) _log.LogInformation("Stopped for the lights: {Makers}", string.Join(", ", stopped));
                 }
+                // Nothing listens, so an OpenRGB of this folder that still runs is a leftover (a crashed run, a scan that hung): it holds the SMBus lock, and a second server then
+                // finds no motherboard (the "found once, not the next time" report). It is ended before a new one starts.
+                await Task.Run(StopBundledServer, ct).ConfigureAwait(false);
                 foreach (int port in OpenRgbHost.Ports.Where(OpenRgbHost.CanBind).Take(3))
                 {
                     _server = await OpenRgbHost.StartAsync(exe, port, _configDir, ct).ConfigureAwait(false);
@@ -57,6 +60,8 @@ public sealed class RgbSession : IDisposable
             await Client.ConnectAsync(Port, ct).ConfigureAwait(false);
         }
         await WaitForDevicesAsync(fresh, ct).ConfigureAwait(false);
+        // A server found already running that lists nothing is a stale scan: ours is ended and started again, once.
+        if (start && !fresh && !retried && Client.Devices.Count == 0 && Exe is not null) { _log.LogWarning("Lights: the server found running lists no device; starting it afresh"); return await RecoverAsync(scene, ct, true).ConfigureAwait(false); }
         if (start) await SizeZonesAsync(scene, ct).ConfigureAwait(false);
         _log.LogInformation("OpenRGB devices: {Devices}", string.Join(" | ", Client.Devices.Select(d => $"{d.Kind} {d.Vendor} {d.Name} [{string.Join(", ", d.Zones.Select(z => $"{z.Name}:{z.LedsCount}/{z.LedsMax}"))}]")));
         // OpenRGB lists a graphics card by vendor + subsystem id (an ASUS Astral/Strix is found only when its exact id is in OpenRGB's table), so the ids go in the log.
@@ -214,13 +219,13 @@ public sealed class RgbSession : IDisposable
     /// <summary>After sleep the lights' devices are not what the server found at its start (a controller that lost its power has a new handle, an old one writes into nothing): the
     /// connection is dropped, the bundled server this app starts is ended and started again, and the devices are found afresh. A server somebody else runs (their own
     /// OpenRGB) is not touched: it is only connected to again.</summary>
-    public async Task<RgbConnect> RecoverAsync(RgbScene scene, CancellationToken ct)
+    public async Task<RgbConnect> RecoverAsync(RgbScene scene, CancellationToken ct, bool retried = false)
     {
         Runner.Stop(); Client.Disconnect();
         await Task.Run(StopBundledServer, ct).ConfigureAwait(false);
         try { _server?.Dispose(); } catch (InvalidOperationException) { }
         _server = null; await Task.Delay(500, ct).ConfigureAwait(false);
-        return await ConnectAsync(true, scene.StopMakers, scene, ct).ConfigureAwait(false);
+        return await ConnectAsync(true, scene.StopMakers, scene, ct, retried).ConfigureAwait(false);
     }
 
     /// <summary>Ends the OpenRGB that sits in this app's own folder (the one started for the lights, by this process or another of the app's); the user's own install is left alone.</summary>
