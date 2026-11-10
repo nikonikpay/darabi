@@ -27,7 +27,7 @@ internal sealed class RenderScene
     private const int Nearest = 0, SunShadow = 1, LampShadow = 2;
     /// <summary>The picture's own choices: where on its arc the sun stands (0 sunrise, 1 sunset), how far the lamps are lit by day, the
     /// lens (metres to what is sharp, and its radius), and the moment the water is caught at.</summary>
-    private const float DayPoint = 0.12f, LampLevel = 0.3f, Focus = 22f, Lens = 0.01f, Moment = 1.3f;
+    private const float DayPoint = 0.12f, LampLevel = 0.3f, Focus = 23.5f, Lens = 0.01f, Moment = 1.3f, Back = 1.5f, Wide = 1.3f, Lift = 0.5f;
 
     [StructLayout(LayoutKind.Sequential)] private struct Tri { public Vector3 V0, E1, E2; }
     private struct Placed { public int Mesh; public bool Fitting; public Vector3 I0, I1, I2, At, C0, C1, C2; }
@@ -120,8 +120,9 @@ internal sealed class RenderScene
         }).Where(l => l.Power > 0)];
 
         var cam = scene.RasterCamera;
-        _eye = cam.Eye; _forward = Vector3.Normalize(cam.Target - cam.Eye); _right = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, _forward)); _up = Vector3.Cross(_forward, _right);
-        _tanHalf = MathF.Tan(cam.FovY / 2);
+        // The render's own view: a wider lens aimed a little higher, so both wind towers stand whole in the picture. The garden's gate is some 3 m behind the eye, so it can step back only this far.
+        _forward = Vector3.Normalize(cam.Target + Vector3.UnitY * Lift - cam.Eye); _eye = cam.Eye - Vector3.Normalize(new Vector3(_forward.X, 0, _forward.Z)) * Back; _right = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, _forward)); _up = Vector3.Cross(_forward, _right);
+        _tanHalf = MathF.Tan(cam.FovY / 2) * Wide;
     }
 
     private Mesh Build(GardenMesh source)
