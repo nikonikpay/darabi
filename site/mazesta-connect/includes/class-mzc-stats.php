@@ -83,6 +83,38 @@ final class MZC_Stats
         return true;
     }
 
+    /**
+     * The warnings and errors of the systems' log uploads, grouped by what they say (numbers in a line become #), so a fault seen on many PCs is one row:
+     * level, text, how many systems and lines, up to 5 system ids and one example line. Reads the newest $max uploads since $since (a unix time) in
+     * slices of 200, so memory stays small; 'read' and 'cut' say how many were read and whether older ones were left out. Kept ten minutes (a transient).
+     */
+    public static function log_kinds($since, $max = 4000)
+    {
+        $wpdb = self::db(); if (!self::ready()) { return array('kinds' => array(), 'read' => 0, 'systems' => 0, 'cut' => false); }
+        $key = 'mzc_logkinds_' . md5($since . '|' . $max); $hit = get_transient($key); if (is_array($hit)) { return $hit; }
+        $at = gmdate('Y-m-d H:i:s', $since); $kinds = array(); $seen = array(); $read = 0; $last = PHP_INT_MAX; $cut = false;
+        while ($read < $max) {
+            $rows = $wpdb->get_results($wpdb->prepare('SELECT id, sys, body FROM `' . self::t('logs') . '` WHERE at >= %s AND id < %d ORDER BY id DESC LIMIT 200', $at, $last), ARRAY_A);
+            if (!$rows) { break; }
+            foreach ($rows as $r) {
+                if ($read >= $max) { $cut = true; break; }
+                $last = (int) $r['id']; $read++; $seen[$r['sys']] = 1;
+                foreach (explode("\n", (string) $r['body']) as $ln) {
+                    if (!preg_match('/^\S+ (ERR|WRN|FTL) (.+)$/', $ln, $m)) { continue; }
+                    $txt = preg_replace('/\d+(\.\d+)?/', '#', mb_substr(trim($m[2]), 0, 200)); $k = $m[1] . '|' . $txt;
+                    if (!isset($kinds[$k])) { $kinds[$k] = array('level' => $m[1], 'text' => $txt, 'systems' => array(), 'n' => 0, 'example' => mb_substr(trim($m[2]), 0, 300)); }
+                    $kinds[$k]['n']++; $kinds[$k]['systems'][$r['sys']] = 1;
+                }
+            }
+            if (count($rows) < 200) { break; }
+        }
+        $out = array();
+        foreach ($kinds as $x) { $out[] = array('level' => $x['level'], 'text' => $x['text'], 'n' => $x['n'], 'count' => count($x['systems']), 'ids' => array_slice(array_keys($x['systems']), 0, 5), 'example' => $x['example']); }
+        usort($out, function ($a, $b) { return ($b['count'] <=> $a['count']) ?: ($b['n'] <=> $a['n']); });
+        $res = array('kinds' => $out, 'read' => $read, 'systems' => count($seen), 'cut' => $cut);
+        set_transient($key, $res, 600); return $res;
+    }
+
     public static function logs($id, $limit = 30)
     {
         $wpdb = self::db(); if (!self::ready()) { return array(); }
