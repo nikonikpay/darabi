@@ -34,15 +34,18 @@ internal sealed unsafe class SceneOverlay : IDisposable
     /// <summary>The readout's size in pixels of the frame, as last drawn.</summary>
     internal (int Width, int Height) Size => (_width, _used);
 
-    /// <summary>What the temperature test's readout shows, large: the core and its hot spot, their traces, then the card's other figures. Null was not measured.</summary>
-    public sealed record Heat(string Card, double? Core, double? Hot, IReadOnlyList<float> CoreTrace, IReadOnlyList<float> HotTrace, IReadOnlyList<(string Name, string? Value, string Unit)> Figures, string Status, bool Failing);
+    /// <summary>One cell of the temperature readout's grid: a name, its value (null: not read, a dash), the unit and an optional fill (0..1) drawn as a thin bar under it.</summary>
+    public sealed record Cell(string Name, string? Value, string Unit, uint Rgb, double? Bar = null);
+    /// <summary>What the temperature test's readout shows, large: the clock, the core and its hot spot with their traces, the frame rate with its average, slowest and quickest, then a grid of the card's other figures. Null was not measured.</summary>
+    public sealed record Heat(string Card, string Sub, string Elapsed, string Total, double Progress, double? Core, double? Hot, IReadOnlyList<float> CoreTrace, IReadOnlyList<float> HotTrace,
+        double? Fps, double? Average, double? Minimum, double? Maximum, double? FrameMs, IReadOnlyList<Cell> Cells, string Status, bool Failing);
 
     /// <param name="heat">The temperature test's readout (<see cref="UpdateHeat"/>): larger, for reading across the room, as a fur test's is.</param>
     public SceneOverlay(D3D12Session s, ID3D12Resource[] targets, int renderHeight, bool heat = false)
     {
         _s = s; _targets = targets;
         _u = Math.Max(10, renderHeight / (heat ? 54 : 90)); _margin = _u * 7 / 10;
-        _width = _u * (heat ? 21 : 23); _height = heat ? HeatHeight : Height(MaxRows); _used = _height;
+        _width = _u * (heat ? 26 : 23); _height = heat ? HeatHeightFor(HeatMaxRows) : Height(MaxRows); _used = _height;
         _c = new Canvas(_width, _height);
 
         byte[] vs = D3D12Session.Shader("SceneOverlayVS");
@@ -129,19 +132,27 @@ internal sealed unsafe class SceneOverlay : IDisposable
 
     public void UpdateHeat(Heat r) { lock (_gate) ComposeHeat(r); }
 
-    private const int HeatRows = 8;
-    private int HeatHeight => _margin * 2 + _u + _u * 4 + _u * 3 + _u * 3 / 10 + HeatRows * RowHeight + _u * 3 / 10 + FootHeight;
+    private const int HeatMaxRows = 9;   // two cells a row
+    public const uint FanHue = 0x3FD6C6;
+    private int HeatHeightFor(int rows) => _margin * 2 + _u + _u * 9 / 10 + _u * 13 / 5 + _u * 4 + _u * 3 + _u * 3 / 10 + _u * 3 + rows * RowHeight + _u * 3 / 10 + FootHeight;
 
     private void ComposeHeat(Heat r)
     {
         if (!Visible) return;
         int u = _u, x0 = _margin, x1 = _width - _margin, y = _margin, half = (x1 - x0) / 2;
-        static string N(double? v) => v is { } d ? d.ToString("F0", CultureInfo.InvariantCulture) : "—";
+        static string N(double? v, string f = "F0") => v is { } d ? d.ToString(f, CultureInfo.InvariantCulture) : "—";
+        var cells = r.Cells.Take(HeatMaxRows * 2).ToList(); int rows = (cells.Count + 1) / 2; _used = HeatHeightFor(rows);
         _c.Clear();
-        _c.Fill(0, 0, _width, _height, Rule); _c.Fill(1, 1, _width - 1, _height - 1, 0);
+        _c.Fill(0, 0, _width, _used, Rule); _c.Fill(1, 1, _width - 1, _used - 1, 0);
         _c.Text(x0, y, x1, y + u, "MAZESTA · GPU TEMPERATURE", Game, u * 3 / 5, 800);
         _c.Text(x0, y, x1, y + u, r.Card, Faint, u * 3 / 5, 400, right: true);
         y += u;
+        _c.Text(x0, y, x1, y + u * 9 / 10, r.Sub, Faint, u * 11 / 20, 400); y += u * 9 / 10;   // the PCIe link and the driver
+
+        // the time run, large, and how far through the test it is
+        _c.Text(x0, y, x1, y + u * 2, r.Elapsed, White, u * 8 / 5, 700, middle: true);
+        _c.Text(x0, y, x1, y + u * 2, "of " + r.Total, Faint, u * 3 / 5, 400, right: true, middle: true);
+        y += u * 2; _c.Fill(x0, y, x1, y + u / 4, Rule); _c.Fill(x0, y, x0 + (int)((x1 - x0) * Math.Clamp(r.Progress, 0, 1)), y + u / 4, Game); y += u * 3 / 5;
 
         // the core and its hot spot, as large as the box allows
         foreach (var (tag, value, hue, x) in new[] { ("GPU", r.Core, GpuHue, x0), ("HOT SPOT", r.Hot, LowHue, x0 + half) })
@@ -160,18 +171,36 @@ internal sealed unsafe class SceneOverlay : IDisposable
         Trace(x0, y, gw, u * 3, core, top - 30, GpuHue, "GPU °C"); Trace(x1 - gw, y, gw, u * 3, hot, top - 30, LowHue, "HOT °C");
         y += u * 3 + u * 3 / 10;
 
-        foreach (var (name, value, unit) in r.Figures.Take(HeatRows))
+        // the frame rate large, with the average, slowest and quickest beside it and the frame's time (as a fur test reports them)
+        string fps = N(r.Fps); int bigF = u * 12 / 5, fpsW = _c.Measure(fps, bigF, 700);
+        _c.Text(x0, y - u / 5, x0 + fpsW + u, y + u * 14 / 5, fps, White, bigF, 700);
+        _c.Text(x0 + fpsW + u / 4, y + u * 3 / 2, x1, y + u * 14 / 5, "FPS", Game, u * 7 / 10, 800);
+        (string Tag, string Value, uint Hue)[] cols = [("AVG", N(r.Average), Game), ("MIN", N(r.Minimum), LowHue), ("MAX", N(r.Maximum), GpuHue), ("MS", N(r.FrameMs, "F2"), Label)];
+        int colW = u * 18 / 5, cx = x1 - colW * cols.Length;
+        foreach (var (tag, value, hue) in cols)
         {
-            _c.Fill(x0, y, x1, y + 1, Rule);
-            _c.Text(x0, y, x0 + half, y + RowHeight, name, Label, u * 4 / 5, 700, middle: true);
-            int uw = _c.Measure(unit, u * 13 / 20, 700);
-            _c.Text(x0 + half, y, x1 - uw - u / 6, y + RowHeight, value ?? "—", White, u * 23 / 20, 700, right: true, middle: true);
-            _c.Text(x1 - uw, y + u / 6, x1, y + RowHeight, unit, GpuHue, u * 13 / 20, 700, middle: true);
-            y += RowHeight;
+            _c.Text(cx, y + u / 5, cx + colW, y + u * 6 / 5, tag, hue, u * 3 / 5, 800, right: true);
+            _c.Text(cx, y + u * 11 / 10, cx + colW, y + u * 13 / 5, value, White, u * 23 / 20, 700, right: true);
+            cx += colW;
         }
+        y += u * 3;
+
+        // the other figures in two columns: a tick in the figure's hue, its name, value and unit, and a thin bar under those that are a share
+        int cw = (x1 - x0 - u / 2) / 2, nameW = u * 18 / 5;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            var cell = cells[i]; int x = x0 + i % 2 * (cw + u / 2), yy = y + i / 2 * RowHeight;
+            _c.Fill(x, yy, x + cw, yy + 1, Rule); _c.Fill(x, yy + u / 5, x + u / 6, yy + RowHeight - u / 5, cell.Rgb);
+            _c.Text(x + u / 2, yy, x + nameW, yy + RowHeight, cell.Name, Label, u * 3 / 5, 700, middle: true);
+            int uw = _c.Measure(cell.Unit, u * 13 / 20, 700);
+            _c.Text(x + nameW, yy, x + cw - uw - u / 6, yy + RowHeight, cell.Value ?? "—", White, u * 23 / 20, 700, right: true, middle: true);
+            _c.Text(x + cw - uw, yy + u / 6, x + cw, yy + RowHeight, cell.Unit, cell.Rgb, u * 13 / 20, 700, middle: true);
+            if (cell.Bar is { } b) { int by = yy + RowHeight - u / 6; _c.Fill(x, by, x + cw, by + u / 8, Rule); _c.Fill(x, by, x + (int)(cw * Math.Clamp(b, 0, 1)), by + u / 8, cell.Rgb); }
+        }
+        y += rows * RowHeight;
         _c.Fill(x0, y, x1, y + 1, Rule); y += u * 3 / 10;
         _c.Text(x0, y, x1, y + FootHeight, r.Status, r.Failing ? Fail : Label, u * 13 / 20, r.Failing ? 700 : 400);
-        _c.Flush(); _used = _height;
+        _c.Flush();
         Array.Fill(_fresh, true);
     }
 

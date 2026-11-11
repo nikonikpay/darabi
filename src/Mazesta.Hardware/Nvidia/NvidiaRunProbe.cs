@@ -67,6 +67,19 @@ public sealed class NvidiaRunProbe : IDisposable
         }
     }
 
+    /// <summary>What the driver says now: its version and the PCIe link the card runs at, with the most it can do. A value it does not give is null.</summary>
+    public readonly record struct Live(string? Driver, int? Gen, int? Width, int? MaxGen, int? MaxWidth);
+
+    /// <summary>The driver's version and the link as it is this moment (a link at rest is slowed to save power: read it under load).</summary>
+    public Live Now()
+    {
+        uint gen = 0, width = 0, maxGen = 0, maxWidth = 0;
+        int? Got(int result, uint v) => result == Nvml.Success ? (int)v : null;
+        string? driver = Nvml.Text(b => Nvml.nvmlSystemGetDriverVersion(b, (uint)b.Length));
+        return new(driver, Got(Nvml.Call(() => Nvml.nvmlDeviceGetCurrPcieLinkGeneration(_device, out gen)), gen), Got(Nvml.Call(() => Nvml.nvmlDeviceGetCurrPcieLinkWidth(_device, out width)), width),
+            Got(Nvml.Call(() => Nvml.nvmlDeviceGetMaxPcieLinkGeneration(_device, out maxGen)), maxGen), Got(Nvml.Call(() => Nvml.nvmlDeviceGetMaxPcieLinkWidth(_device, out maxWidth)), maxWidth));
+    }
+
     /// <summary>Stops sampling and gives what was counted; the link is the fastest and widest seen while busy (null when never busy).</summary>
     public (GpuThrottleCounts Counts, int? Gen, int? Width) Stop()
     {

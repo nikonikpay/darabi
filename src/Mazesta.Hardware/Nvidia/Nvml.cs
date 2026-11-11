@@ -48,6 +48,7 @@ internal static class Nvml
     [DllImport(Dll)] public static extern int nvmlDeviceGetCurrPcieLinkWidth(IntPtr device, out uint width);
     [DllImport(Dll)] public static extern int nvmlDeviceGetMaxPcieLinkGeneration(IntPtr device, out uint gen);
     [DllImport(Dll)] public static extern int nvmlDeviceGetMaxPcieLinkWidth(IntPtr device, out uint width);
+    [DllImport(Dll)] public static extern int nvmlSystemGetDriverVersion(byte[] version, uint length);
     [DllImport(Dll)] public static extern int nvmlDeviceGetVbiosVersion(IntPtr device, byte[] version, uint length);
     [DllImport(Dll)] public static extern int nvmlDeviceGetMemoryBusWidth(IntPtr device, out uint bits);
     [DllImport(Dll)] public static extern int nvmlDeviceGetNumGpuCores(IntPtr device, out uint cores);

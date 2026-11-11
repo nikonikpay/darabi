@@ -28,7 +28,7 @@ public sealed class GpuFurBenchmark : IBenchmark, ITestAvailability
         using var window = new TestWindow("Mazesta — GPU temperature — benchmark", w, h, options.Get(GpuSceneExecutor.FullScreenOption) == "on");
         using var scene = new ShamsehScene(s, window, w, h);
         var readout = new FurReadout(scene, request.Engine, GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName), s.AdapterName);
-        var before = scene.CheckFrame(CheckTime);
+        var stats = new FurStats(); var before = scene.CheckFrame(CheckTime); stats.Restart();
         double runSeconds = Math.Max(10, request.DurationSeconds); long n = 0, tickFrames = 0; double low = double.MaxValue, high = 0;
         var total = Stopwatch.StartNew(); var tick = Stopwatch.StartNew(); var from = request.Clock.UtcNow;
         try
@@ -38,13 +38,13 @@ public sealed class GpuFurBenchmark : IBenchmark, ITestAvailability
                 ct.ThrowIfCancellationRequested();
                 if (!window.Pump()) throw new OperationCanceledException("The benchmark window was closed.");
                 if (window.OverlayKey()) scene.Overlay.Visible = !scene.Overlay.Visible;
-                scene.Present((float)total.Elapsed.TotalSeconds); n++; tickFrames++;
+                scene.Present((float)total.Elapsed.TotalSeconds); n++; tickFrames++; stats.Frame();
                 if (tick.Elapsed.TotalSeconds >= 0.5)
                 {
                     double fps = tickFrames / tick.Elapsed.TotalSeconds; tickFrames = 0; tick.Restart();
                     if (total.Elapsed.TotalSeconds > Settle) { low = Math.Min(low, fps); high = Math.Max(high, fps); }
                     window.Title = $"Mazesta — GPU temperature — benchmark — {fps:F0} FPS — {Math.Max(0, (int)(runSeconds - total.Elapsed.TotalSeconds))} s";
-                    readout.Show(fps, request.Clock.UtcNow, $"{(int)total.Elapsed.TotalSeconds}/{runSeconds:F0} s · {w} × {h}", false);
+                    readout.Show(fps, request.Clock.UtcNow, total.Elapsed, TimeSpan.FromSeconds(runSeconds), stats, $"{w} × {h} · benchmark", false);
                     request.Report(total.Elapsed.TotalSeconds / runSeconds);
                 }
             }

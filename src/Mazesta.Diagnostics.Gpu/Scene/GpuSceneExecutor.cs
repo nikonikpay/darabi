@@ -211,7 +211,22 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     internal static double? Latest(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now) => Reading(engine, node, role, now)?.Value;
 
     /// <summary><see cref="Latest"/> with the unit the sensor reports in; the node's own sensors first, then those of the nodes under it.</summary>
-    private static (double Value, Unit Unit)? Reading(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now)
+    /// <summary>Every sensor of <paramref name="role"/> with its name and newest reading from the last few seconds (a card with two fans has two), in the monitor's order.</summary>
+    internal static List<(string Name, double Value)> Each(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now)
+    {
+        var list = new List<(string, double)>(); if (engine is null || node is null) return list;
+        int recent = engine.History.SecondsSinceEpoch(now) - 5;
+        foreach (var s in node.Sensors.Concat(engine.Hardware.Where(n => n.ParentId == node.Id).SelectMany(n => n.Sensors)).Where(s => s.Role == role))
+        {
+            var raw = engine.History.GetRaw(s.Id);
+            for (int i = raw.Values.Length - 1; i >= 0 && raw.Seconds[i] >= recent; i--) if (!float.IsNaN(raw.Values[i])) { list.Add((s.Name, raw.Values[i])); break; }
+        }
+        return list;
+    }
+
+    internal static double? Gb((double Value, Unit Unit)? r) => r is not { } x ? null : x.Unit == Unit.Megabyte ? x.Value / 1024 : x.Unit == Unit.Gigabyte ? x.Value : null;
+
+    internal static (double Value, Unit Unit)? Reading(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now)
     {
         if (engine is null || node is null) return null;
         int recent = engine.History.SecondsSinceEpoch(now) - 5;
@@ -246,7 +261,6 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
             foreach (var role in roles) if (Reading(engine, node, role, now) is { } r) return new(r.Value.ToString("F0", CultureInfo.InvariantCulture), unit);
             return null;
         }
-        static double? Gb((double Value, Unit Unit)? r) => r is not { } x ? null : x.Unit == Unit.Megabyte ? x.Value / 1024 : x.Unit == Unit.Gigabyte ? x.Value : null;
         SceneOverlay.Figure? Used(HardwareNode? node, SensorRole used, SensorRole total, SensorRole free)
         {
             double? u = Gb(Reading(engine, node, used, now)), t = Gb(Reading(engine, node, total, now)) ?? (u is { } a && Gb(Reading(engine, node, free, now)) is { } f ? a + f : null);

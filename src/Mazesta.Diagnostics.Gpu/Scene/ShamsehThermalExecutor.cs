@@ -57,7 +57,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0;
-        var readout = new FurReadout(scene, request.Engine, gpu, card); double checkTime = 0, lastFps = 0;
+        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0;
         try
         {
             while (total.Elapsed < duration)
@@ -69,18 +69,19 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                 {
                     long checkStart = Stopwatch.GetTimestamp(); var sum = scene.CheckFrame(CheckTime); checks++; lastCheck.Restart();
                     checkTime += Stopwatch.GetElapsedTime(checkStart).TotalSeconds;   // left out of the frame rate: the figure is the scene's own pace
+                    stats.Restart();
                     if (reference is null) reference = sum;
                     else if (!SceneView.Same(sum, reference)) { errors++; if (firstError.Length == 0) firstError = $"check frame {checks} differs from the first one (same scene, same moment)"; }
                 }
                 scene.Present((float)total.Elapsed.TotalSeconds);
-                frames++; updateFrames++;
+                frames++; updateFrames++; stats.Frame();
                 if (updateClock.Elapsed.TotalSeconds >= 0.5)
                 {
                     // a half second with a check frame in it is not the scene's pace (the card idles while the check is read back): the last figure stands
                     if (checkTime == 0 || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
                     double fps = lastFps; updateFrames = 0; updateClock.Restart(); checkTime = 0;
                     window.Title = $"Mazesta — GPU temperature — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
-                    readout.Show(fps, request.Clock.UtcNow, $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · {w} × {h} · errors {errors}", errors > 0);
+                    readout.Show(fps, request.Clock.UtcNow, total.Elapsed, duration, stats, $"{w} × {h} · check frames {checks} · errors {errors}", errors > 0);
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
                 }
             }
@@ -109,31 +110,74 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
     }
 }
 
+/// <summary>The frames of a run as a fur test counts them: how many, the average rate, and the slowest and quickest single frame (as rates). The first
+/// frames (shaders and clocks settling) count in the total and the average, not in the slowest and quickest; <see cref="Restart"/> after a check frame
+/// keeps its time out of the frame that follows.</summary>
+internal sealed class FurStats
+{
+    private const double Settle = 3;   // seconds
+    private readonly long _born = Stopwatch.GetTimestamp(); private long _last = Stopwatch.GetTimestamp(); private double _busyMs, _minMs = double.MaxValue, _maxMs;
+    public long Frames { get; private set; }
+    public void Restart() => _last = Stopwatch.GetTimestamp();
+    public void Frame()
+    {
+        long now = Stopwatch.GetTimestamp(); double ms = (now - _last) * 1000.0 / Stopwatch.Frequency; _last = now; Frames++; _busyMs += ms;
+        if (Stopwatch.GetElapsedTime(_born).TotalSeconds > Settle && ms > 0) { _minMs = Math.Min(_minMs, ms); _maxMs = Math.Max(_maxMs, ms); }
+    }
+    public double? Average => _busyMs > 0 ? Frames * 1000 / _busyMs : null;
+    public double? Slowest => _maxMs > 0 ? 1000 / _maxMs : null;
+    public double? Fastest => _minMs < double.MaxValue ? 1000 / _minMs : null;
+}
+
 /// <summary>The star's large readout, shared by the temperature test and its benchmark: core and hot spot with their traces, then the card's other
 /// figures. Only what was read in the last seconds is shown: a figure this card does not report is a dash. Laid out off the frame's thread, one at a time.</summary>
 internal sealed class FurReadout(ShamsehScene scene, Mazesta.Monitoring.PollingEngine? engine, HardwareNode? gpu, string card)
 {
     private readonly List<float> _core = [], _hot = []; private int _refreshing;
+    private readonly Mazesta.Hardware.Nvidia.NvidiaRunProbe? _probe = Probe(card);   // the driver's version and the PCIe link (NVIDIA only: another maker's card shows none)
 
-    public void Show(double fps, DateTimeOffset now, string status, bool failing)
+    private static Mazesta.Hardware.Nvidia.NvidiaRunProbe? Probe(string card) { try { return Mazesta.Hardware.Nvidia.NvidiaRunProbe.Start(card); } catch (Exception) { return null; } }
+    private static string Clock(TimeSpan t) => $"{(int)t.TotalHours} h {t.Minutes:00} m {t.Seconds:00} s";
+
+    public void Show(double fps, DateTimeOffset now, TimeSpan elapsed, TimeSpan total, FurStats stats, string status, bool failing)
     {
         double? Now(SensorRole role) => GpuSceneExecutor.Latest(engine, gpu, role, now);
         double? core = Now(SensorRole.GpuCoreTemp), hot = Now(SensorRole.GpuHotSpotTemp);
         if (core is { } c) Keep(_core, (float)c); if (hot is { } t) Keep(_hot, (float)t);
         static string? F(double? v, string format) => v?.ToString(format, CultureInfo.InvariantCulture);
-        (string, string?, string)[] figures =
-        [
-            ("VRAM", F(Now(SensorRole.GpuVramTemp), "F0"), "°C"), ("POWER", F(Now(SensorRole.GpuPower), "F0"), "W"), ("CLOCK", F(Now(SensorRole.GpuCoreClock), "F0"), "MHz"),
-            ("MEMORY", F(Now(SensorRole.GpuMemoryClock), "F0"), "MHz"), ("VOLTAGE", F(Now(SensorRole.GpuVoltage), "F3"), "V"), ("FAN", F(Now(SensorRole.GpuFanPercent), "F0"), "%"),
-            ("LOAD", F(Now(SensorRole.GpuLoad3D) ?? Now(SensorRole.GpuLoadD3D3D), "F0"), "%"), ("FPS", F(fps, "F0"), ""),
-        ];
-        var heat = new SceneOverlay.Heat(card, core, hot, [.. _core], [.. _hot], figures, status, failing);
+        var gb = (used: GpuSceneExecutor.Gb(GpuSceneExecutor.Reading(engine, gpu, SensorRole.GpuVramUsed, now)), all: GpuSceneExecutor.Gb(GpuSceneExecutor.Reading(engine, gpu, SensorRole.GpuVramTotal, now)));
+        double? vramShare = gb.used is { } u && gb.all is > 0 ? u / gb.all : null, load = Now(SensorRole.GpuLoad3D) ?? Now(SensorRole.GpuLoadD3D3D), powerShare = Now(SensorRole.GpuPowerPercent);
+        const uint G = SceneOverlay.GpuHue;
+        var cells = new List<SceneOverlay.Cell>
+        {
+            new("LOAD", F(load, "F0"), "%", G, load / 100), new("POWER", F(Now(SensorRole.GpuPower), "F0"), "W", SceneOverlay.Game, powerShare / 100),
+            new("CLOCK", F(Now(SensorRole.GpuCoreClock), "F0"), "MHz", SceneOverlay.CpuHue), new("MEMORY", F(Now(SensorRole.GpuMemoryClock), "F0"), "MHz", SceneOverlay.RamHue),
+            new("VRAM °C",F(Now(SensorRole.GpuVramTemp), "F0"), "°C", SceneOverlay.LowHue), new("VOLTAGE", F(Now(SensorRole.GpuVoltage), "F3"), "V", SceneOverlay.Game),
+            new("VRAM", gb.used is { } used ? used.ToString("F1", CultureInfo.InvariantCulture) + (gb.all is { } all ? " / " + all.ToString("F0", CultureInfo.InvariantCulture) : "") : null, "GB", SceneOverlay.RamHue),
+            new("VRAM %",F(vramShare * 100, "F0"), "%", SceneOverlay.RamHue, vramShare),
+        };
+        // each fan its own cell with its speed, and its share of the top speed where the monitor reports one (one share for all, or one for each)
+        var rpm = GpuSceneExecutor.Each(engine, gpu, SensorRole.GpuFanRpm, now); var share = GpuSceneExecutor.Each(engine, gpu, SensorRole.GpuFanPercent, now);
+        for (int i = 0; i < rpm.Count; i++)
+        {
+            double? p = share.Count == rpm.Count ? share[i].Value : share.Count == 1 ? share[0].Value : null;
+            cells.Add(new(rpm.Count > 1 ? "FAN " + (i + 1) : "FAN", rpm[i].Value.ToString("F0", CultureInfo.InvariantCulture), p is { } pc ? "RPM · " + pc.ToString("F0", CultureInfo.InvariantCulture) + "%" : "RPM", SceneOverlay.FanHue, p / 100));
+        }
+        if (rpm.Count == 0) for (int i = 0; i < share.Count; i++) cells.Add(new(share.Count > 1 ? "FAN " + (i + 1) : "FAN", share[i].Value.ToString("F0", CultureInfo.InvariantCulture), "%", SceneOverlay.FanHue, share[i].Value / 100));
+        cells.Add(new("FRAMES", stats.Frames.ToString("N0", CultureInfo.InvariantCulture), "", SceneOverlay.Game));
+
+        var live = _probe?.Now();
+        var parts = new List<string>();
+        if (live is { Gen: { } g, Width: { } w }) parts.Add($"PCIe Gen {g} x{w}" + (live.Value.MaxGen is { } mg && live.Value.MaxWidth is { } mw ? $" (max Gen {mg} x{mw})" : ""));
+        if (live?.Driver is { Length: > 0 } drv) parts.Add("Driver " + drv);
+        var heat = new SceneOverlay.Heat(card, string.Join(" · ", parts), Clock(elapsed), Clock(total), elapsed / total, core, hot, [.. _core], [.. _hot],
+            fps, stats.Average, stats.Slowest, stats.Fastest, fps > 0 ? 1000 / fps : null, cells, status, failing);
         if (Interlocked.Exchange(ref _refreshing, 1) == 1) return;   // laying out text takes milliseconds
         Task.Run(() => { try { scene.Overlay.UpdateHeat(heat); } catch (Exception) { } finally { Volatile.Write(ref _refreshing, 0); } });
     }
 
     /// <summary>Before the scene is disposed: the readout is not left being drawn.</summary>
-    public void Wait() { while (Volatile.Read(ref _refreshing) == 1) Thread.Sleep(1); }
+    public void Wait() { while (Volatile.Read(ref _refreshing) == 1) Thread.Sleep(1); _probe?.Dispose(); }
 
     private static void Keep(List<float> trace, float v) { trace.Add(v); if (trace.Count > FramePace.Kept * 2) trace.RemoveAt(0); }
 }
