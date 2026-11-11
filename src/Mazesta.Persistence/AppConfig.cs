@@ -84,8 +84,8 @@ public sealed class AppConfig : IVersionedDocument
     public double OverlayScale { get; set; } = 1.0;
     /// <summary>"list" (one column) or "columns" (two blocks side by side, the denser layout of the first overlay). Absent in older files: list.</summary>
     public string OverlayLayout { get; set; } = "list";
-    /// <summary>The overlay's titles, labels and layout in English whatever language the app is in (the layout turns left to right). Absent in older files: off.</summary>
-    public bool OverlayEnglish { get; set; }
+    /// <summary>The overlay's titles, labels and layout in English whatever language the app is in (the layout turns left to right). Absent in older files: on (English is the default).</summary>
+    public bool OverlayEnglish { get; set; } = true;
     /// <summary>The sets of items the user saved under a name on the overlay page (the preset is then "user:" and the name). Absent in older files: none.</summary>
     public Dictionary<string, List<Mazesta.Core.Overlay.OverlayChoice>>? OverlayUserPresets { get; set; }
     /// <summary>The address (or name) the overlay's ping, packet loss and jitter are measured to. Absent in older files: Google's resolver.</summary>
