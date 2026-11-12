@@ -62,8 +62,8 @@ export function spaceBox(i, onEvent) {
       h("span", { class: "caption" }, sizeText(r), " · ", t("Files_Space_Files", r.files)), h("button", { class: "btn quiet", onclick: () => call("space.open", { at }) }, icon("popout"), t("Files_Space_Open")));
     const max = Math.max(1, ...r.children.map((c) => c.size), r.here);
     const bar = (v) => h("i", { class: "fl-bar", style: { "--w": v / max } });
-    list.replaceChildren(...r.children.map((c) => h("li", { class: c.files || c.unread ? "go" : "", onclick: c.files ? () => { at = [...at, c.name]; show(); } : null },
-      h("div", {}, h("b", {}, lat(c.name)), " ", h("span", { class: "caption" }, sizeText(c)), bar(c.size)), c.files ? icon("chevronend") : h("span")),
+    list.replaceChildren(...r.children.map((c) => h("li", { class: c.files ? "go" : "", onclick: c.files ? () => { at = [...at, c.name]; show(); } : null },
+      h("div", {}, h("b", {}, lat(c.name)), " ", h("span", { class: "caption" }, sizeText(c)), bar(c.size)), c.files ? icon("chevronend") : h("span"))),
       ...(r.others ? [h("li", {}, h("div", {}, h("span", { class: "caption" }, t("Files_Space_Others"), " ", lat(bytes(r.others))), bar(r.others)), h("span"))] : []),
       ...(r.here ? [h("li", {}, h("div", {}, h("span", { class: "caption" }, t("Files_Space_Here"), " ", lat(bytes(r.here))), bar(r.here)), h("span"))] : []));
     if (r.top) top.replaceChildren(...r.top.map((f) => h("li", {}, h("div", {}, lat(bytes(f.size)), h("small", {}, lat(f.path))),
