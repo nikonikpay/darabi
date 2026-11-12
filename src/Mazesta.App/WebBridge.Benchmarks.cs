@@ -18,6 +18,9 @@ public sealed partial class WebBridge
     /// machine keeps each one's records apart, and a changed CPU or GPU starts fresh ones), and a hash of it that names it in the comparison lists.</summary>
     private sealed record SystemId(string Key, string Name, string Cpu, string Hash);
 
+    /// <summary>The latest run of a benchmark that is never compared with other machines (the internet speed measures the line): kept on this copy only, for its chart. Never sent to the site.</summary>
+    private sealed record LocalRun(DateTimeOffset At, double Value, string Unit, bool Overclocked, IReadOnlyList<BenchmarkMetric> Metrics, IReadOnlyList<TraceSeries>? Trace);
+
     private void RegisterBenchmarks()
     {
         var bench = _benchVm = _sp.GetRequiredService<Func<BenchmarksViewModel>>()();
@@ -98,6 +101,16 @@ public sealed partial class WebBridge
                 string rk = BenchmarkRecords.RecordKey(run.Definition.Id.Value, options); shown[rk] = (run.Result, c); lastKey[run.Definition.Id.Value] = rk;
                 if (c is { Saved: false }) _log.LogInformation("Benchmark {Id}: {Value} is below the record {Best}; not kept", run.Definition.Id.Value, c.Current.Value, c.Previous?.Value);
                 PushSoon("bench", State);
+                if (c is not null && run.Result.Status == BenchmarkStatus.Completed && BenchmarkRecords.Headline(run.Definition.Id.Value) is { Part: PeerPart.None })
+                {
+                    try
+                    {
+                        string dir = Path.Combine(_paths.DataRoot, "benchmarks", "local"); Directory.CreateDirectory(dir);
+                        var local = new LocalRun(c.Current.At, c.Current.Value, c.Current.Unit, overclocked, c.Current.Metrics, BenchmarkTrace.Capture(engine, run.Result.StartedAt, run.Result.FinishedAt, row.Benchmark.Component));
+                        File.WriteAllText(Path.Combine(dir, run.Definition.Id.Value + ".json"), global::System.Text.Json.JsonSerializer.Serialize(local));
+                    }
+                    catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "The run's chart was not kept"); }
+                }
                 if (c is null || Headline(row) is not { } h || s.Hash.Length == 0) return;
                 try
                 {
@@ -223,7 +236,7 @@ public sealed partial class WebBridge
         void OnSnapshot(SensorSnapshot _) { if (System() is null) return; engine.SnapshotPublished -= OnSnapshot; PushSoon("bench", State); }
         if (System() is null) { engine.SnapshotPublished += OnSnapshot; _cleanup.Add(() => engine.SnapshotPublished -= OnSnapshot); }
 
-        BenchmarkRowViewModel Row(System.Text.Json.JsonElement p) => bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id.Value == Str(p, "id")) ?? throw new ArgumentException("unknown benchmark");
+        BenchmarkRowViewModel Row(global::System.Text.Json.JsonElement p) => bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id.Value == Str(p, "id")) ?? throw new ArgumentException("unknown benchmark");
         // What a machine can run is asked again when the page opens: a card that came back from a driver reset must not stay "not runnable here" until the app is restarted.
         Method("bench.state", _ => { if (!bench.IsRunning) foreach (var r in bench.Rows) r.RefreshAvailability(); return State(); });
         // The whole comparison list of a row (it can hold thousands of models; the page shows it a page at a time and searches it). Details of an
@@ -273,6 +286,15 @@ public sealed partial class WebBridge
         Method("bench.last", p =>
         {
             var r = Row(p);
+            if (Headline(r) is null && BenchmarkRecords.Headline(r.Benchmark.Definition.Id.Value) is { Part: PeerPart.None })
+            {
+                string file = Path.Combine(_paths.DataRoot, "benchmarks", "local", r.Benchmark.Definition.Id.Value + ".json");
+                LocalRun? l = null;
+                try { if (File.Exists(file)) l = global::System.Text.Json.JsonSerializer.Deserialize<LocalRun>(File.ReadAllText(file)); }
+                catch (Exception e) when (e is IOException or global::System.Text.Json.JsonException) { _log.LogWarning(e, "The run's chart could not be read"); }
+                return l is null ? null : new { id = r.Benchmark.Definition.Id.Value, at = l.At.ToLocalTime().ToString("yyyy/MM/dd HH:mm", Loc.Culture), machine = Environment.MachineName, part = "", value = Units.FormatMeasured(l.Value, l.Unit),
+                    detail = Detail(l.Value, l.Unit, l.Overclocked, l.At, l.Metrics, null), trace = TraceJson(l.Trace) };
+            }
             if (Headline(r) is not { } h || MyLast(Table(r, h)) is not { } x) return null;
             return new { id = x.Id, at = x.At.ToLocalTime().ToString("yyyy/MM/dd HH:mm", Loc.Culture), machine = x.Machine, part = x.Part, value = Units.FormatMeasured(x.Value, x.Unit),
                 detail = Detail(x.Value, x.Unit, x.Overclocked, x.At, x.Metrics, x.Details), trace = TraceJson(x.Trace) };
