@@ -1891,3 +1891,9 @@ div.findings { max-height: none; overflow: visible; }
 .fl-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
 .fl-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 10px; background: var(--well); border-radius: var(--r-panel); }
 .fl-list small { display: block; color: var(--paper-2); overflow-wrap: anywhere; margin-top: 2px; }
+.fl-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; overflow-wrap: anywhere; }
+.fl-space li.go { cursor: pointer; }
+.fl-space li.go:hover { background: color-mix(in oklab, var(--hue) 10%, var(--well)); }
+.fl-bar { display: block; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--hue); transform: scaleX(var(--w)); transform-origin: var(--origin, right); }
+:root[dir="ltr"] .fl-bar { --origin: left; }
+.fl-h { font-size: 13px; margin: 12px 0 0; }

@@ -14,7 +14,8 @@ public class AppGuideLexiconTests
      InlineData("نمودار فن گرافیک رو میخوام", "tuning"), InlineData("فن رو روی سایلنت بذار", "fans"), InlineData("حالت بازی رو روشن کن", "play"), InlineData("ایکس ام پی رو فعال کنم", "tuning"), InlineData("تاریخچه دما", "monitoring"), InlineData("نتیجه بررسی دستی رو بفرست به فرم سرویس", "checks"),
      InlineData("خروجی pdf از مشخصات بگیر", "system"), InlineData("مشخصات سیستم رو pdf کن", "system"),
      InlineData("سیستمم از اسلیپ خودش روشن میشه", "wake"), InlineData("wake on lan رو خاموش کن", "wake"), InlineData("کلید بازیابی درایو", "storage"),
-     InlineData("فایل پاک نمیشه میگه در برنامه دیگری باز است", "tools"), InlineData("unlock a locked file", "tools")]
+     InlineData("فایل پاک نمیشه میگه در برنامه دیگری باز است", "tools"), InlineData("unlock a locked file", "tools"),
+     InlineData("درایو سی پر شده", "tools"), InlineData("حجم پوشه ها رو ببینم", "tools"), InlineData("show me the folder size", "tools")]
     public void An_everyday_request_shows_the_place_where_it_is_done(string text, string page) { var r = R(text); Assert.True(r.Intent == AiIntent.Navigate && r.Place?.Page == page, $"{text}: {r.Intent} {r.Place?.Page}"); }
 
     [Theory, InlineData("ویندوزم کنده چیکار کنم"), InlineData("کامپیوترم کند شده"), InlineData("سیستمم هنگ میکنه"), InlineData("چرا کامپیوترم خودش ری استارت میشه"), InlineData("چرا بازی ها لگ دارن"), InlineData("فن لپ تاپم خیلی سر و صدا میکنه")]

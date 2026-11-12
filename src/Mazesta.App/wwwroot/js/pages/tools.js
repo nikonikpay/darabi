@@ -9,9 +9,10 @@ import { box } from "../groups.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
 import { crashesBox } from "./crashes.js";
-import { lockBox } from "./files.js";
+import { lockBox, spaceBox } from "./files.js";
 
 export function mount(el) {
+  const offs = [];   // the file boxes' own event subscriptions
   // ——— Repair: sfc and DISM ———
   const btn = (cmd, key, cls = "btn") => h("button", { class: cls, "data-cmd": cmd, onclick: () => call("tools.exec", { cmd }) }, t(key));
   const repair = [btn("sfc", "Tools_Sfc", "btn primary"), btn("dismScan", "Tools_DismScan"), btn("dismRestore", "Tools_DismRestore")];
@@ -72,7 +73,7 @@ export function mount(el) {
       box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
         body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })),
-    section("Tools_Sec_Files", lockBox(8)));
+    section("Tools_Sec_Files", spaceBox(8, (ev, fn) => offs.push(on(ev, fn))), lockBox(9)));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;
@@ -172,5 +173,5 @@ export function mount(el) {
   call("sys.state").then((s) => { showPower(s.power); showVm(s.vm); });
   loadHosts();
   const off = on("tools", update);
-  return off;
+  return () => { off(); for (const f of offs) f(); };
 }

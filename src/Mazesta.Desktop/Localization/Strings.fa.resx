@@ -4329,4 +4329,24 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Files_Lock_Kind_Other" xml:space="preserve"><value>برنامه</value></data>
   <data name="Help_Files_Lock_Title" xml:space="preserve"><value>نشان می‌دهد کدام برنامه‌ها یک فایل یا فایل‌های یک پوشه را باز نگه داشته‌اند، همان‌طور که خود ویندوز گزارش می‌دهد، تا بدانید پیش از پاک کردن، جابه‌جا کردن یا تغییر نام چه چیزی را ببندید. برنامه را می‌شود از همین‌جا بست؛ سرویس‌ها و فرایندهای حیاتی ویندوز بسته نمی‌شوند.</value></data>
   <data name="HelpHow_Files_Lock_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|«انتخاب فایل» یا «انتخاب پوشه» را بزنید و همانی را انتخاب کنید که ویندوز رهایش نمی‌کند.|فهرست را بخوانید؛ کارتان را در آن برنامه ذخیره کنید و آن را ببندید یا «بستن» را بزنید.|«بررسی دوباره» را بزنید؛ وقتی هیچ برنامه‌ای آن را نگه نداشت، پاک، جابه‌جا یا تغییر نامش دهید.</value></data>
+  <data name="Files_Space_Title" xml:space="preserve"><value>فضای دیسک کجا رفته؟</value></data>
+  <data name="Files_Space_Sub" xml:space="preserve"><value>یک درایو یا پوشه را بررسی کنید و به بزرگ‌ترین پوشه‌هایش بروید</value></data>
+  <data name="Files_Space_Free" xml:space="preserve"><value>{0} آزاد از {1}</value></data>
+  <data name="Files_Space_Busy" xml:space="preserve"><value>یک بررسی در حال انجام است.</value></data>
+  <data name="Files_Space_Scanning" xml:space="preserve"><value>در حال بررسی: {0} فایل، تا اینجا {1}…</value></data>
+  <data name="Files_Space_Done" xml:space="preserve"><value>بررسی تمام شد. روی هر پوشه بزنید تا داخلش بروید.</value></data>
+  <data name="Files_Space_Cancelled" xml:space="preserve"><value>بررسی لغو شد.</value></data>
+  <data name="Files_Space_Failed" xml:space="preserve"><value>بررسی متوقف شد: {0}</value></data>
+  <data name="Files_Space_Up" xml:space="preserve"><value>بالاتر</value></data>
+  <data name="Files_Space_Open" xml:space="preserve"><value>باز کردن در اکسپلورر</value></data>
+  <data name="Files_Space_Show" xml:space="preserve"><value>نشان بده</value></data>
+  <data name="Files_Space_Files" xml:space="preserve"><value>{0} فایل</value></data>
+  <data name="Files_Space_Unread" xml:space="preserve"><value>خوانده نشد</value></data>
+  <data name="Files_Space_AtLeast" xml:space="preserve"><value>دست‌کم</value></data>
+  <data name="Files_Space_Others" xml:space="preserve"><value>پوشه‌های دیگر:</value></data>
+  <data name="Files_Space_Here" xml:space="preserve"><value>فایل‌های خود این پوشه:</value></data>
+  <data name="Files_Space_Biggest" xml:space="preserve"><value>بزرگ‌ترین فایل‌ها</value></data>
+  <data name="Files_Space_Note" xml:space="preserve"><value>اندازه‌ها حجم خود فایل‌هاست، مثل اکسپلورر. پوشه‌هایی که ویندوز اجازهٔ خواندنشان را نمی‌دهد علامت می‌خورند و اندازه‌شان معلوم نیست. میان‌برهای پوشه (junction) و فایل‌های ابری که فقط آنلاین هستند حساب نمی‌شوند. پوشهٔ WinSxS ویندوز بزرگ‌تر از واقع دیده می‌شود، چون فایل‌هایش مشترک‌اند.</value></data>
+  <data name="Help_Files_Space_Title" xml:space="preserve"><value>یک درایو یا پوشه را بررسی می‌کند و نشان می‌دهد کدام پوشه‌ها و فایل‌ها فضایش را گرفته‌اند، از بزرگ به کوچک، تا ببینید چه چیزی دیسک را پر کرده و آن را در اکسپلورر باز کنید. از اینجا چیزی پاک نمی‌شود.</value></data>
+  <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|روی یک درایو یا «انتخاب پوشه» بزنید و صبر کنید تا بررسی تمام شود (یک درایو کامل یک دقیقه یا بیشتر).|روی بزرگ‌ترین پوشه بزنید تا داخلش بروید؛ «بالاتر» برمی‌گرداند.|«جزئیات بیشتر» را باز کنید تا بزرگ‌ترین فایل‌ها را ببینید؛ «نشان بده» اکسپلورر را روی آن باز می‌کند تا خودتان تصمیم بگیرید چه چیزی پاک شود.</value></data>
 </root>
