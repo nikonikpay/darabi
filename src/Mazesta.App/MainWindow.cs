@@ -44,7 +44,21 @@ public sealed class MainWindow : Form
     {
         base.OnHandleCreated(e);
         int on = 1; _ = DwmSetWindowAttribute(Handle, 20, ref on, sizeof(int));   // DWMWA_USE_IMMERSIVE_DARK_MODE: the frame matches the ink page
+        // Win+Shift+C picks a screen colour while the app is open; another program holding it (PowerToys) leaves the button on the page
+        ColorKeyHeld = RegisterHotKey(Handle, ColorKeyId, 0x8 | 0x4 | 0x4000, (int)Keys.C);   // MOD_WIN | MOD_SHIFT | MOD_NOREPEAT
     }
+
+    private const int ColorKeyId = 0x4D43;
+    /// <summary>Whether this window holds the colour picker's shortcut.</summary>
+    public bool ColorKeyHeld { get; private set; }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == 0x0312 && m.WParam == ColorKeyId) { _bridge?.PickColorByKey(); return; }   // WM_HOTKEY
+        base.WndProc(ref m);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool RegisterHotKey(nint hWnd, int id, int modifiers, int vk);
 
     /// <summary>The oldest WebView2 runtime the window's calls work on (settings 4 and DownloadStarting came with 92); an older one threw NotImplementedException
     /// past the old catch and left the window on its loading panel for good. Windows 10 without updates still has such runtimes.</summary>

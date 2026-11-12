@@ -1,4 +1,4 @@
-// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller, many files renamed, a file's checksum. Files come only from the host's own dialogs (files.pick); the host
+// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller, many files renamed, a file's checksum, a colour from the screen. Files come only from the host's own dialogs (files.pick); the host
 // acts only on what was picked there. Every answer is what Windows reported; "could not check" is never shown as "nothing found".
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
@@ -157,6 +157,31 @@ export function hashBox(i, onEvent) {
   onEvent("hash", (x) => { msg.textContent = t("Files_Hash_Reading", Math.round(x.share * 100)); });
   return box({ ico: "check", cls: "p-tool", title: t("Files_Hash_Title"), sub: t("Files_Hash_Sub"), i, a: "checksum",
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("one", "Files_PickFile", go), h("span", { class: "grow" }), cancel), msg, out, paste, verdict] });
+}
+
+// ——— A colour from anywhere on the screen; the last ones are kept in this browser profile (a convenience, nothing depends on it) ———
+const RECENT = "mazesta.colors.recent";
+const recentRead = () => { try { return JSON.parse(localStorage.getItem(RECENT)) || []; } catch { return []; } };
+export function colorBox(i, onEvent) {
+  let recent = recentRead();
+  const now = h("div", { class: "fl-color" }), list = h("div", { class: "fl-swatches" }), msg = h("p", { class: "msg", "aria-live": "polite" }), keyNote = h("p", { class: "note" });
+  const copy = async (v) => { try { await navigator.clipboard.writeText(v); toast(t("Files_Copied")); } catch { /* the value is still shown */ } };
+  const code = (v) => h("button", { class: "btn quiet lat", title: t("Files_Copy"), onclick: () => copy(v) }, v);
+  function show(c) {
+    now.replaceChildren(h("span", { class: "fl-swatch big", style: { background: c.hex } }), h("div", { class: "fl-codes" }, code(c.hex), code(c.rgb), code(c.hsl)));
+    list.replaceChildren(...recent.map((x) => h("button", { class: "fl-swatch", style: { background: x.hex }, title: x.hex, "aria-label": x.hex, onclick: () => show(x) })));
+  }
+  function add(c) {
+    recent = [c, ...recent.filter((x) => x.hex !== c.hex)].slice(0, 16);
+    try { localStorage.setItem(RECENT, JSON.stringify(recent)); } catch { /* kept for this visit only */ }
+    show(c); msg.className = "msg ok"; msg.textContent = t("Files_Color_Copied", c.hex);
+  }
+  const pick = h("button", { class: "btn primary", onclick: async () => { pick.disabled = true; try { const c = await call("color.pick"); if (c) add(c); } finally { pick.disabled = false; } } }, icon("drop"), t("Files_Color_Pick"));
+  onEvent("colorpicked", add);
+  call("color.key").then((k) => { keyNote.textContent = t(k.held ? "Files_Color_Key" : "Files_Color_KeyTaken"); });
+  if (recent.length) show(recent[0]);
+  return box({ ico: "drop", cls: "p-tool", title: t("Files_Color_Title"), sub: t("Files_Color_Sub"), i, a: "color",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pick), msg, now, list, keyNote] });
 }
 
 // Bytes as people read them (1 KB = 1024 bytes, as Explorer shows), Latin digits in a .lat run.

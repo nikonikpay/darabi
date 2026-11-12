@@ -104,6 +104,7 @@ public static class AppGuide
         T("tools", "images", "Files_Img_Title", "makes pictures smaller (resize photos to 800-2560 px or any size, JPEG quality), a new file beside each", null),
         T("tools", "rename", "Files_Ren_Title", "renames many files at once (find and replace, or a name and a number), with a preview and undo", null),
         T("tools", "checksum", "Files_Hash_Title", "a file's MD5, SHA-1 and SHA-256, compared with the one on its download page", null),
+        T("tools", "color", "Files_Color_Title", "picks a colour from anywhere on the screen (button or Win+Shift+C) with a magnifier; HEX copied, RGB and HSL shown, the recent ones kept", null),
         T("tools", "locks", "Files_Lock_Title", "which program holds a file or folder open (when Windows will not delete, move or rename it), and closing that program", null),
         T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null),
         P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable"),
