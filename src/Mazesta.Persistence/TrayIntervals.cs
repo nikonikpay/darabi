@@ -36,6 +36,23 @@ public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int W
     }
 }
 
+/// <summary>The quick file search's switch and shortcut, read straight from appconfig.json for the tray (missing or damaged: on, Ctrl+Alt+F).</summary>
+public static class FileSearchFile
+{
+    public static (bool On, Mazesta.Core.Tray.Hotkey Key) Read(string configFile)
+    {
+        var fallback = Mazesta.Core.Tray.Hotkey.TryParse(Mazesta.Core.Tray.FileSearchSignals.DefaultKey)!;
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(configFile)); var root = doc.RootElement;
+            bool on = !root.TryGetProperty("fileSearch", out var v) || v.ValueKind != JsonValueKind.False;
+            var key = root.TryGetProperty("fileSearchKey", out var k) && k.ValueKind == JsonValueKind.String ? Mazesta.Core.Tray.Hotkey.TryParse(k.GetString()) : null;
+            return (on, key ?? fallback);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { return (true, fallback); }
+    }
+}
+
 /// <summary>The overlay's shortcuts, read straight from appconfig.json for the tray (read-only, like <see cref="TrayIntervals"/>); a missing, damaged or clashing setting gives the defaults.</summary>
 public static class OverlayKeysFile
 {

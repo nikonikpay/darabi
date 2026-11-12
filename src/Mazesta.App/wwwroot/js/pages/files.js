@@ -184,6 +184,23 @@ export function colorBox(i, onEvent) {
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pick), msg, now, list, keyNote] });
 }
 
+// ——— The quick file search: it lives in the tray (its index and window), so this only opens it there ———
+export function searchBox(i) {
+  const msg = h("p", { class: "msg", "aria-live": "polite" }), how = h("p", { class: "note" }, t("Files_Search_How"));
+  const label = h("span", {}, t("Files_Search_Open"));
+  const open = h("button", { class: "btn primary", onclick: async () => {
+    const r = await call("search.open");
+    msg.className = r.open ? "msg" : "msg fail";
+    msg.textContent = r.open ? "" : t(r.on ? "Files_Search_NoTray" : "Files_Search_Off");
+  } }, icon("search"), label);
+  call("search.state").then((s) => {
+    label.textContent = t("Files_Search_Open_Key", s.key);
+    if (!s.on) { msg.className = "msg fail"; msg.textContent = t("Files_Search_Off"); } else if (!s.tray) { msg.className = "msg fail"; msg.textContent = t("Files_Search_NoTray"); }
+  });
+  return box({ ico: "search", cls: "p-tool", title: t("Files_Search_Title"), sub: t("Files_Search_Sub"), i, a: "search",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, open), msg, how] });
+}
+
 // Bytes as people read them (1 KB = 1024 bytes, as Explorer shows), Latin digits in a .lat run.
 export function bytes(n) {
   const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0, v = n;

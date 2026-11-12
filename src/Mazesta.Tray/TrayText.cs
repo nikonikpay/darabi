@@ -24,6 +24,19 @@ internal static class TrayText
     public const string AllGood = "مشکلی دیده نشد";
     public const string CheckFailed = "بررسی انجام نشد";
 
+    // the quick file search (FileSearch/SearchForm)
+    public const string Search = "جستجوی فایل‌ها";
+    public const string SearchTitle = "مازستا — جستجوی فایل";
+    public const string SearchHint = "نام فایل یا پوشه… (مثل report یا *.mp4)";
+    public const string SearchName = "نام", SearchFolder = "پوشه", SearchSize = "اندازه", SearchDate = "تاریخ تغییر";
+    public const string SearchOpen = "باز کردن", SearchOpenFolder = "باز کردن پوشه‌ی آن", SearchCopyPath = "کپی مسیر";
+    public static string SearchMenu(string? key) => key is null ? Search : $"{Search}  ({key})";
+    public static string SearchReading(int ready, int all) => string.Create(CultureInfo.InvariantCulture, $"در حال خواندن درایوها: {ready} از {all}");
+    public static string SearchIndexed(long names, int drives) => string.Create(CultureInfo.InvariantCulture, $"{names:N0} نام در {drives} درایو");
+    public static string SearchFound(int total, int shown, long ms) => total > shown
+        ? string.Create(CultureInfo.InvariantCulture, $"{total:N0} یافته، {shown} تای اول نشان داده شده · {ms} میلی‌ثانیه")
+        : string.Create(CultureInfo.InvariantCulture, $"{total:N0} یافته · {ms} میلی‌ثانیه");
+
     public static string Alert(HealthAlert a) => a.Kind switch
     {
         HealthAlertKind.CpuOverheat => $"دمای پردازنده زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",

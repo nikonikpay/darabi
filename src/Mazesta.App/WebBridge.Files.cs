@@ -110,6 +110,12 @@ public sealed partial class WebBridge
         MethodAsync("color.pick", async _ => await PickColorAsync(true).ConfigureAwait(true));
         Method("color.key", _ => new { held = _window.ColorKeyHeld });
 
+        // ——— The quick file search lives in the tray (its index and window): the app only asks the tray to show it ———
+        Method("search.open", _ => new { on = _config.FileSearch, key = Mazesta.Core.Tray.Hotkey.Normalize(_config.FileSearchKey) ?? Mazesta.Core.Tray.FileSearchSignals.DefaultKey,
+            open = _config.FileSearch && SignalTray(Mazesta.Core.Tray.FileSearchSignals.Show) });
+        Method("search.state", _ => new { on = _config.FileSearch, key = Mazesta.Core.Tray.Hotkey.Normalize(_config.FileSearchKey) ?? Mazesta.Core.Tray.FileSearchSignals.DefaultKey,
+            tray = System.Diagnostics.Process.GetProcessesByName(Mazesta.Core.Tray.OverlaySignals.TrayProcess).Length > 0 });
+
         // ——— Where the disk space went: one scan at a time, its progress pushed as "space"; the last result is kept for browsing until the next ———
         Method("space.drives", _ => DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady)
             .Select(d => new { root = d.Name, label = d.VolumeLabel, total = d.TotalSize, free = d.AvailableFreeSpace }).ToList());
@@ -160,6 +166,14 @@ public sealed partial class WebBridge
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), arg) { UseShellExecute = false })?.Dispose();
             return null;
         });
+    }
+
+    /// <summary>Sets one of the tray's named events; false when no tray has made it (none running).</summary>
+    internal static bool SignalTray(string name)
+    {
+        if (!EventWaitHandle.TryOpenExisting(name, out var e)) return false;
+        using (e) e.Set();
+        return true;
     }
 
     private bool _picking;

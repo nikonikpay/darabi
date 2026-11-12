@@ -1,0 +1,12 @@
+namespace Mazesta.Core.Tray;
+
+/// <summary>
+/// How the app reaches the tray's quick file search, with two named events (like <see cref="OverlaySignals"/>): <see cref="Show"/> opens its
+/// window, <see cref="Settings"/> says the switch or the shortcut changed in appconfig.json, so the tray reads them again without a restart.
+/// </summary>
+public static class FileSearchSignals
+{
+    public const string Show = @"Local\Mazesta.FileSearch.Show";
+    public const string Settings = @"Local\Mazesta.FileSearch.Settings";
+    public const string DefaultKey = "Ctrl+Alt+F";
+}

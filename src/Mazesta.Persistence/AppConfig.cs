@@ -37,6 +37,10 @@ public sealed class AppConfig : IVersionedDocument
     public int TrayIdleIntervalMinutes { get; set; } = 10;
     /// <summary>The tray puts its temperature check off while a game (a full-screen program) is in front.</summary>
     public bool TraySkipInGames { get; set; }
+    /// <summary>The tray keeps every drive's file names for the quick file search (its shortcut opens the window). Off frees that memory.</summary>
+    public bool FileSearch { get; set; } = true;
+    /// <summary>The quick file search's global shortcut (see Hotkey); a setting that is not usable falls back to the default.</summary>
+    public string FileSearchKey { get; set; } = Mazesta.Core.Tray.FileSearchSignals.DefaultKey;
     /// <summary>How often the tray checks while a health rule is building towards an alert (HealthAlerts.IsWatching).</summary>
     public int TrayWatchIntervalSeconds { get; set; } = 60;
     /// <summary>How often the tray reads the drives' health (SMART / Windows' verdict, wear, uncorrected errors). Absent in older files, so 30.</summary>

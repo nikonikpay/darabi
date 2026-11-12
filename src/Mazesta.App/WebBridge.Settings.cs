@@ -16,7 +16,7 @@ public sealed partial class WebBridge
             language = settings.Language, languages = settings.Languages, renderMode = settings.RenderMode, renderModes = settings.RenderModes,
             interval = settings.FastIntervalText, storageInterval = settings.StorageIntervalText, displayName = settings.DisplayName, message = settings.Message,
             trayFirst = settings.TrayFirstCheckText, trayIdle = settings.TrayIdleText, trayWatch = settings.TrayWatchText, trayHealth = settings.TrayHealthText, trayCpuAlert = settings.TrayCpuAlertText, trayGpuAlert = settings.TrayGpuAlertText, trayGpuHotSpot = settings.TrayGpuHotSpotAlertText, trayHold = settings.TrayHoldText, traySsd = settings.TraySsdAlertText, trayRamAlert = settings.TrayRamAlertText, trayRamHold = settings.TrayRamHoldText, trayRamCheck = settings.TrayRamCheckText, trayStatus = settings.TrayStatusText,
-            usageReport = _config.UsageReport, traySkipInGames = _config.TraySkipInGames, usageLog = _sp.GetRequiredService<Mazesta.Desktop.Services.UsageRecorder>().Log.File,
+            usageReport = _config.UsageReport, traySkipInGames = _config.TraySkipInGames, fileSearch = _config.FileSearch, usageLog = _sp.GetRequiredService<Mazesta.Desktop.Services.UsageRecorder>().Log.File,
             canEnableTray = settings.CanEnableTray, canDisableTray = settings.CanDisableTray, dataFolder = settings.DataFolder, mode = settings.ModeText, version = settings.Version,
         };
         Mirror("settings", settings, State);
@@ -44,6 +44,7 @@ public sealed partial class WebBridge
                 case "trayRamHold": settings.TrayRamHoldText = v; break;
                 case "trayRamCheck": settings.TrayRamCheckText = v; break;
                 case "traySkipInGames": _config.TraySkipInGames = Bool(p, "value"); _store.Save(_config); PushSoon("settings", State); break;
+                case "fileSearch": _config.FileSearch = Bool(p, "value"); _store.Save(_config); SignalTray(Mazesta.Core.Tray.FileSearchSignals.Settings); PushSoon("settings", State); break;   // the tray reads it again at once
                 case "usageReport": _config.UsageReport = Bool(p, "value"); _store.Save(_config); PushSoon("settings", State); break;
                 default: throw new ArgumentException("unknown field");
             }
