@@ -3491,7 +3491,8 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Fans_HideUnwired" xml:space="preserve"><value>پنهان کن</value></data>
   <data name="Web_Bench_RunDetails" xml:space="preserve"><value>شرایط و تنظیمات این اجرا</value></data>
   <data name="Web_Tests_Advanced" xml:space="preserve"><value>پیشرفته</value></data>
-  <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>مدت، تکرار و تنظیمات هر تست و شرح کامل نتیجهٔ آن را نشان می‌دهد</value></data>
+  <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>مدت، تکرار و تنظیمات تست‌های همین بخش و شرح کامل نتیجهٔ آن‌ها را نشان می‌دهد</value></data>
+  <data name="Web_Bench_Advanced_Hint" xml:space="preserve"><value>تنظیمات بنچمارک‌های همین بخش، شرایط هر اجرا، همهٔ اعداد اندازه‌گیری‌شده و یافته‌ها را نشان می‌دهد؛ فهرست ساده فقط اعداد اصلی، رکورد و مقایسه را نگه می‌دارد</value></data>
   <data name="Test_Cpu_Stress" xml:space="preserve"><value>CPU · بار کامل (ماتریس، محاسبات صحیح، هش و فشرده‌سازی به‌نوبت)</value></data>
   <data name="Test_Cpu_Stage_Matrix" xml:space="preserve"><value>ضرب ماتریس (ممیز شناور)</value></data>
   <data name="Test_Cpu_Stage_Integer" xml:space="preserve"><value>محاسبات صحیح (ضرب، تقسیم، انشعاب)</value></data>

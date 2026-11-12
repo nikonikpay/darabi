@@ -527,9 +527,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 /* A preset's custom steps: the whole width, a few lines, left to right like any code. */
 .q-row .extra label.wide { flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 4px; }
 .q-row .extra textarea.steps { width: 100%; min-height: 58px; resize: vertical; font: 12.5px/1.5 var(--lat); direction: ltr; text-align: left; }
-.groups.simple .q-row .extra { grid-column: 3 / -1; grid-row: 2; }
+.group.simple .q-row .extra { grid-column: 3 / -1; grid-row: 2; }
 .q-row .row-checkup { grid-column: 3 / -1; }
-.groups.simple .q-row .row-checkup { display: none; }
+.group.simple .q-row .row-checkup { display: none; }
 .q-row .state { grid-column: 3 / -1; display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; }
 .q-row .state .progress { grid-column: 1 / -1; }
 .q-row .detail { grid-column: 3 / -1; font-size: 12px; line-height: 1.7; color: var(--paper-3); }
@@ -555,17 +555,17 @@ body.popout .chart { height: 100%; min-height: 120px; }
 @media (max-height: 800px) {
   .groups > .group > .panel-head { padding-block: 8px; }
   .q-row { padding: 10px 0 8px; }
-  .groups.simple .q-row { padding: 6px 0 5px; }
+  .group.simple .q-row { padding: 6px 0 5px; }
   .dock { padding: 7px 12px; bottom: 8px; }
 }
 /* The plain test list: one line a test (tick, name, verdict); its controls and the account of its result show with "Advanced". */
-.groups.simple .q-row { grid-template-columns: 44px 24px minmax(0, 1fr) auto; padding: 9px 0 8px; }
-.groups.simple .q-row .ctrls, .groups.simple .q-row .extra:not(:has(> label.primary:not([hidden]))), .groups.simple .q-row .extra > label:not(.primary), .groups.simple .q-row .detail, .groups.simple .q-row .advice, .groups.simple .q-row .error, .groups.simple .q-row .state > span:not(.pill) { display: none; }
-.groups.simple .q-row .state { grid-column: 4; grid-row: 1; display: flex; align-items: center; gap: 12px; }
-.groups.simple .q-row .state .progress { width: 120px; }
-.groups.simple .q-row:not(.active) .state .progress { display: none; }
-.groups.simple .q-row .step { font-size: 15px; align-self: center; padding-top: 0; }
-.groups.simple .q-row .name { font-size: 13.5px; }
+.group.simple .q-row { grid-template-columns: 44px 24px minmax(0, 1fr) auto; padding: 9px 0 8px; }
+.group.simple .q-row .ctrls, .group.simple .q-row .extra:not(:has(> label.primary:not([hidden]))), .group.simple .q-row .extra > label:not(.primary), .group.simple .q-row .detail, .group.simple .q-row .advice, .group.simple .q-row .error, .group.simple .q-row .state > span:not(.pill) { display: none; }
+.group.simple .q-row .state { grid-column: 4; grid-row: 1; display: flex; align-items: center; gap: 12px; }
+.group.simple .q-row .state .progress { width: 120px; }
+.group.simple .q-row:not(.active) .state .progress { display: none; }
+.group.simple .q-row .step { font-size: 15px; align-self: center; padding-top: 0; }
+.group.simple .q-row .name { font-size: 13.5px; }
 .adv-toggle { margin-inline-start: auto; align-self: center; }
 .metrics { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 0 32px; }
 .metric { padding-top: 6px; }
@@ -1867,3 +1867,21 @@ div.findings { max-height: none; overflow: visible; }
 .rgb-hdr.probing { border-color: var(--yellow); } .rgb-hdr-name { display: grid; flex: 1 1 140px; min-inline-size: 0; } .rgb-hdr-name small { color: var(--paper-3); font-size: 11.5px; overflow-wrap: anywhere; }
 .rgb-hdr input.field { inline-size: 84px; } .rgb-ask { flex: 1 1 100%; margin: 0; font-size: 13px; }
 @media (max-width: 900px) { .rgb-bar { grid-template-columns: minmax(0, 1fr); } .rgb-hdrs { padding-inline-start: 0; border-inline-start: 0; } }
+
+/* ———— Each part's "Advanced" button, and the calmer benchmark rows ———— */
+.adv-pick { display: inline-flex; align-items: center; gap: 6px; flex: none; font: inherit; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: var(--r-ctl); cursor: pointer;
+  color: var(--paper-2); background: transparent; border: 1px solid color-mix(in oklab, var(--hue, var(--paper)) 55%, transparent); transition: background var(--fast), color var(--fast); }
+.adv-pick svg { width: 14px; height: 14px; stroke: currentColor; }
+.adv-pick:hover { background: color-mix(in oklab, var(--hue, var(--paper)) 18%, transparent); }
+.adv-pick[aria-pressed="true"] { background: var(--hue, var(--paper)); border-color: var(--hue, var(--paper)); color: var(--ink); }
+/* Plain benchmark rows: the choice of card or drive, the duration and the run button, the main numbers and the record; the options, the conditions and
+   the findings (and numbers beyond the first four) wait for "Advanced". */
+.group.p-bench.simple .q-row .extra > label:not(.primary), .group.p-bench.simple .q-row .run-more, .group.p-bench.simple .q-row .rec-more, .group.p-bench.simple .q-row .row-checkup,
+.group.p-bench.simple .q-row .metrics .metric:nth-child(n+5) { display: none; }
+.group.p-bench .q-row .extra label.primary { color: var(--paper-2); }
+/* The benchmark's own result in its part's hue, the comparison with other systems in a box of another kind (dashed, its own colour, darker than the row). */
+.group.p-bench .rec-cell { background: color-mix(in oklab, var(--hue, var(--paper)) 9%, var(--ink-3)); border-color: color-mix(in oklab, var(--hue, var(--paper)) 35%, transparent); }
+.peers { --cmp: #9aa7ff; margin-top: 14px; padding: 12px 14px; border: 1px dashed color-mix(in oklab, var(--cmp) 50%, transparent); border-inline-start: 3px solid var(--cmp);
+  background: color-mix(in oklab, var(--cmp) 6%, var(--ink)); }
+.peers-head svg, .peers-sub svg { stroke: var(--cmp); }
+.peers .peers-sum .pct { color: var(--cmp); }

@@ -76,7 +76,7 @@ export function benchList(component = null) {
     const index = new Map(parts.flatMap(([, members]) => members).map((r, i) => [r.id, i]));
     let gi = 0;
     for (const [kind, members] of parts) {
-      const g = groupPanel("bench", kind, gi++, (on) => { for (const r of members) call("bench.set", { id: r.id, field: "selected", value: on }); });
+      const g = groupPanel("bench", kind, gi++, (on) => { for (const r of members) call("bench.set", { id: r.id, field: "selected", value: on }); }, { hint: "Web_Bench_Advanced_Hint" });
       groups.push({ g, ids: members.map((r) => r.id) }); list.append(g.el);
       for (const r of members) addRow(r, index.get(r.id), g.body);
     }
@@ -93,7 +93,8 @@ export function benchList(component = null) {
         : o.choices
         ? h("select", { class: "field", onchange: (e) => set("option", e.target.value, { key: o.key }) }, o.choices.map((c) => h("option", { value: c.value }, c.label)))
         : h("input", { class: "field lat", style: { width: "110px" }, oninput: (e) => set("option", e.target.value, { key: o.key }) });
-      return { o, input, el: h("label", {}, o.label, input) };
+      // Which card or drive the run is on stays in the plain row; the other options wait for "Advanced".
+      return { o, input, el: h("label", { class: o.key === "gpu" || o.key === "drive" ? "primary" : null }, o.label, input) };
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), metrics = h("div", { class: "metrics" }), detail = h("details", { class: "rec-more run-more", hidden: true });
     const tags = h("span", { class: "row-tags" });

@@ -25,14 +25,8 @@ export function applies(when, options) {
 
 export function mount(el) {
   const list = h("div", { class: "groups" });
-  // Plain by default: a test is a line with its tick and, once run, whether it passed. "Advanced" brings each test's length, repeat
-  // and options forward, and the whole account of its result. (A per-viewer convenience, kept in the browser profile.)
-  let advanced = false; try { advanced = localStorage.getItem("mazesta.tests.advanced") === "1"; } catch { /* not kept */ }
-  const advBox = h("input", { type: "checkbox", class: "switch", checked: advanced, "aria-label": t("Web_Tests_Advanced"),
-    onchange: (e) => { advanced = e.target.checked; list.classList.toggle("simple", !advanced); try { localStorage.setItem("mazesta.tests.advanced", advanced ? "1" : "0"); } catch { /* not kept */ } } });
-  list.classList.toggle("simple", !advanced);
-  const onAdvanced = (e) => { advanced = e.detail; advBox.checked = advanced; list.classList.toggle("simple", !advanced); };
-  window.addEventListener("tests:advanced", onAdvanced);
+  // Plain by default: a test is a line with its tick and, once run, whether it passed. Each part's "Advanced" button (at the end of its head, see
+  // groupPanel) brings that part's test lengths, repeats and options forward, and the whole account of its results.
   const notice = h("div", { class: "banner", hidden: true });
   const blocked = h("div", { class: "banner", role: "status", hidden: true });
   // Ready-made selections: each picks its tests and their lengths; the note says what it covers and what it leaves out.
@@ -49,8 +43,7 @@ export function mount(el) {
   const thermalBox = h("input", { type: "checkbox", class: "switch", "aria-label": t("Test_Thermal"), onchange: (e) => call("tests.exec", { cmd: "thermal", value: e.target.checked }) });
   const thermal = h("label", { class: "run-follow", "data-a": "tests-thermal" }, thermalBox, t("Test_Thermal"));
   el.append(
-    h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede"))),
-      h("label", { class: "run-follow adv-toggle", title: t("Web_Tests_Advanced_Hint"), "data-a": "tests-advanced" }, advBox, t("Web_Tests_Advanced"))),
+    h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
     notice, blocked, h("div", { class: "profile-bar" }, h("span", { class: "caption" }, t("Profile_Title")), profiles), profileNote, list,
     h("div", { class: "dock" }, h("span", { class: "dock-set" }, start, cancel, watch), h("span", { class: "dock-set" }, together, thermal), h("span", { class: "grow" }),
       // One length for every test at once (each can still be changed after); the box goes back to its title so it can be picked again.
@@ -64,7 +57,7 @@ export function mount(el) {
     const index = new Map(s.rows.map((r, i) => [r.id, i]));
     let gi = 0;
     for (const [kind, members] of byPart(s.rows, (r) => partOfId(r.id))) {
-      const g = groupPanel("tests", kind, gi++, (on) => { for (const r of members) call("tests.set", { id: r.id, field: "selected", value: on }); });
+      const g = groupPanel("tests", kind, gi++, (on) => { for (const r of members) call("tests.set", { id: r.id, field: "selected", value: on }); }, { a: gi === 1 ? "tests-advanced" : null });
       groups.push({ g, ids: members.map((r) => r.id) }); list.append(g.el);
       for (const r of members) addRow(s, r, index.get(r.id), g.body);
     }
@@ -154,5 +147,5 @@ export function mount(el) {
   }
   call("tests.state").then(update);
   const off = on("tests", update);
-  return () => { off(); window.removeEventListener("tests:advanced", onAdvanced); };
+  return () => { off(); for (const { g } of groups) g.dispose(); };
 }

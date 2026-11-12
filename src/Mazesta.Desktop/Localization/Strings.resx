@@ -3491,7 +3491,8 @@ Cancel: stop.</value></data>
   <data name="Fans_HideUnwired" xml:space="preserve"><value>Hide them</value></data>
   <data name="Web_Bench_RunDetails" xml:space="preserve"><value>Conditions and settings of this run</value></data>
   <data name="Web_Tests_Advanced" xml:space="preserve"><value>Advanced</value></data>
-  <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>Shows each test's length, repeat and options, and the full account of its result</value></data>
+  <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>Shows this part's test lengths, repeats and options, and the full account of their results</value></data>
+  <data name="Web_Bench_Advanced_Hint" xml:space="preserve"><value>Shows this part's benchmark options, the conditions of each run, every number it measured and the findings; the plain list keeps the main numbers, the record and the comparison</value></data>
   <data name="Test_Cpu_Stress" xml:space="preserve"><value>CPU · full load (matrix, integer, hashing and compression, in turn)</value></data>
   <data name="Test_Cpu_Stage_Matrix" xml:space="preserve"><value>matrix products (floating point)</value></data>
   <data name="Test_Cpu_Stage_Integer" xml:space="preserve"><value>integer arithmetic (multiply, divide, branch)</value></data>
