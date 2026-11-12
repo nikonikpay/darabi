@@ -15,9 +15,9 @@ function advRead(page, kind) {
   try { const v = localStorage.getItem(advKey(page, kind)); if (v !== null) return v === "1"; return page === "tests" && localStorage.getItem("mazesta.tests.advanced") === "1"; } catch { return false; }
 }
 
-export function groupPanel(page, kind, i, onTick, { a = null, hint = "Web_Tests_Advanced_Hint" } = {}) {
+export function groupPanel(page, kind, i, onTick, { a = null, hint = "Web_Tests_Advanced_Hint", noAdv = false } = {}) {
   const p = part(kind), title = t(p.key), shut = shutSet(page);
-  let adv = advRead(page, kind);
+  let adv = noAdv || advRead(page, kind);   // noAdv: no button, everything always shown (Benchmarks)
   const advBtn = h("button", { class: "adv-pick", type: "button", "aria-pressed": String(adv), title: t(hint), "data-a": a, onclick: (e) => { e.stopPropagation(); setAdv(!adv, true); } }, icon("sliders"), t("Web_Tests_Advanced"));
   function setAdv(v, remember) {
     adv = v; el.classList.toggle("simple", !v); advBtn.setAttribute("aria-pressed", String(v));
@@ -33,7 +33,7 @@ export function groupPanel(page, kind, i, onTick, { a = null, hint = "Web_Tests_
   const body = h("div", { class: "queue" });
   const el = h("section", { class: `panel group p-${page} ${p.cls}`, style: { "--i": i } },
     h("header", { class: "panel-head", onclick: () => setShut(!el.classList.contains("shut"), true) },
-      all, h("span", { class: "ico" }, icon(p.icon)), h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, title)), count, advBtn, fold),
+      all, h("span", { class: "ico" }, icon(p.icon)), h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, title)), count, noAdv ? null : advBtn, fold),
     h("div", { class: "group-body" }, h("div", {}, body)));
   function setShut(v, remember) {
     el.classList.toggle("shut", v); fold.setAttribute("aria-expanded", String(!v));

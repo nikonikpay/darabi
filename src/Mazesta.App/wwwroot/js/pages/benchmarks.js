@@ -76,7 +76,7 @@ export function benchList(component = null) {
     const index = new Map(parts.flatMap(([, members]) => members).map((r, i) => [r.id, i]));
     let gi = 0;
     for (const [kind, members] of parts) {
-      const g = groupPanel("bench", kind, gi++, (on) => { for (const r of members) call("bench.set", { id: r.id, field: "selected", value: on }); }, { hint: "Web_Bench_Advanced_Hint" });
+      const g = groupPanel("bench", kind, gi++, (on) => { for (const r of members) call("bench.set", { id: r.id, field: "selected", value: on }); }, { noAdv: true });
       groups.push({ g, ids: members.map((r) => r.id) }); list.append(g.el);
       for (const r of members) addRow(r, index.get(r.id), g.body);
     }
