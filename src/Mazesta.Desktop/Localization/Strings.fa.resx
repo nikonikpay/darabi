@@ -4366,4 +4366,42 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Files_Img_Note" xml:space="preserve"><value>هر فایل تازه کنار اصل ذخیره می‌شود و اندازه در نامش می‌آید، مثلاً photo (1280).jpg؛ خود عکس اصلی هرگز تغییر نمی‌کند. عکسی که از این اندازه کوچک‌تر است اندازه‌اش را نگه می‌دارد. JPEG، BMP و TIFF به JPEG و PNG و GIF به PNG تبدیل می‌شوند. عکس همان‌طور که دوربین گرفته صاف می‌شود و اطلاعات دیگرش (مکان، دوربین) کپی نمی‌شود.</value></data>
   <data name="Help_Files_Img_Title" xml:space="preserve"><value>از عکس‌ها نسخه‌هایی با اندازه و حجم کمتر می‌سازد، برای فرستادن در پیام‌رسان، ایمیل یا فرمی که حجم را محدود می‌کند. عکس‌های اصلی دست نمی‌خورند.</value></data>
   <data name="HelpHow_Files_Img_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|«انتخاب عکس‌ها» را بزنید و یک یا چند عکس انتخاب کنید.|بلندترین ضلع (۱۲۸۰ پیکسل برای پیام‌رسان مناسب است) و کیفیت را انتخاب کنید.|«کوچک کن» را بزنید؛ هر فایل تازه کنار اصل خودش است و اندازه در نامش آمده.</value></data>
+  <data name="Files_Ren_Title" xml:space="preserve"><value>تغییر نام چند فایل با هم</value></data>
+  <data name="Files_Ren_Sub" xml:space="preserve"><value>جست‌وجو و جایگزینی در نام‌ها، یا یک نام و شماره برای همه؛ پیش از هر تغییری همهٔ نام‌های تازه را ببینید</value></data>
+  <data name="Files_Ren_Mode_replace" xml:space="preserve"><value>جست‌وجو و جایگزینی</value></data>
+  <data name="Files_Ren_Mode_number" xml:space="preserve"><value>نام و شماره</value></data>
+  <data name="Files_Ren_Find" xml:space="preserve"><value>پیدا کن</value></data>
+  <data name="Files_Ren_Replace" xml:space="preserve"><value>جایگزین کن با</value></data>
+  <data name="Files_Ren_Base" xml:space="preserve"><value>نام تازه</value></data>
+  <data name="Files_Ren_Start" xml:space="preserve"><value>شروع از</value></data>
+  <data name="Files_Ren_Regex" xml:space="preserve"><value>عبارت باقاعده (regex)</value></data>
+  <data name="Files_Ren_Case" xml:space="preserve"><value>حروف کوچک و بزرگ فرق دارند</value></data>
+  <data name="Files_Ren_Run" xml:space="preserve"><value>تغییر نام</value></data>
+  <data name="Files_Ren_Same" xml:space="preserve"><value>بدون تغییر</value></data>
+  <data name="Files_Ren_Clash" xml:space="preserve"><value>این نام گرفته شده</value></data>
+  <data name="Files_Ren_Bad" xml:space="preserve"><value>ویندوز این نام را نمی‌پذیرد</value></data>
+  <data name="Files_Ren_Ready" xml:space="preserve"><value>{0} فایل از {1} تغییر نام می‌دهد.</value></data>
+  <data name="Files_Ren_Blocked_N" xml:space="preserve"><value>{0} نام تازه را نمی‌شود داد؛ قاعده را تغییر دهید.</value></data>
+  <data name="Files_Ren_Blocked" xml:space="preserve"><value>بعضی نام‌های تازه را نمی‌شود داد؛ هیچ فایلی تغییر نام نداد.</value></data>
+  <data name="Files_Ren_BadRegex" xml:space="preserve"><value>عبارت باقاعده درست نیست: {0}</value></data>
+  <data name="Files_Ren_Done" xml:space="preserve"><value>{0} فایل تغییر نام داد.</value></data>
+  <data name="Files_Ren_Failed" xml:space="preserve"><value>تغییر نام نداد: {0}</value></data>
+  <data name="Files_Ren_Undo" xml:space="preserve"><value>برگرداندن آخرین تغییر نام</value></data>
+  <data name="Files_Ren_Undo_N" xml:space="preserve"><value>برگرداندن آخرین تغییر نام ({0} فایل)</value></data>
+  <data name="Files_Ren_Undone" xml:space="preserve"><value>{0} فایل نام قبلی‌اش را پس گرفت.</value></data>
+  <data name="Files_Ren_Note" xml:space="preserve"><value>فقط نام عوض می‌شود و پسوند (.jpg، .docx) می‌ماند. پوشهٔ انتخاب‌شده یعنی فایل‌های مستقیم داخل آن، به ترتیب نام. تا وقتی نامی با نام دیگری یکی شود یا مجاز نباشد، هیچ فایلی تغییر نام نمی‌دهد. آخرین تغییر نام، حتی پس از بستن برنامه، به خاطر می‌ماند و «برگرداندن» نام قبلی هر فایلی را که هنوز نام تازه را دارد پس می‌دهد.</value></data>
+  <data name="Files_Hash_Title" xml:space="preserve"><value>چک‌سام فایل</value></data>
+  <data name="Files_Hash_Sub" xml:space="preserve"><value>بررسی اینکه یک دانلود (ISO ویندوز، درایور) کامل و دست‌نخورده رسیده است</value></data>
+  <data name="Files_Hash_Paste" xml:space="preserve"><value>چک‌سام صفحهٔ دانلود را اینجا بچسبانید</value></data>
+  <data name="Files_Hash_Reading" xml:space="preserve"><value>در حال خواندن فایل: {0}٪</value></data>
+  <data name="Files_Hash_NotHash" xml:space="preserve"><value>این چک‌سام MD5، SHA-1، SHA-256 یا SHA-512 نیست.</value></data>
+  <data name="Files_Hash_PickFirst" xml:space="preserve"><value>چک‌سام {0} است؛ فایل را انتخاب کنید تا مقایسه شود.</value></data>
+  <data name="Files_Hash_Match" xml:space="preserve"><value>{0} یکی است: فایل همان است که منتشر شده.</value></data>
+  <data name="Files_Hash_NoMatch" xml:space="preserve"><value>{0} یکی نیست: فایل فرق دارد یا خراب است؛ دوباره دانلودش کنید.</value></data>
+  <data name="Files_Copy" xml:space="preserve"><value>کپی</value></data>
+  <data name="Files_Copied" xml:space="preserve"><value>کپی شد.</value></data>
+  <data name="Help_Files_Ren_Title" xml:space="preserve"><value>چند فایل را با هم تغییر نام می‌دهد: یک کلمه در همهٔ نام‌ها پیدا و جایگزین می‌شود، یا یک نام با شماره برای هر کدام (photo 01، photo 02...). اول همهٔ نام‌های تازه نشان داده می‌شود، تا وقتی دو نام یکی شوند کاری انجام نمی‌شود و آخرین تغییر نام را می‌شود برگرداند.</value></data>
+  <data name="HelpHow_Files_Ren_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|فایل‌ها را انتخاب کنید، یا یک پوشه برای همهٔ فایل‌های داخلش.|«جست‌وجو و جایگزینی» یا «نام و شماره» را انتخاب کنید و بنویسید؛ فهرست هم‌زمان نام تازهٔ هر فایل را نشان می‌دهد.|وقتی هیچ ردیفی قرمز نیست «تغییر نام» را بزنید. «برگرداندن آخرین تغییر نام» نام‌های قبلی را برمی‌گرداند.</value></data>
+  <data name="Help_Files_Hash_Title" xml:space="preserve"><value>MD5، SHA-1 و SHA-256 یک فایل را حساب می‌کند و با چک‌سامی که از صفحهٔ دانلودش می‌چسبانید مقایسه می‌کند، تا بدانید ISO ویندوز یا درایور کامل رسیده و تغییر نکرده است.</value></data>
+  <data name="HelpHow_Files_Hash_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|«انتخاب فایل» را بزنید و فایل دانلودشده را انتخاب کنید؛ فایل بزرگ کمی طول می‌کشد.|چک‌سامی را که در صفحهٔ دانلود آمده در کادر بچسبانید.|سبز یعنی فایل همان فایل منتشرشده است؛ قرمز یعنی دوباره دانلودش کنید.</value></data>
 </root>

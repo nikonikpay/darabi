@@ -16,7 +16,8 @@ public class AppGuideLexiconTests
      InlineData("سیستمم از اسلیپ خودش روشن میشه", "wake"), InlineData("wake on lan رو خاموش کن", "wake"), InlineData("کلید بازیابی درایو", "storage"),
      InlineData("فایل پاک نمیشه میگه در برنامه دیگری باز است", "tools"), InlineData("unlock a locked file", "tools"),
      InlineData("درایو سی پر شده", "tools"), InlineData("حجم پوشه ها رو ببینم", "tools"), InlineData("show me the folder size", "tools"),
-     InlineData("حجم عکس ها رو کم کن", "tools"), InlineData("resize photo", "tools")]
+     InlineData("حجم عکس ها رو کم کن", "tools"), InlineData("resize photo", "tools"),
+     InlineData("اسم چند فایل رو یکجا عوض کنم", "tools"), InlineData("batch rename", "tools"), InlineData("چک سام فایل ایزو", "tools"), InlineData("sha256 of a file", "tools")]
     public void An_everyday_request_shows_the_place_where_it_is_done(string text, string page) { var r = R(text); Assert.True(r.Intent == AiIntent.Navigate && r.Place?.Page == page, $"{text}: {r.Intent} {r.Place?.Page}"); }
 
     [Theory, InlineData("ویندوزم کنده چیکار کنم"), InlineData("کامپیوترم کند شده"), InlineData("سیستمم هنگ میکنه"), InlineData("چرا کامپیوترم خودش ری استارت میشه"), InlineData("چرا بازی ها لگ دارن"), InlineData("فن لپ تاپم خیلی سر و صدا میکنه")]

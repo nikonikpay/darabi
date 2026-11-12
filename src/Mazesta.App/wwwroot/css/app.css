@@ -1900,3 +1900,8 @@ div.findings { max-height: none; overflow: visible; }
 .fl-opts { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; }
 .fl-opts label { display: grid; gap: 4px; font-size: 12px; color: var(--paper-2); }
 .fl-list small.fail { color: var(--fail); }
+.fl-ren { max-height: 360px; overflow: auto; }
+.fl-ren li.fail { box-shadow: inset 3px 0 0 var(--fail); }
+.fl-check { display: flex !important; align-items: center; gap: 8px; }
+.fl-hash dd { overflow-wrap: anywhere; }
+.fl-hash + .field { width: 100%; box-sizing: border-box; margin-top: 10px; }

@@ -1,4 +1,4 @@
-// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller. Files come only from the host's own dialogs (files.pick); the host
+// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller, many files renamed, a file's checksum. Files come only from the host's own dialogs (files.pick); the host
 // acts only on what was picked there. Every answer is what Windows reported; "could not check" is never shown as "nothing found".
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
@@ -69,6 +69,94 @@ export function imageBox(i, onEvent) {
       h("div", { class: "fl-opts" }, h("label", {}, t("Files_Img_Size"), size, custom), h("label", {}, t("Files_Img_Quality"), quality)),
       h("div", { class: "btn-row" }, run), msg, list],
     more: h("p", { class: "note" }, t("Files_Img_Note")) });
+}
+
+// ——— Many files renamed: a preview of every new name first; the batch runs only when nothing clashes, and the last one can be undone ———
+export function renameBox(i) {
+  let paths = [];
+  const picked = h("p", { class: "fl-picked" }), msg = h("p", { class: "msg", "aria-live": "polite" }), list = h("ul", { class: "fl-list fl-ren" });
+  const field = (key, ph) => h("input", { class: "field", "aria-label": t(key), placeholder: ph || "", oninput: preview });
+  const find = field("Files_Ren_Find"), replace = field("Files_Ren_Replace"), start = h("input", { class: "field lat", inputmode: "numeric", value: "1", "aria-label": t("Files_Ren_Start"), oninput: preview });
+  const check = (key) => h("input", { type: "checkbox", class: "switch", "aria-label": t(key), onchange: preview });
+  const regex = check("Files_Ren_Regex"), matchCase = check("Files_Ren_Case");
+  const mode = h("div", { class: "choice", role: "radiogroup", "aria-label": t("Files_Ren_Title") },
+    ["replace", "number"].map((v) => h("label", {}, h("input", { type: "radio", name: "ren-mode", value: v, checked: v === "replace", onchange: () => { sync(); preview(); } }), h("b", {}, t(`Files_Ren_Mode_${v}`)))));
+  const findRow = h("label", {}, t("Files_Ren_Find"), find), startRow = h("label", { hidden: true }, t("Files_Ren_Start"), start);
+  const replaceLabel = h("span", {}, t("Files_Ren_Replace")), flags = h("div", { class: "fl-opts" }, h("label", { class: "fl-check" }, regex, t("Files_Ren_Regex")), h("label", { class: "fl-check" }, matchCase, t("Files_Ren_Case")));
+  const run = h("button", { class: "btn primary", disabled: true, onclick: apply }, t("Files_Ren_Run"));
+  const undo = h("button", { class: "btn quiet", hidden: true, onclick: undoLast }, icon("refresh"), t("Files_Ren_Undo"));
+  const number = () => mode.querySelector("input:checked")?.value === "number";
+  function sync() { const n = number(); findRow.hidden = n; flags.hidden = n; startRow.hidden = !n; replaceLabel.textContent = t(n ? "Files_Ren_Base" : "Files_Ren_Replace"); }
+  const rule = () => ({ paths, find: find.value, replace: replace.value, regex: regex.checked, matchCase: matchCase.checked, number: number(), start: start.value.trim() });
+  const use = (p) => { paths = p; picked.replaceChildren(shown(p)); preview(); };
+  let seq = 0;
+  async function preview() {
+    if (!paths.length) return;
+    const my = ++seq, r = await call("rename.preview", rule());
+    if (my !== seq) return;   // a newer keystroke's preview is on its way
+    if (r.error) { msg.className = "msg fail"; msg.textContent = t("Files_Ren_BadRegex", r.error); list.replaceChildren(); run.disabled = true; return; }
+    const STATE = { Same: "", Ready: "ok", Clash: "fail", Bad: "fail" };
+    list.replaceChildren(...r.items.slice(0, 300).map((x) => h("li", { class: STATE[x.state] }, h("div", {}, lat(x.name), x.state === "Same" ? null : h("small", {}, "→ ", lat(x.newName))),
+      h("span", { class: "caption" }, x.state === "Same" ? t("Files_Ren_Same") : x.state === "Ready" ? "" : t(`Files_Ren_${x.state}`)))));
+    run.disabled = !r.ready || r.blocked > 0;
+    msg.className = `msg ${r.blocked ? "fail" : ""}`;
+    msg.textContent = r.blocked ? t("Files_Ren_Blocked_N", r.blocked) : t("Files_Ren_Ready", r.ready, r.items.length);
+  }
+  async function apply() {
+    run.disabled = true;
+    try {
+      const r = await call("rename.apply", rule());
+      msg.className = `msg ${r.failed.length ? "fail" : "ok"}`;
+      msg.textContent = t("Files_Ren_Done", r.renamed) + (r.failed.length ? " " + t("Files_Ren_Failed", r.failed.map((f) => f.name).join("، ")) : "");
+      list.replaceChildren(); paths = []; picked.replaceChildren(); last();
+    } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); run.disabled = false; }
+  }
+  async function undoLast() {
+    const r = await call("rename.undo");
+    msg.className = `msg ${r.failed.length ? "fail" : "ok"}`;
+    msg.textContent = t("Files_Ren_Undone", r.renamed) + (r.failed.length ? " " + t("Files_Ren_Failed", r.failed.map((f) => f.name).join("، ")) : "");
+    last();
+  }
+  const last = () => call("rename.last").then((x) => { undo.hidden = !x.count; undo.textContent = ""; undo.append(icon("refresh"), t("Files_Ren_Undo_N", x.count)); });
+  last();
+  return box({ ico: "doc", cls: "p-tool", title: t("Files_Ren_Title"), sub: t("Files_Ren_Sub"), wide: true, i, a: "rename",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("files", "Files_PickFile", use), pickBtn("folder", "Files_PickFolder", use), h("span", { class: "grow" }), undo), picked, mode,
+      h("div", { class: "fl-opts" }, findRow, h("label", {}, replaceLabel, replace), startRow), flags, h("div", { class: "btn-row" }, run), msg, list],
+    more: h("p", { class: "note" }, t("Files_Ren_Note")) });
+}
+
+// ——— A file's checksum, to compare with the one on its download page ———
+export function hashBox(i, onEvent) {
+  let sums = null;
+  const msg = h("p", { class: "msg", "aria-live": "polite" }), out = h("dl", { class: "kv fl-hash" });
+  const paste = h("input", { class: "field lat", "aria-label": t("Files_Hash_Paste"), placeholder: t("Files_Hash_Paste"), oninput: compare });
+  const verdict = h("p", { class: "msg" });
+  const cancel = h("button", { class: "btn stop", hidden: true, onclick: () => call("hash.cancel") }, icon("stop"), t("Test_Cancel"));
+  const copy = (v) => h("button", { class: "btn quiet", onclick: async () => { try { await navigator.clipboard.writeText(v); toast(t("Files_Copied")); } catch { /* the value is still shown */ } } }, t("Files_Copy"));
+  async function go(p) {
+    sums = null; out.replaceChildren(); verdict.textContent = ""; cancel.hidden = false; msg.className = "msg"; msg.textContent = t("Tools_Working");
+    try {
+      const r = await call("hash.file", { paths: p });
+      if (r.cancelled) { msg.textContent = t("Files_Space_Cancelled"); return; }
+      sums = r; msg.className = "msg"; msg.replaceChildren(lat(r.name), " · ", lat(bytes(r.size)));
+      out.replaceChildren(...[["MD5", r.md5], ["SHA-1", r.sha1], ["SHA-256", r.sha256]].flatMap(([k, v]) => [h("dt", {}, lat(k)), h("dd", {}, lat(v), " ", copy(v))]));
+      compare();
+    } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); }
+    finally { cancel.hidden = true; }
+  }
+  async function compare() {
+    const text = paste.value.trim();
+    if (!text) { verdict.textContent = ""; return; }
+    const r = await call("hash.compare", { text });
+    if (!r.kind) { verdict.className = "msg fail"; verdict.textContent = t("Files_Hash_NotHash"); return; }
+    if (!sums) { verdict.className = "msg"; verdict.textContent = t("Files_Hash_PickFirst", r.kind); return; }
+    const same = [sums.md5, sums.sha1, sums.sha256].includes(r.clean);
+    verdict.className = `msg ${same ? "ok" : "fail"}`;
+    verdict.textContent = same ? t("Files_Hash_Match", r.kind) : t("Files_Hash_NoMatch", r.kind);
+  }
+  onEvent("hash", (x) => { msg.textContent = t("Files_Hash_Reading", Math.round(x.share * 100)); });
+  return box({ ico: "check", cls: "p-tool", title: t("Files_Hash_Title"), sub: t("Files_Hash_Sub"), i, a: "checksum",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("one", "Files_PickFile", go), h("span", { class: "grow" }), cancel), msg, out, paste, verdict] });
 }
 
 // Bytes as people read them (1 KB = 1024 bytes, as Explorer shows), Latin digits in a .lat run.

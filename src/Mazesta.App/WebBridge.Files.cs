@@ -62,6 +62,46 @@ public sealed partial class WebBridge
             return new { ok, total = paths.Count, folder = paths.Count > 0 ? Path.GetDirectoryName(paths[0]) : null };
         });
 
+        // ——— Many files renamed: the plan is made here from the rule (never from names the page sends), shown, then carried out as shown ———
+        Method("rename.preview", p =>
+        {
+            var (items, error) = RenameItems(p);
+            return new { error, items = items.Select(i => new { name = Path.GetFileName(i.Path), newName = i.NewName, state = i.State }),
+                ready = items.Count(i => i.State == RenameState.Ready), blocked = items.Count(i => i.State is RenameState.Clash or RenameState.Bad) };
+        });
+        MethodAsync("rename.apply", async p =>
+        {
+            var (items, error) = RenameItems(p);
+            if (error is not null || items.Any(i => i.State is RenameState.Clash or RenameState.Bad)) throw new InvalidOperationException(Loc.Get("Files_Ren_Blocked"));
+            var r = await Task.Run(() => BatchRename.Apply(items, RenameLog)).ConfigureAwait(true);
+            foreach (var i in items.Where(i => i.State == RenameState.Ready)) _picked.Add(Path.Combine(Path.GetDirectoryName(i.Path)!, i.NewName));
+            _log.LogInformation("Renamed {Count} files, {Failed} failed", r.Renamed, r.Failed.Count);
+            return new { renamed = r.Renamed, failed = r.Failed.Select(f => new { name = Path.GetFileName(f.Path), error = f.Error }) };
+        });
+        Method("rename.last", _ => new { count = BatchRename.Read(RenameLog).Count });
+        MethodAsync("rename.undo", async _ =>
+        {
+            var r = await Task.Run(() => BatchRename.Undo(RenameLog)).ConfigureAwait(true);
+            _log.LogInformation("Rename undone: {Count} back, {Failed} not", r.Renamed, r.Failed.Count);
+            return new { renamed = r.Renamed, failed = r.Failed.Select(f => new { name = Path.GetFileName(f.Path), error = f.Error }) };
+        });
+
+        // ——— A file's checksum: MD5, SHA-1 and SHA-256 in one read, the progress pushed as "hash" ———
+        MethodAsync("hash.file", async p =>
+        {
+            var path = Picked(p).FirstOrDefault() ?? throw new InvalidOperationException("no files");
+            _hashCts?.Cancel(); var cts = _hashCts = new CancellationTokenSource();
+            try
+            {
+                var (md5, sha1, sha256) = await Task.Run(() => FileHash.Hash(path, x => Push("hash", new { share = x }), cts.Token)).ConfigureAwait(true);
+                return new { name = Path.GetFileName(path), size = new FileInfo(path).Length, md5, sha1, sha256 };
+            }
+            catch (OperationCanceledException) { return new { cancelled = true }; }
+            finally { if (_hashCts == cts) _hashCts = null; }
+        });
+        Method("hash.cancel", _ => { _hashCts?.Cancel(); return null; });
+        Method("hash.compare", p => new { kind = Checksum.KindOf(Str(p, "text")), clean = Checksum.Clean(Str(p, "text")) });
+
         // ——— Where the disk space went: one scan at a time, its progress pushed as "space"; the last result is kept for browsing until the next ———
         Method("space.drives", _ => DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady)
             .Select(d => new { root = d.Name, label = d.VolumeLabel, total = d.TotalSize, free = d.AvailableFreeSpace }).ToList());
@@ -114,7 +154,16 @@ public sealed partial class WebBridge
         });
     }
 
-    private (SpaceNode Root, TopFiles Top)? _space; private CancellationTokenSource? _spaceCts;
+    private (SpaceNode Root, TopFiles Top)? _space; private CancellationTokenSource? _spaceCts, _hashCts;
+    private string RenameLog => Path.Combine(_paths.DataRoot, "rename", "last.json");
+
+    /// <summary>The batch's files (a picked folder stands for the files directly in it, by name) and the rule the page sent, planned here.</summary>
+    private (IReadOnlyList<RenameItem> Items, string? Error) RenameItems(JsonElement p)
+    {
+        var files = Picked(p).SelectMany(x => Directory.Exists(x) ? Directory.EnumerateFiles(x).Order(StringComparer.CurrentCultureIgnoreCase) : (IEnumerable<string>)[x]).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var rule = new RenameRule(Str(p, "find"), Str(p, "replace"), Bool(p, "regex"), Bool(p, "matchCase"), Bool(p, "number"), int.TryParse(Str(p, "start"), out int s) && s >= 0 ? s : 1);
+        return RenamePlan.Check(rule) is { } bad ? ([], bad) : (RenamePlan.Make(files, rule, File.Exists), null);
+    }
 
     private static object Holder(FileLockHolder h) => new { pid = h.Pid, start = h.StartTime.ToString(System.Globalization.CultureInfo.InvariantCulture), name = h.Name, path = h.Path, kind = h.Kind, canClose = h.CanClose };
 

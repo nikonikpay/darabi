@@ -4366,4 +4366,42 @@ Cancel: stop.</value></data>
   <data name="Files_Img_Note" xml:space="preserve"><value>Each new file is saved beside the original with the size in its name, for example photo (1280).jpg; the original is never changed. A picture already smaller than the size keeps its size. JPEG, BMP and TIFF become JPEG; PNG and GIF become PNG. The picture is turned upright as the camera took it, and its other details (place, camera) are not copied.</value></data>
   <data name="Help_Files_Img_Title" xml:space="preserve"><value>Makes copies of pictures with a smaller size and file, for sending in a messenger, an e-mail or a form that limits the size. The originals stay as they are.</value></data>
   <data name="HelpHow_Files_Img_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press Choose pictures and pick one or many.|Choose the longest side (1280 px suits messengers) and the quality.|Press Make smaller; each new file is beside its original, with the size in its name.</value></data>
+  <data name="Files_Ren_Title" xml:space="preserve"><value>Rename many files</value></data>
+  <data name="Files_Ren_Sub" xml:space="preserve"><value>Find and replace in the names, or give them a name and a number; see every new name before anything changes</value></data>
+  <data name="Files_Ren_Mode_replace" xml:space="preserve"><value>Find and replace</value></data>
+  <data name="Files_Ren_Mode_number" xml:space="preserve"><value>Name and number</value></data>
+  <data name="Files_Ren_Find" xml:space="preserve"><value>Find</value></data>
+  <data name="Files_Ren_Replace" xml:space="preserve"><value>Replace with</value></data>
+  <data name="Files_Ren_Base" xml:space="preserve"><value>New name</value></data>
+  <data name="Files_Ren_Start" xml:space="preserve"><value>Start at</value></data>
+  <data name="Files_Ren_Regex" xml:space="preserve"><value>Regular expression</value></data>
+  <data name="Files_Ren_Case" xml:space="preserve"><value>Match case</value></data>
+  <data name="Files_Ren_Run" xml:space="preserve"><value>Rename</value></data>
+  <data name="Files_Ren_Same" xml:space="preserve"><value>unchanged</value></data>
+  <data name="Files_Ren_Clash" xml:space="preserve"><value>name already taken</value></data>
+  <data name="Files_Ren_Bad" xml:space="preserve"><value>Windows does not allow this name</value></data>
+  <data name="Files_Ren_Ready" xml:space="preserve"><value>{0} of {1} files will be renamed.</value></data>
+  <data name="Files_Ren_Blocked_N" xml:space="preserve"><value>{0} new names cannot be given; change the rule.</value></data>
+  <data name="Files_Ren_Blocked" xml:space="preserve"><value>Some new names cannot be given; nothing was renamed.</value></data>
+  <data name="Files_Ren_BadRegex" xml:space="preserve"><value>The regular expression is not valid: {0}</value></data>
+  <data name="Files_Ren_Done" xml:space="preserve"><value>{0} files were renamed.</value></data>
+  <data name="Files_Ren_Failed" xml:space="preserve"><value>Not renamed: {0}</value></data>
+  <data name="Files_Ren_Undo" xml:space="preserve"><value>Undo the last rename</value></data>
+  <data name="Files_Ren_Undo_N" xml:space="preserve"><value>Undo the last rename ({0} files)</value></data>
+  <data name="Files_Ren_Undone" xml:space="preserve"><value>{0} files have their old names back.</value></data>
+  <data name="Files_Ren_Note" xml:space="preserve"><value>Only the name changes; the extension (.jpg, .docx) stays. A chosen folder means the files directly in it, in name order. Nothing is renamed while any new name clashes with another or is not allowed. The last rename is remembered, also after a restart, and Undo gives every file still carrying its new name its old one back.</value></data>
+  <data name="Files_Hash_Title" xml:space="preserve"><value>File checksum</value></data>
+  <data name="Files_Hash_Sub" xml:space="preserve"><value>Check that a download (a Windows ISO, a driver) arrived whole and unchanged</value></data>
+  <data name="Files_Hash_Paste" xml:space="preserve"><value>Paste the checksum from the download page</value></data>
+  <data name="Files_Hash_Reading" xml:space="preserve"><value>Reading the file: {0}%</value></data>
+  <data name="Files_Hash_NotHash" xml:space="preserve"><value>This is not an MD5, SHA-1, SHA-256 or SHA-512 checksum.</value></data>
+  <data name="Files_Hash_PickFirst" xml:space="preserve"><value>A {0} checksum; choose the file to compare it with.</value></data>
+  <data name="Files_Hash_Match" xml:space="preserve"><value>The {0} matches: the file is the same as the one published.</value></data>
+  <data name="Files_Hash_NoMatch" xml:space="preserve"><value>The {0} does not match: the file is different or damaged; download it again.</value></data>
+  <data name="Files_Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Files_Copied" xml:space="preserve"><value>Copied.</value></data>
+  <data name="Help_Files_Ren_Title" xml:space="preserve"><value>Renames many files at once: a word found and replaced in every name, or one name with a number for each (photo 01, photo 02...). Every new name is shown first, nothing runs while two would clash, and the last rename can be undone.</value></data>
+  <data name="HelpHow_Files_Ren_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Choose the files, or a folder for all the files in it.|Pick Find and replace or Name and number, and type; the list shows each new name as you type.|When nothing is marked red, press Rename. Undo the last rename puts the old names back.</value></data>
+  <data name="Help_Files_Hash_Title" xml:space="preserve"><value>Works out a file's MD5, SHA-1 and SHA-256 and compares them with the checksum you paste from its download page, to know a Windows ISO or a driver arrived whole and was not changed.</value></data>
+  <data name="HelpHow_Files_Hash_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press Choose files and pick the downloaded file; a big file takes a little while.|Paste the checksum shown on the download page into the field.|Green means the file is the published one; red means download it again.</value></data>
 </root>

@@ -9,7 +9,7 @@ import { box } from "../groups.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
 import { crashesBox } from "./crashes.js";
-import { lockBox, spaceBox, imageBox } from "./files.js";
+import { lockBox, spaceBox, imageBox, renameBox, hashBox } from "./files.js";
 
 export function mount(el) {
   const offs = [];   // the file boxes' own event subscriptions
@@ -73,7 +73,7 @@ export function mount(el) {
       box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
         body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })),
-    section("Tools_Sec_Files", spaceBox(8, (ev, fn) => offs.push(on(ev, fn))), lockBox(9), imageBox(10, (ev, fn) => offs.push(on(ev, fn)))));
+    section("Tools_Sec_Files", spaceBox(8, (ev, fn) => offs.push(on(ev, fn))), lockBox(9), imageBox(10, (ev, fn) => offs.push(on(ev, fn))), renameBox(11), hashBox(12, (ev, fn) => offs.push(on(ev, fn)))));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;
