@@ -100,6 +100,7 @@ public static class AppGuide
         T("tools", "hibernate", "Tools_Hib_Title", "hibernation and Fast Startup on or off", null),
         T("tools", "vm", "Tools_Vm_Title", "virtual memory (the page file)", null),
         T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null),
+        T("tools", "locks", "Files_Lock_Title", "which program holds a file or folder open (when Windows will not delete, move or rename it), and closing that program", null),
         T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null),
         P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable"),
         P("wake", "Nav_Wake", "what wakes the computer from sleep, each with a switch: devices (keyboard, mouse, USB, network cards), wake timers, Windows maintenance, scheduled tasks and Wake-on-LAN; one button turns all of them off and one puts back what it turned off; it also shows what woke the computer last"),

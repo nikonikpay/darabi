@@ -19,7 +19,7 @@ const TOPICS = [
   ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
   ["lights", null, "Nav_Lights"], ["fans", null, "Nav_Fans"],
   ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["tools", "crashes", "Bsod_Title"], ["tools", "repair", "Tools_Repair"], ["tools", "cleanup", "Tools_Windows"],
-  ["tools", "hibernate", "Tools_Hib_Title"], ["tools", "vm", "Tools_Vm_Title"], ["tools", "hosts", "Tools_Hosts_Title"],
+  ["tools", "hibernate", "Tools_Hib_Title"], ["tools", "vm", "Tools_Vm_Title"], ["tools", "hosts", "Tools_Hosts_Title"], ["tools", "locks", "Files_Lock_Title"],
   ["tweaks", null, "Nav_Tweaks"], ["wake", null, "Nav_Wake"], ["wake", "devices", "Wake_Dev_Title"], ["wake", "timers", "Wake_Timers_Title"], ["wake", "wol", "Wake_Net_Title"], ["wake", "lastwake", "Wake_Last_Title"], ["autorun", null, "Nav_Autorun"], ["autorun", "services", "Autorun_Svc_Title"], ["autorun", "startup", "Autorun_Start_Title"],
   ["shield", null, "Nav_Shield"], ["updates", null, "Nav_Updates"], ["drivers", null, "Nav_Drivers"],
   ["reports", null, "Nav_Reports"], ["messages", null, "Nav_Messages"], ["settings", null, "Nav_Settings"], ["appupdate", null, "Nav_AppUpdate"],
@@ -27,7 +27,7 @@ const TOPICS = [
 ];
 // The boxes' own icons and each section's colour (the part colours of the rest of the app).
 const BOX_ICON = { power: "bolt", gamemode: "gamepad", gameboost: "sparkle", curve: "chart", profiles: "layers", rules: "clock", scene: "play", memory: "ram", "bench.gpu.fur": "gpu", "bench.cpu.render.multi": "cpu",
-  dns: "net", netfix: "net", crashes: "alert", repair: "wrench", cleanup: "win", hibernate: "hourglass", vm: "drive", hosts: "doc", bitlocker: "lock" };
+  dns: "net", netfix: "net", crashes: "alert", repair: "wrench", cleanup: "win", hibernate: "hourglass", vm: "drive", hosts: "doc", bitlocker: "lock", locks: "lock" };
 const LOOSE_ICON = { Nav_Assistant: "chat", Help_Tray_Title: "pin", Help_Keys_Title: "keyboard", Nav_Dashboard: "home", Nav_Messages: "mail", Nav_Reports: "doc" };
 const HUE = { Nav_Group_Hardware: "--c-cpu", Nav_Group_Tests: "--pass", Nav_Group_Apps: "--c-ram", Nav_Group_Gaming: "--c-gpu", Nav_Tuning: "--c-power",
   Nav_Group_Lights: "--c-board", Nav_Group_Windows: "--c-net", Nav_Reports: "--c-storage" };

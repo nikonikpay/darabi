@@ -1,6 +1,6 @@
 // Windows tools, in three sections (the game switches are on the games page, play.js): the connection (the DNS resolver with its speed test, the troubleshooter),
 // repair and clean-up (Windows' own repair tools, their real output streaming below them; Windows' own windows; hibernation and Fast Startup),
-// and memory and hosts (the virtual memory, the hosts file). Every change is one
+// memory and hosts (the virtual memory, the hosts file), and files (what holds a file open: files.js). Every change is one
 // button, is read back from Windows afterwards, and says what Windows answered; nothing runs on its own.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
@@ -9,6 +9,7 @@ import { box } from "../groups.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
 import { crashesBox } from "./crashes.js";
+import { lockBox } from "./files.js";
 
 export function mount(el) {
   // ——— Repair: sfc and DISM ———
@@ -70,7 +71,8 @@ export function mount(el) {
         body: [vmInUse, vmPending], more: [h("div", { style: { marginTop: "6px" } }, choice), custom, vmLimit, h("div", { class: "btn-row" }, vmApply), vmMsg] }),
       box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
-        body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })));
+        body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })),
+    section("Tools_Sec_Files", lockBox(8)));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;

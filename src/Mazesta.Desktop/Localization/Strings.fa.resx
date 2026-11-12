@@ -4304,4 +4304,29 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="BitLocker_Off_Warn" xml:space="preserve"><value>رمزگشایی بسته به درایو از چند دقیقه تا چند ساعت طول می‌کشد. تا پایان کار کامپیوتر را به برق وصل و روشن نگه دارید؛ در این مدت می‌توانید کار کنید. با خاموش بودن BitLocker هر کسی که درایو را بردارد می‌تواند فایل‌هایتان را بخواند.</value></data>
   <data name="Help_BitLocker_Title" xml:space="preserve"><value>برای هر حرف درایو نشان می‌دهد که آیا ویندوز آن را با BitLocker رمزگذاری کرده است - حتی وقتی محافظت معلق است یا هنوز در انتظار فعال‌سازی است - و هشدار می‌دهد که بدون کلید بازیابی، نصب دوباره ویندوز یا به‌روزرسانی بایوس می‌تواند داده‌ها را برای همیشه قفل کند.</value></data>
   <data name="HelpHow_BitLocker_Title" xml:space="preserve"><value>صفحه ذخیره‌سازی را باز کنید و وضعیت هر درایو را در کادر BitLocker بخوانید.|اگر درایوی رمزگذاری شده، پیش از هر نصب دوباره یا به‌روزرسانی بایوس مطمئن شوید کلید بازیابی آن در حساب مایکروسافت شماست.|اگر خودتان روشنش نکرده‌اید و آن را نمی‌خواهید، با مراحل داخل کادر خودتان خاموشش کنید.</value></data>
+  <data name="Tools_Sec_Files" xml:space="preserve"><value>فایل‌ها و صفحه</value></data>
+  <data name="Files_PickFile" xml:space="preserve"><value>انتخاب فایل</value></data>
+  <data name="Files_PickFolder" xml:space="preserve"><value>انتخاب پوشه</value></data>
+  <data name="Files_Filter_Images" xml:space="preserve"><value>تصویرها</value></data>
+  <data name="Files_Picked_Many" xml:space="preserve"><value>{0} فایل انتخاب شد</value></data>
+  <data name="Files_Recheck" xml:space="preserve"><value>بررسی دوباره</value></data>
+  <data name="Files_Lock_Title" xml:space="preserve"><value>چه برنامه‌ای فایل را باز نگه داشته؟</value></data>
+  <data name="Files_Lock_Sub" xml:space="preserve"><value>وقتی ویندوز می‌گوید فایل در برنامهٔ دیگری باز است و پاک، جابه‌جا یا تغییر نام نمی‌شود</value></data>
+  <data name="Files_Lock_None" xml:space="preserve"><value>الان هیچ برنامه‌ای آن را باز نگه نداشته است.</value></data>
+  <data name="Files_Lock_Found" xml:space="preserve"><value>{0} برنامه آن را باز نگه داشته‌اند:</value></data>
+  <data name="Files_Lock_Truncated" xml:space="preserve"><value>پوشه بیش از {0} فایل دارد؛ فقط {0} فایل اول بررسی شد.</value></data>
+  <data name="Files_Lock_Failed" xml:space="preserve"><value>ویندوز نتوانست بررسی کند: {0}</value></data>
+  <data name="Files_Lock_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Files_Lock_CloseAsk" xml:space="preserve"><value>{0} بسته شود؟ کارهای ذخیره‌نشده در آن از بین می‌رود.</value></data>
+  <data name="Files_Lock_Closed" xml:space="preserve"><value>{0} بسته شد.</value></data>
+  <data name="Files_Lock_CloseFailed" xml:space="preserve"><value>{0} بسته نشد: {1}</value></data>
+  <data name="Files_Lock_Protected" xml:space="preserve"><value>بخشی از ویندوز است؛ از اینجا بسته نمی‌شود</value></data>
+  <data name="Files_Lock_Kind_Window" xml:space="preserve"><value>برنامه</value></data>
+  <data name="Files_Lock_Kind_Service" xml:space="preserve"><value>سرویس ویندوز</value></data>
+  <data name="Files_Lock_Kind_Explorer" xml:space="preserve"><value>فایل اکسپلورر</value></data>
+  <data name="Files_Lock_Kind_Console" xml:space="preserve"><value>برنامهٔ خط فرمان</value></data>
+  <data name="Files_Lock_Kind_Critical" xml:space="preserve"><value>فرایند حیاتی ویندوز</value></data>
+  <data name="Files_Lock_Kind_Other" xml:space="preserve"><value>برنامه</value></data>
+  <data name="Help_Files_Lock_Title" xml:space="preserve"><value>نشان می‌دهد کدام برنامه‌ها یک فایل یا فایل‌های یک پوشه را باز نگه داشته‌اند، همان‌طور که خود ویندوز گزارش می‌دهد، تا بدانید پیش از پاک کردن، جابه‌جا کردن یا تغییر نام چه چیزی را ببندید. برنامه را می‌شود از همین‌جا بست؛ سرویس‌ها و فرایندهای حیاتی ویندوز بسته نمی‌شوند.</value></data>
+  <data name="HelpHow_Files_Lock_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|«انتخاب فایل» یا «انتخاب پوشه» را بزنید و همانی را انتخاب کنید که ویندوز رهایش نمی‌کند.|فهرست را بخوانید؛ کارتان را در آن برنامه ذخیره کنید و آن را ببندید یا «بستن» را بزنید.|«بررسی دوباره» را بزنید؛ وقتی هیچ برنامه‌ای آن را نگه نداشت، پاک، جابه‌جا یا تغییر نامش دهید.</value></data>
 </root>

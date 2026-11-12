@@ -4304,4 +4304,29 @@ Cancel: stop.</value></data>
   <data name="BitLocker_Off_Warn" xml:space="preserve"><value>Decryption takes from a few minutes to several hours, depending on the drive. Keep the computer plugged in and on until it finishes; you can keep working meanwhile. With BitLocker off, anyone who takes the drive can read your files.</value></data>
   <data name="Help_BitLocker_Title" xml:space="preserve"><value>Shows, for each drive letter, whether Windows has encrypted it with BitLocker - also when encryption is suspended or still waiting for activation - and warns that a Windows reinstall or a BIOS update can lock the data for good without the recovery key.</value></data>
   <data name="HelpHow_BitLocker_Title" xml:space="preserve"><value>Open the Storage page and read each drive's state in the BitLocker box.|If a drive is encrypted, check that its recovery key is in your Microsoft account before any reinstall or BIOS update.|If you did not turn it on and do not want it, follow the steps in the box to turn it off yourself.</value></data>
+  <data name="Tools_Sec_Files" xml:space="preserve"><value>Files and screen</value></data>
+  <data name="Files_PickFile" xml:space="preserve"><value>Choose files</value></data>
+  <data name="Files_PickFolder" xml:space="preserve"><value>Choose a folder</value></data>
+  <data name="Files_Filter_Images" xml:space="preserve"><value>Pictures</value></data>
+  <data name="Files_Picked_Many" xml:space="preserve"><value>{0} files chosen</value></data>
+  <data name="Files_Recheck" xml:space="preserve"><value>Check again</value></data>
+  <data name="Files_Lock_Title" xml:space="preserve"><value>What is holding this file?</value></data>
+  <data name="Files_Lock_Sub" xml:space="preserve"><value>When Windows says a file is open in another program and will not delete, move or rename it</value></data>
+  <data name="Files_Lock_None" xml:space="preserve"><value>No program holds it open now.</value></data>
+  <data name="Files_Lock_Found" xml:space="preserve"><value>{0} program(s) hold it open:</value></data>
+  <data name="Files_Lock_Truncated" xml:space="preserve"><value>The folder has more than {0} files; only the first {0} were checked.</value></data>
+  <data name="Files_Lock_Failed" xml:space="preserve"><value>Windows could not check: {0}</value></data>
+  <data name="Files_Lock_Close" xml:space="preserve"><value>Close it</value></data>
+  <data name="Files_Lock_CloseAsk" xml:space="preserve"><value>Close {0}? Any unsaved work in it is lost.</value></data>
+  <data name="Files_Lock_Closed" xml:space="preserve"><value>{0} was closed.</value></data>
+  <data name="Files_Lock_CloseFailed" xml:space="preserve"><value>{0} was not closed: {1}</value></data>
+  <data name="Files_Lock_Protected" xml:space="preserve"><value>Part of Windows - not closed here</value></data>
+  <data name="Files_Lock_Kind_Window" xml:space="preserve"><value>program</value></data>
+  <data name="Files_Lock_Kind_Service" xml:space="preserve"><value>Windows service</value></data>
+  <data name="Files_Lock_Kind_Explorer" xml:space="preserve"><value>File Explorer</value></data>
+  <data name="Files_Lock_Kind_Console" xml:space="preserve"><value>console program</value></data>
+  <data name="Files_Lock_Kind_Critical" xml:space="preserve"><value>critical Windows process</value></data>
+  <data name="Files_Lock_Kind_Other" xml:space="preserve"><value>program</value></data>
+  <data name="Help_Files_Lock_Title" xml:space="preserve"><value>Shows which programs hold a file or the files of a folder open, as Windows itself reports them, so you know what to close before deleting, moving or renaming it. A program can be closed from here; Windows services and critical processes cannot.</value></data>
+  <data name="HelpHow_Files_Lock_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press Choose files or Choose a folder and pick the one Windows will not let go.|Read the list; save your work in that program, then close it there or press Close it.|Press Check again; when no program holds it, delete, move or rename it.</value></data>
 </root>

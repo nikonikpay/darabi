@@ -1885,3 +1885,9 @@ div.findings { max-height: none; overflow: visible; }
   background: color-mix(in oklab, var(--cmp) 6%, var(--ink)); }
 .peers-head svg, .peers-sub svg { stroke: var(--cmp); }
 .peers .peers-sum .pct { color: var(--cmp); }
+
+/* File tools (Windows tools page, files.js): picked paths and a list of results, each with its own action at the end */
+.fl-picked { font-size: 12px; color: var(--paper-2); overflow-wrap: anywhere; margin: 8px 0 0; }
+.fl-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.fl-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 10px; background: var(--well); border-radius: var(--r-panel); }
+.fl-list small { display: block; color: var(--paper-2); overflow-wrap: anywhere; margin-top: 2px; }
