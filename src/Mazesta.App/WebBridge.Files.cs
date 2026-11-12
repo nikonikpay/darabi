@@ -20,7 +20,8 @@ public sealed partial class WebBridge
             else
             {
                 string filter = kind == "images" ? Loc.Get("Files_Filter_Images") + "|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.tif;*.tiff|" + Loc.Get("Shield_Pick_AnyFilter") + "|*.*" : Loc.Get("Shield_Pick_AnyFilter") + "|*.*";
-                using var f = new System.Windows.Forms.OpenFileDialog { Title = Loc.Get("Files_PickFile"), CheckFileExists = true, Multiselect = kind != "one", Filter = filter, DereferenceLinks = true };
+                // ValidateNames off (FOS_NOVALIDATE): the dialog otherwise refuses a file another program holds open, the very file the lock box is for
+                using var f = new System.Windows.Forms.OpenFileDialog { Title = Loc.Get("Files_PickFile"), CheckFileExists = true, ValidateNames = false, Multiselect = kind != "one", Filter = filter, DereferenceLinks = true };
                 if (f.ShowDialog(owner) == System.Windows.Forms.DialogResult.OK) paths.AddRange(f.FileNames);
             }
             foreach (var x in paths) _picked.Add(x);
