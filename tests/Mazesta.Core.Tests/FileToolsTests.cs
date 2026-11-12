@@ -55,6 +55,9 @@ public class FileToolsTests
         Assert.NotNull(RenamePlan.Check(new RenameRule("(", "", Regex: true)));
     }
 
+    [Fact] public void A_runaway_regex_refuses_the_plan_instead_of_showing_names_unchanged() =>
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => RenamePlan.Make([P(new string('a', 40) + "!.txt")], new RenameRule("(a+)+$", "x", Regex: true), _ => false));
+
     [Fact] public void Two_files_wanting_one_name_a_name_outside_the_batch_or_a_bad_name_are_marked()
     {
         var both = RenamePlan.Make([P("a1.txt"), P("a2.txt")], new RenameRule(@"\d", "", Regex: true), _ => false);

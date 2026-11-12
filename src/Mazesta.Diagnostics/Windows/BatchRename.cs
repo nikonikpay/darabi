@@ -20,13 +20,21 @@ public static class BatchRename
             string temp = Path.Combine(Path.GetDirectoryName(i.Path)!, $".mz-rename-{Guid.NewGuid():N}{Path.GetExtension(i.Path)}");
             try { File.Move(i.Path, temp); moved.Add((temp, i)); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { failed.Add((i.Path, ex.Message)); }
         }
+        // the files now sit under temporary names: logged before the second step, so a crash or power cut here can still be undone
+        if (moved.Count > 0) Write(undoLog, [.. moved.Select(m => new Step(m.Item.Path, m.Temp))]);
+        var stranded = new List<Step>();
         foreach (var (temp, i) in moved)
         {
             string to = Path.Combine(Path.GetDirectoryName(i.Path)!, i.NewName);
             try { File.Move(temp, to); done.Add(new(i.Path, to)); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { failed.Add((i.Path, ex.Message)); TryMove(temp, i.Path); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // put back; if even that is refused the file keeps its temporary name, which the page names and Undo still knows
+                if (TryMove(temp, i.Path)) failed.Add((i.Path, ex.Message));
+                else { stranded.Add(new(i.Path, temp)); failed.Add((i.Path, $"{ex.Message} ({Path.GetFileName(temp)})")); }
+            }
         }
-        Write(undoLog, done);
+        if (moved.Count > 0) Write(undoLog, [.. done, .. stranded]);   // a batch where nothing moved leaves the last one undoable
         return new(done.Count, failed);
     }
 
@@ -36,16 +44,17 @@ public static class BatchRename
         var steps = Read(undoLog); var failed = new List<(string, string)>(); int back = 0;
         // through temporary names too, so a swap goes back; an old name taken by a file outside the batch is left alone
         var batch = steps.Select(s => s.To).ToHashSet(StringComparer.OrdinalIgnoreCase); var moved = new List<(string Temp, Step Step)>();
+        var keep = new List<Step>();   // what could not go back stays in the log, so Undo can be pressed again once the file is free
         foreach (var s in steps)
         {
             if (!File.Exists(s.To)) { failed.Add((s.To, "gone")); continue; }
-            if (File.Exists(s.From) && !batch.Contains(s.From)) { failed.Add((s.To, "taken")); continue; }
+            if (File.Exists(s.From) && !batch.Contains(s.From)) { failed.Add((s.To, "taken")); keep.Add(s); continue; }
             string temp = Path.Combine(Path.GetDirectoryName(s.To)!, $".mz-rename-{Guid.NewGuid():N}{Path.GetExtension(s.To)}");
-            if (TryMove(s.To, temp)) moved.Add((temp, s)); else failed.Add((s.To, "refused"));
+            if (TryMove(s.To, temp)) moved.Add((temp, s)); else { failed.Add((s.To, "refused")); keep.Add(s); }
         }
         foreach (var (temp, s) in moved)
-            if (TryMove(temp, s.From)) back++; else { failed.Add((s.To, "refused")); TryMove(temp, s.To); }
-        File.Delete(undoLog);
+            if (TryMove(temp, s.From)) back++; else { failed.Add((s.To, "refused")); keep.Add(TryMove(temp, s.To) ? s : s with { To = temp }); }
+        Write(undoLog, keep);
         return new(back, failed);
     }
 
@@ -57,7 +66,7 @@ public static class BatchRename
 
     private static void Write(string undoLog, List<Step> done)
     {
-        if (done.Count == 0) return;
+        if (done.Count == 0) { if (File.Exists(undoLog)) File.Delete(undoLog); return; }   // nothing left to put back
         Directory.CreateDirectory(Path.GetDirectoryName(undoLog)!);
         File.WriteAllText(undoLog, JsonSerializer.Serialize(done));
     }

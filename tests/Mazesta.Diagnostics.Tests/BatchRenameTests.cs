@@ -21,6 +21,22 @@ public class BatchRenameTests
         finally { Directory.Delete(dir, true); }
     }
 
+    [Fact] public void A_file_that_cannot_go_back_stays_in_the_undo_log_until_it_can()
+    {
+        string dir = Directory.CreateTempSubdirectory("mz-ren").FullName, log = Path.Combine(dir, "undo", "last.json");
+        try
+        {
+            string a = Path.Combine(dir, "a.txt"); File.WriteAllText(a, "mine");
+            Assert.Equal(1, BatchRename.Apply(RenamePlan.Make([a], new RenameRule("a", "b"), File.Exists), log).Renamed);
+            File.WriteAllText(a, "someone else's");   // the old name taken by a file outside the batch
+            var u = BatchRename.Undo(log);
+            Assert.Equal(0, u.Renamed); Assert.Equal("taken", Assert.Single(u.Failed).Error); Assert.Single(BatchRename.Read(log));
+            File.Delete(a);
+            Assert.Equal(1, BatchRename.Undo(log).Renamed); Assert.Equal("mine", File.ReadAllText(a)); Assert.False(File.Exists(log));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
     [Fact] public void A_files_checksums_are_read_in_one_pass()
     {
         string f = Path.GetTempFileName();

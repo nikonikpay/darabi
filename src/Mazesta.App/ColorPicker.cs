@@ -77,4 +77,20 @@ public sealed class ColorPicker : Form
 
     // one window over monitors of different scales: Windows' "new DPI, new size" would shrink it off the picture, so its size stays as set
     protected override void WndProc(ref Message m) { if (m.Msg == 0x02E0) return; base.WndProc(ref m); }   // WM_DPICHANGED
+
+    // The app's window was minimised (or another program was in front, for the shortcut), so Windows leaves the picker shown but not in front:
+    // Esc, Enter and the arrows would go to that other program. Joining its input queue for a moment is the documented way to take the front.
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        uint front = GetWindowThreadProcessId(GetForegroundWindow(), out _), me = GetCurrentThreadId();
+        bool joined = front != 0 && front != me && AttachThreadInput(me, front, true);
+        try { SetForegroundWindow(Handle); Activate(); } finally { if (joined) AttachThreadInput(me, front, false); }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool AttachThreadInput(uint attach, uint to, bool on);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 }

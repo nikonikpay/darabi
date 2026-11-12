@@ -16,24 +16,26 @@ public sealed record RenameItem(string Path, string NewName, RenameState State);
 public static class RenamePlan
 {
     private static readonly char[] Invalid = Path.GetInvalidFileNameChars();
+    /// <summary>A name is at most 255 characters: an expression that needs longer than this on one has run away (catastrophic backtracking).</summary>
+    private static readonly TimeSpan Budget = TimeSpan.FromMilliseconds(200);
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase) { "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
 
     /// <summary>Null when the rule is usable; otherwise why not (a regular expression that does not parse).</summary>
     public static string? Check(RenameRule rule)
     {
         if (!rule.Regex || rule.Number) return null;
-        try { _ = new Regex(rule.Find, Options(rule), TimeSpan.FromSeconds(1)); return null; } catch (ArgumentException ex) { return ex.Message; }
+        try { _ = new Regex(rule.Find, Options(rule), Budget); return null; } catch (ArgumentException ex) { return ex.Message; }
     }
 
     public static IReadOnlyList<RenameItem> Make(IReadOnlyList<string> paths, RenameRule rule, Func<string, bool> exists)
     {
         int digits = Math.Max(2, (rule.Start + paths.Count - 1).ToString(System.Globalization.CultureInfo.InvariantCulture).Length);
-        var regex = rule.Regex && !rule.Number && Check(rule) is null ? new Regex(rule.Find, Options(rule), TimeSpan.FromSeconds(1)) : null;
+        var regex = rule.Regex && !rule.Number && Check(rule) is null ? new Regex(rule.Find, Options(rule), Budget) : null;
         var names = paths.Select((p, i) =>
         {
             string name = System.IO.Path.GetFileNameWithoutExtension(p), ext = System.IO.Path.GetExtension(p);
             string stem = rule.Number ? $"{rule.Replace}{(rule.Replace.Length > 0 && !rule.Replace.EndsWith(' ') ? " " : "")}{(rule.Start + i).ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(digits, '0')}"
-                : regex is not null ? Safe(() => regex.Replace(name, rule.Replace)) ?? name
+                : regex is not null ? regex.Replace(name, rule.Replace)   // a timeout leaves here: the whole plan is refused, never shown as "unchanged"
                 : rule.Find.Length == 0 ? name : name.Replace(rule.Find, rule.Replace, rule.MatchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
             return (Path: p, New: stem.TrimEnd(' ', '.') + ext, Old: System.IO.Path.GetFileName(p));
         }).ToList();
@@ -54,7 +56,6 @@ public static class RenamePlan
 
     private static string Key(string path, string name) => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path) ?? "", name);
     private static RegexOptions Options(RenameRule r) => r.MatchCase ? RegexOptions.None : RegexOptions.IgnoreCase;
-    private static string? Safe(Func<string> f) { try { return f(); } catch (RegexMatchTimeoutException) { return null; } }
 }
 
 /// <summary>A file's checksum as people paste it from a download page ("SHA256: 9F86D081..."): the longest run of 32 or more hex digits,

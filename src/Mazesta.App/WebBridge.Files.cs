@@ -64,15 +64,18 @@ public sealed partial class WebBridge
         });
 
         // ——— Many files renamed: the plan is made here from the rule (never from names the page sends), shown, then carried out as shown ———
-        Method("rename.preview", p =>
+        // off the window's thread: a folder of thousands of files is listed and checked on every keystroke
+        MethodAsync("rename.preview", async p =>
         {
-            var (items, error) = RenameItems(p);
+            var paths = Picked(p);
+            var (items, error) = await Task.Run(() => RenameItems(p, paths)).ConfigureAwait(true);
             return new { error, items = items.Select(i => new { name = Path.GetFileName(i.Path), newName = i.NewName, state = i.State }),
                 ready = items.Count(i => i.State == RenameState.Ready), blocked = items.Count(i => i.State is RenameState.Clash or RenameState.Bad) };
         });
         MethodAsync("rename.apply", async p =>
         {
-            var (items, error) = RenameItems(p);
+            var paths = Picked(p);
+            var (items, error) = await Task.Run(() => RenameItems(p, paths)).ConfigureAwait(true);
             if (error is not null || items.Any(i => i.State is RenameState.Clash or RenameState.Bad)) throw new InvalidOperationException(Loc.Get("Files_Ren_Blocked"));
             var r = await Task.Run(() => BatchRename.Apply(items, RenameLog)).ConfigureAwait(true);
             foreach (var i in items.Where(i => i.State == RenameState.Ready)) _picked.Add(Path.Combine(Path.GetDirectoryName(i.Path)!, i.NewName));
@@ -188,11 +191,13 @@ public sealed partial class WebBridge
     private string RenameLog => Path.Combine(_paths.DataRoot, "rename", "last.json");
 
     /// <summary>The batch's files (a picked folder stands for the files directly in it, by name) and the rule the page sent, planned here.</summary>
-    private (IReadOnlyList<RenameItem> Items, string? Error) RenameItems(JsonElement p)
+    private static (IReadOnlyList<RenameItem> Items, string? Error) RenameItems(JsonElement p, List<string> picked)
     {
-        var files = Picked(p).SelectMany(x => Directory.Exists(x) ? Directory.EnumerateFiles(x).Order(StringComparer.CurrentCultureIgnoreCase) : (IEnumerable<string>)[x]).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var files = picked.SelectMany(x => Directory.Exists(x) ? Directory.EnumerateFiles(x).Order(StringComparer.CurrentCultureIgnoreCase) : (IEnumerable<string>)[x]).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var rule = new RenameRule(Str(p, "find"), Str(p, "replace"), Bool(p, "regex"), Bool(p, "matchCase"), Bool(p, "number"), int.TryParse(Str(p, "start"), out int s) && s >= 0 ? s : 1);
-        return RenamePlan.Check(rule) is { } bad ? ([], bad) : (RenamePlan.Make(files, rule, File.Exists), null);
+        if (RenamePlan.Check(rule) is { } bad) return ([], bad);
+        try { return (RenamePlan.Make(files, rule, File.Exists), null); }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException) { return ([], Loc.Get("Files_Ren_Slow")); }
     }
 
     private static object Holder(FileLockHolder h) => new { pid = h.Pid, start = h.StartTime.ToString(System.Globalization.CultureInfo.InvariantCulture), name = h.Name, path = h.Path, kind = h.Kind, canClose = h.CanClose };

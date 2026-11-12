@@ -4383,6 +4383,7 @@ Cancel: stop.</value></data>
   <data name="Files_Ren_Ready" xml:space="preserve"><value>{0} of {1} files will be renamed.</value></data>
   <data name="Files_Ren_Blocked_N" xml:space="preserve"><value>{0} new names cannot be given; change the rule.</value></data>
   <data name="Files_Ren_Blocked" xml:space="preserve"><value>Some new names cannot be given; nothing was renamed.</value></data>
+  <data name="Files_Ren_Slow" xml:space="preserve"><value>This expression takes too long on these names (it backtracks without end); write it more simply.</value></data>
   <data name="Files_Ren_BadRegex" xml:space="preserve"><value>The regular expression is not valid: {0}</value></data>
   <data name="Files_Ren_Done" xml:space="preserve"><value>{0} files were renamed.</value></data>
   <data name="Files_Ren_Failed" xml:space="preserve"><value>Not renamed: {0}</value></data>
