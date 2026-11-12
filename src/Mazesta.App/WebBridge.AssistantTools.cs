@@ -11,7 +11,7 @@ public sealed partial class WebBridge
     {
         ["cpu"] = ["cpu.stress", "cpu.fft"], ["memory"] = ["memory.pattern"],
         ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency", "network.speed"],
-        ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram", "gpu.scene.d3d"],
+        ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram", "gpu.thermal", "gpu.scene.d3d"],
     };
     /// <summary>Asked for all of an area, the assistant offers every test of it but this one: it needs a second computer set up as its peer.</summary>
     private static readonly string[] AssistantNeverTests = ["network.lan"];

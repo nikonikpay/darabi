@@ -417,7 +417,7 @@ async function history(r) {
 // The lines of a chart, one per measured quantity: a line wears its part's hue (the other lines of the part a step lighter), a chip in the
 // legend shows or hides it, and the pointer reads every shown line's value at that second. Each line has its own scale (0 to its largest
 // value, a percentage to 100) so a clock and a load can share the picture; a comparison of runs shares one scale instead.
-const PART_HUE = { Gpu: "--c-gpu", Cpu: "--c-cpu", Ram: "--c-ram" };
+const PART_HUE = { Gpu: "--c-gpu", Cpu: "--c-cpu", Ram: "--c-ram", Storage: "--c-storage", Net: "--c-net" };
 const SVGNS = "http://www.w3.org/2000/svg";
 function chart(lines, shared = false) {
   const W = 760, H = 240, L = 8, R = 8, T = 10, B = 22, n = Math.max(...lines.map((l) => l.values.length)), on = new Set(lines.map((l) => l.id));
@@ -437,8 +437,10 @@ function chart(lines, shared = false) {
     for (let i = 0; i < n; i += step) { const tx = ns("text", { class: "ax", x: x(i), y: H - 6, "text-anchor": i === 0 ? "start" : "middle" }); tx.textContent = `${i}s`; svg.append(tx); }
     for (const l of lines) {
       if (!on.has(l.id)) continue;
-      let d = "", pen = false;
-      l.values.forEach((v, i) => { if (v === null || v === undefined) { pen = false; return; } d += `${pen ? "L" : "M"}${x(i).toFixed(1)} ${y(l, v).toFixed(1)}`; pen = true; });
+      // The monitor reads every second or two, so a reading is often followed by an empty second: the line runs across a gap of up to four seconds
+      // (a longer one is a real break), or a run read every other second would be a row of dots and no line.
+      let d = "", last = -99;
+      l.values.forEach((v, i) => { if (v === null || v === undefined) return; d += `${i - last <= 5 ? "L" : "M"}${x(i).toFixed(1)} ${y(l, v).toFixed(1)}`; last = i; });
       svg.append(ns("path", { d, class: "ln", stroke: l.color }));
     }
     svg.append(cursor);

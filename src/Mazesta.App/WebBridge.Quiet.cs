@@ -21,28 +21,34 @@ public sealed partial class WebBridge
         AppUpdater.Get(_paths, _log).Quiet = () => _quiet;
 
         HardwareKind[] needed = [HardwareKind.Cpu, HardwareKind.Gpu, HardwareKind.Memory];
+        // The part the running benchmark measures (a drive, the network) is read too, since its chart is that part's readings; a drive's temperature
+        // is read as often as the rest while the run lasts (it is every 15 minutes otherwise).
+        HardwareKind? runKind = null;
         void Apply(bool on)
         {
             _quiet = on;
             if (on)
             {
-                var keep = overlay.ShownKinds().Concat(needed).ToHashSet();
+                var keep = overlay.ShownKinds().Concat(needed).Concat(runKind is HardwareKind.Storage or HardwareKind.Network ? [runKind.Value] : []).ToHashSet();
                 engine.Skip(Enum.GetValues<HardwareKind>().Where(k => !keep.Contains(k)).ToHashSet());
+                engine.Boost(runKind == HardwareKind.Storage ? new HashSet<HardwareKind> { HardwareKind.Storage } : null);
                 busy?.Set();
             }
-            else { engine.Skip(null); busy?.Reset(); }
+            else { engine.Skip(null); engine.Boost(null); runKind = null; busy?.Reset(); }
             _log.LogInformation("Benchmark quiet mode {State}; not polled: {Kinds}", on ? "on" : "off", engine.Skipped is { } s ? string.Join(", ", s) : "-");
             Push("quiet", on);
         }
         void OnBusy(bool on) => _window.Dispatcher.BeginInvoke(() => Apply(on));
         runner.BusyChanged += OnBusy;
+        void OnStarted(IBenchmark b, IReadOnlyDictionary<string, string> _) => _window.Dispatcher.BeginInvoke(() => { runKind = b.Component; if (_quiet) Apply(true); });
+        runner.Started += OnStarted;
         // The overlay shown or hidden during a run changes what the monitor must keep reading.
         void OnOverlay(bool _) { if (_quiet) Apply(true); }
         overlay.VisibilityChanged += OnOverlay;
         _cleanup.Add(() =>
         {
-            runner.BusyChanged -= OnBusy; overlay.VisibilityChanged -= OnOverlay;
-            if (_quiet) { engine.Skip(null); _quiet = false; }
+            runner.BusyChanged -= OnBusy; runner.Started -= OnStarted; overlay.VisibilityChanged -= OnOverlay;
+            if (_quiet) { engine.Skip(null); engine.Boost(null); _quiet = false; }
             busy?.Reset(); busy?.Dispose();
         });
         if (runner.IsBusy) Apply(true);

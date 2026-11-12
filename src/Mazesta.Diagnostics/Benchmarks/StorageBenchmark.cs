@@ -22,6 +22,7 @@ public sealed class StorageBenchmark : IBenchmark
     public HardwareKind Component => HardwareKind.Storage;
     private const int SeqDepth = 8, RandomDepth = 32, MixedDepth = 4, MixedMax = 64 << 10;
     private readonly TimeSpan _rest;
+    private long _read, _written;   // bytes moved so far, counted once a second into the run's chart (when the write speed falls, the drive's cache is full)
 
     public StorageBenchmark() : this(TimeSpan.FromSeconds(5)) { }
     internal StorageBenchmark(TimeSpan rest) => _rest = rest;
@@ -49,6 +50,14 @@ public sealed class StorageBenchmark : IBenchmark
     private async Task<BenchmarkResult> MeasureAsync(StorageFile file, TestExecutionRequest request, DateTimeOffset started, CancellationToken ct)
     {
         using var buffers = new Buffers();
+        _read = _written = 0; var perSecond = new List<(double Read, double Written)>(); long lastRead = 0, lastWritten = 0;
+        using var tick = new Timer(_ =>
+        {
+            long r = Interlocked.Read(ref _read), w = Interlocked.Read(ref _written);
+            lock (perSecond) perSecond.Add(((r - lastRead) / 1e6, (w - lastWritten) / 1e6)); lastRead = r; lastWritten = w;
+        }, null, 1000, 1000);
+        async ValueTask Write(Memory<byte> b, long at) { await file.WriteAsync(b, at, ct).ConfigureAwait(false); Interlocked.Add(ref _written, b.Length); }
+        async ValueTask Read(Memory<byte> b, long at) { await ReadAll(file, b, at, ct).ConfigureAwait(false); Interlocked.Add(ref _read, b.Length); }
         long blocks = file.Length / StorageFile.Block, sectors = file.Length / StorageFile.Sector;
         var total = TimeSpan.FromSeconds(request.DurationSeconds) + 2 * _rest; var overall = Stopwatch.StartNew();
         TimeSpan Share(double fraction) => TimeSpan.FromSeconds(request.DurationSeconds * fraction);
@@ -61,25 +70,28 @@ public sealed class StorageBenchmark : IBenchmark
         // Preparation (untimed): one full pass, so every later read hits written data; then the first rest.
         await Task.WhenAll(Enumerable.Range(0, SeqDepth).Select(async w =>
         {
-            for (long b; (b = Interlocked.Increment(ref cursor)) < blocks;) await file.WriteAsync(buffers.Seq[w], b * StorageFile.Block, ct).ConfigureAwait(false);
+            for (long b; (b = Interlocked.Increment(ref cursor)) < blocks;) await Write(buffers.Seq[w], b * StorageFile.Block).ConfigureAwait(false);
         })).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
 
-        cursor = -1; double seqWrite = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => file.WriteAsync(buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqWrite = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => Write(buffers.Seq[w], NextBlock()), Progress, ct).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
-        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => ReadAll(file, buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
-        double randQ32 = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => ReadAll(file, buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
-        double randQ1 = await PhaseAsync(1, Share(0.15), (w, r) => ReadAll(file, buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
-        double randWrite = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => file.WriteAsync(buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => Read(buffers.Seq[w], NextBlock()), Progress, ct).ConfigureAwait(false);
+        double randQ32 = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => Read(buffers.Small[w], RandomSector(r)), Progress, ct).ConfigureAwait(false);
+        double randQ1 = await PhaseAsync(1, Share(0.15), (w, r) => Read(buffers.Small[w], RandomSector(r)), Progress, ct).ConfigureAwait(false);
+        double randWrite = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => Write(buffers.Small[w], RandomSector(r)), Progress, ct).ConfigureAwait(false);
         long mixedBytes = 0, mixedOps = 0;
         double mixed = await PhaseAsync(MixedDepth, Share(0.15), async (w, r) =>
         {
             double pick = r.NextDouble(); int size = pick < 0.6 ? 4096 : pick < 0.85 ? 16384 : MixedMax;
             long at = r.NextInt64(file.Length / size) * size; var buffer = buffers.Mixed[w][..size];
-            if (r.NextDouble() < 0.7) await ReadAll(file, buffer, at, ct).ConfigureAwait(false); else await file.WriteAsync(buffer, at, ct).ConfigureAwait(false);
+            if (r.NextDouble() < 0.7) await Read(buffer, at).ConfigureAwait(false); else await Write(buffer, at).ConfigureAwait(false);
             Interlocked.Add(ref mixedBytes, size); Interlocked.Increment(ref mixedOps);
         }, Progress, ct).ConfigureAwait(false);
         request.Report(1);
+        tick.Dispose();
+        TraceSeries[] series;
+        lock (perSecond) series = [new("Trace_Storage_Write", "Storage", "MB/s", [.. perSecond.Select(p => (double?)Math.Round(p.Written, 1))]), new("Trace_Storage_Read", "Storage", "MB/s", [.. perSecond.Select(p => (double?)Math.Round(p.Read, 1))])];
 
         BenchmarkMetric[] metrics =
         [
@@ -89,7 +101,7 @@ public sealed class StorageBenchmark : IBenchmark
             new("Bench_Storage_Mixed", mixed * mixedBytes / Math.Max(1, mixedOps) / 1e6, "MB/s"), new("Bench_Storage_MixedIops", mixed, "IOPS")
         ];
         return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,
-            $"unbuffered overlapped I/O; {file.Length >> 20} MiB file written once before timing and {_rest.TotalSeconds:0} s rest; SEQ1M Q{SeqDepth}T1 write, {_rest.TotalSeconds:0} s rest, SEQ1M Q{SeqDepth}T1 read, RND4K Q{RandomDepth}T1 read, RND4K Q1T1 read, RND4K Q{RandomDepth}T1 write, mixed 70/30 read/write 4-64K Q{MixedDepth}T1");
+            $"unbuffered overlapped I/O; {file.Length >> 20} MiB file written once before timing and {_rest.TotalSeconds:0} s rest; SEQ1M Q{SeqDepth}T1 write, {_rest.TotalSeconds:0} s rest, SEQ1M Q{SeqDepth}T1 read, RND4K Q{RandomDepth}T1 read, RND4K Q1T1 read, RND4K Q{RandomDepth}T1 write, mixed 70/30 read/write 4-64K Q{MixedDepth}T1", Series: series);
     }
 
     /// <summary>A read inside the file that returns fewer bytes than asked is not a finished operation: counted as one it would make the speed up.

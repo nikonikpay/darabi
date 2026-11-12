@@ -22,6 +22,9 @@ public class TestProfilesTests
         Assert.DoesNotContain(TestProfiles.All, p => p.Id == "deep");
     }
 
+    [Fact] public void Every_profile_with_a_graphics_test_also_runs_the_graphics_temperature_test()
+        => Assert.All(TestProfiles.All.Where(p => p.Id != "osstorage"), p => Assert.Contains(p.Tests, t => t.TestId == "gpu.thermal"));
+
     [Fact] public void Everyday_and_the_Windows_drive_profile_stay_within_their_hours()
     {
         Assert.InRange(TestProfiles.All.Single(p => p.Id == "everyday").Tests.Sum(t => t.Seconds), 1, 3600);

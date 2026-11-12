@@ -69,6 +69,15 @@ public sealed class PollingEngine : IDisposable
         lock (_lock) { FastInterval = interval; _options.FastInterval = interval; foreach (var n in Hardware.Where(n => n.Kind != HardwareKind.Storage)) _nextDue[n.Id] = _clock.UtcNow; }
         _wake.Set();
     }
+    private volatile IReadOnlySet<HardwareKind>? _boost;
+    private TimeSpan Cadence(HardwareKind kind) => _boost?.Contains(kind) == true ? FastInterval : _options.CadenceFor(kind);
+    /// <summary>Kinds read at the fast interval for now (a drive's temperature every second or two while a storage benchmark runs, instead of every 15 minutes); null puts them back.</summary>
+    public void Boost(IReadOnlySet<HardwareKind>? kinds)
+    {
+        _boost = kinds is { Count: > 0 } ? kinds : null;
+        lock (_lock) foreach (var n in Hardware.Where(n => kinds?.Contains(n.Kind) == true)) _nextDue[n.Id] = _clock.UtcNow;
+        _wake.Set();
+    }
     private volatile IReadOnlySet<HardwareKind>? _skipped;
     /// <summary>Kinds of hardware left unread until this is cleared (null): while a benchmark runs, the parts it neither measures nor shows are not
     /// polled, so reading them (a drive's SMART, the network adapters) costs the run nothing. Their last readings go stale meanwhile.</summary>
@@ -102,7 +111,7 @@ public sealed class PollingEngine : IDisposable
             var now = _clock.UtcNow; var due = new HashSet<HardwareId>(); var skipped = _skipped;
             lock (_lock)
                 foreach (var n in Hardware)
-                    if (skipped?.Contains(n.Kind) != true && (!_nextDue.TryGetValue(n.Id, out var d) || d <= now)) { due.Add(n.Id); _nextDue[n.Id] = now + _options.CadenceFor(n.Kind); }
+                    if (skipped?.Contains(n.Kind) != true && (!_nextDue.TryGetValue(n.Id, out var d) || d <= now)) { due.Add(n.Id); _nextDue[n.Id] = now + Cadence(n.Kind); }
             var result = Provider.Poll(new PollRequest(now, due));
             var after = _clock.UtcNow;
             if (after - now > FastInterval && after - _lastOverrunLog > TimeSpan.FromMinutes(1))
@@ -112,7 +121,7 @@ public sealed class PollingEngine : IDisposable
             foreach (var r in result.Readings)
             {
                 result.NodeStatus.TryGetValue(r.Id.Hardware, out var st);
-                var cadence = kinds.TryGetValue(r.Id.Hardware, out var k) ? _options.CadenceFor(k) : FastInterval;
+                var cadence = kinds.TryGetValue(r.Id.Hardware, out var k) ? Cadence(k) : FastInterval;
                 readings.Add(r with { Quality = StaleDetector.Apply(r, st, cadence, after) });
             }
             snapshot = new SensorSnapshot(Interlocked.Increment(ref _sequence), after, readings, result.NodeStatus);

@@ -109,8 +109,20 @@ public sealed partial class WebBridge
                     peer = SelfCheck.Evaluate(row.Name, row.Benchmark.Component, c.Current.Value,
                         runs.Of(table).Where(x => x.System == s.Hash && x.Overclocked == overclocked).Select(x => x.Value), h.HigherIsBetter, c.Current.Unit);
                     var details = await DetailsOf(h.Part, part, options);
+                    // The chart's readings are the part the run measured: the drive it wrote to (found by its serial) or the card it drew on, not another one in the machine.
+                    Func<HardwareNode, bool>? only = null;
+                    if (h.Part == PeerPart.Drive)
+                    {
+                        // By its name; two drives of one model are told apart by the serial (the sensor id carries it, in its own spelling).
+                        static string Alnum(string? s) => new([.. (s ?? "").Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant)]);
+                        var same = engine.Hardware.Where(n => n.Kind == HardwareKind.Storage && n.ParentId is null && string.Equals(BenchmarkPeers.PartName(n.Name), BenchmarkPeers.PartName(part), StringComparison.OrdinalIgnoreCase)).ToList();
+                        string serial = Alnum((await inventory.GetAsync().ConfigureAwait(true)).Storage.FirstOrDefault(d => string.Equals(BenchmarkPeers.PartName(d.FriendlyName), BenchmarkPeers.PartName(part), StringComparison.OrdinalIgnoreCase))?.SerialNumber);
+                        var picked = same.Count > 1 && serial.Length > 0 && same.Where(n => Alnum(n.Id.Value).EndsWith(serial, StringComparison.Ordinal)).ToList() is { Count: > 0 } exact ? exact : same;
+                        if (picked.Count > 0) { var ids = picked.Select(n => n.Id).ToHashSet(); only = n => ids.Contains(n.Id); }
+                    }
+                    else if (h.Part == PeerPart.Gpu) only = n => string.Equals(BenchmarkPeers.PartName(n.Name), BenchmarkPeers.PartName(part), StringComparison.OrdinalIgnoreCase);
                     runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(run.Definition.Id.Value, options), BenchmarkPeers.PartName(part),
-                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details], BenchmarkTrace.Capture(engine, run.Result.StartedAt, run.Result.FinishedAt)));
+                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details], BenchmarkTrace.Capture(engine, run.Result.StartedAt, run.Result.FinishedAt, row.Benchmark.Component, only, run.Result.Series)));
                     memo.Clear(); PushSoon("bench", State);
                 }
                 catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }

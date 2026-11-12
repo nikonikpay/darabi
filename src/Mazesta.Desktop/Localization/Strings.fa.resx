@@ -1855,11 +1855,11 @@
   <data name="Nav_Search_None" xml:space="preserve"><value>چیزی پیدا نشد</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>پروفایل‌ها:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>بررسی سریع</value></data>
-  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۱۴ دقیقه: هر کدام دو دقیقه CPU، RAM، بار گرافیک، حافظهٔ تصویر و آزمون توان، یک دور صحنهٔ سه‌بعدی (۲:۴۲)، یک دقیقه خواندن و نوشتن درایو و سپس بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه پوشش داده نمی‌شوند و روی رم زیاد دو دقیقه ممکن است به همهٔ الگوها نرسد.</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۱۴ دقیقه: هر کدام دو دقیقه CPU، RAM، بار گرافیک، حافظهٔ تصویر، دمای گرافیک و آزمون توان، یک دور صحنهٔ سه‌بعدی (۲:۴۲)، یک دقیقه خواندن و نوشتن درایو و سپس بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه پوشش داده نمی‌شوند و روی رم زیاد دو دقیقه ممکن است به همهٔ الگوها نرسد.</value></data>
   <data name="Profile_Standard" xml:space="preserve"><value>پیش‌فرض مازستا</value></data>
-  <data name="Profile_Standard_Note" xml:space="preserve"><value>حدود یک ساعت: هر قطعه یک بار زیر بار واقعی، با زمان کافی برای همهٔ الگوهای RAM در بیشتر سیستم‌ها، همهٔ هسته‌ها به نوبت و آزمون توان ترکیبی.</value></data>
+  <data name="Profile_Standard_Note" xml:space="preserve"><value>حدود یک ساعت: هر قطعه یک بار زیر بار واقعی، با زمان کافی برای همهٔ الگوهای RAM در بیشتر سیستم‌ها، همهٔ هسته‌ها به نوبت، آزمون دمای گرافیک و آزمون توان ترکیبی.</value></data>
   <data name="Profile_Transient" xml:space="preserve"><value>ناپایداری گذرا</value></data>
-  <data name="Profile_Transient_Note" xml:space="preserve"><value>باری که مدام تغییر می‌کند: هسته‌ها تک‌تک داخل و خارج از بوست، پله و پالس روی GPU، CPU و GPU با هم. برای کرش در بار سبک، هنگام بازی یا در حالت بیکار.</value></data>
+  <data name="Profile_Transient_Note" xml:space="preserve"><value>باری که مدام تغییر می‌کند: هسته‌ها تک‌تک داخل و خارج از بوست، پله و پالس روی GPU، آزمون دمای گرافیک، CPU و GPU با هم. برای کرش در بار سبک، هنگام بازی یا در حالت بیکار.</value></data>
   <data name="Profile_OsStorage" xml:space="preserve"><value>درایو ویندوز</value></data>
   <data name="Profile_OsStorage_Note" xml:space="preserve"><value>حدود ۱۰ دقیقه: آزمون‌های خود درایو، SMART و بررسی فایل‌های ویندوز (SFC و DISM هر قدر لازم باشد کار می‌کنند). در گزینه‌های آزمون ذخیره‌سازی درایو ویندوز را انتخاب کنید؛ آزمون‌ها فقط از یک فایل تازه در فضای خالی استفاده می‌کنند، نه داده‌های درایو.</value></data>
   <data name="Advice_Cpu" xml:space="preserve"><value>مشاهده: CPU زیر بار نتیجهٔ نادرست محاسبه کرد.
@@ -3658,6 +3658,17 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Trace_Cpu_Clock" xml:space="preserve"><value>کلاک CPU</value></data>
   <data name="Trace_Cpu_Power" xml:space="preserve"><value>توان CPU</value></data>
   <data name="Trace_Ram_Load" xml:space="preserve"><value>بار RAM</value></data>
+  <data name="Trace_Ram_Temp" xml:space="preserve"><value>دمای RAM</value></data>
+  <data name="Trace_Gpu_HotSpot" xml:space="preserve"><value>نقطه‌ی داغ GPU</value></data>
+  <data name="Trace_Gpu_VramTemp" xml:space="preserve"><value>دمای VRAM</value></data>
+  <data name="Trace_Cpu_Temp" xml:space="preserve"><value>دمای CPU</value></data>
+  <data name="Trace_Cpu_Voltage" xml:space="preserve"><value>ولتاژ CPU</value></data>
+  <data name="Trace_Storage_Temp" xml:space="preserve"><value>دمای دیسک</value></data>
+  <data name="Trace_Storage_Write" xml:space="preserve"><value>سرعت نوشتن</value></data>
+  <data name="Trace_Storage_Read" xml:space="preserve"><value>سرعت خواندن</value></data>
+  <data name="Trace_Net_Down" xml:space="preserve"><value>دانلود</value></data>
+  <data name="Trace_Net_Up" xml:space="preserve"><value>آپلود</value></data>
+  <data name="Trace_Net_Util" xml:space="preserve"><value>بار شبکه</value></data>
   <data name="Tuning_AutoOverclockPlus" xml:space="preserve"><value>اورکلاک خودکار پلاس</value></data>
   <data name="Tuning_AutoOverclockPlus_Title" xml:space="preserve"><value>سریع‌تر، بالاتر از توان کارخانه</value></data>
   <data name="Tuning_AutoOverclockPlus_Desc" xml:space="preserve"><value>حد توان کارت را تا بیشترین مقداری که درایور اجازه می‌دهد بالا می‌برد، سپس کلاک هسته (تا ۴۵۰ مگاهرتز) و آفست حافظه را با گام‌های ریزتر بالا می‌برد، تا وقتی کارت درست حساب می‌کند و زیر ۸۴ درجه است؛ فقط وقتی نگه داشته می‌شود که امتیاز اندازه‌گیری‌شده بالا برود. توان و دمای بیشتری از حالت کارخانه می‌گیرد.</value></data>
@@ -3792,7 +3803,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Log_StorageDaily_Round" xml:space="preserve"><value>دور {0}: {1}.</value></data>
   <data name="Log_StorageDaily_Done" xml:space="preserve"><value>دور {0} تمام شد: {1} درخواست بررسی‌شده، P99 برابر {2} میلی‌ثانیه، {3} توقف بیش از یک ثانیه، {4} خطا.</value></data>
   <data name="Profile_Everyday" xml:space="preserve"><value>کار روزمره</value></data>
-  <data name="Profile_Everyday_Note" xml:space="preserve"><value>کمتر از یک ساعت: پردازنده و کارت گرافیک در باری که مدام عوض می‌شود (چرخهٔ «گذرا»)، کار سبک، ضربه‌های کوتاه، بیکاری و بیدار شدن، توالی «اسپایک» روی RAM و دیسک در کار روزمره. برای سیستمی که تست‌های سنگین را بی‌خطا می‌گذراند ولی موقع کار هنگ می‌کند یا ری‌استارت می‌شود.</value></data>
+  <data name="Profile_Everyday_Note" xml:space="preserve"><value>کمتر از یک ساعت: پردازنده و کارت گرافیک در باری که مدام عوض می‌شود (چرخهٔ «گذرا»)، کار سبک، ضربه‌های کوتاه، بیکاری و بیدار شدن، توالی «اسپایک» روی RAM، دو دقیقه آزمون دمای گرافیک و دیسک در کار روزمره. برای سیستمی که تست‌های سنگین را بی‌خطا می‌گذراند ولی موقع کار هنگ می‌کند یا ری‌استارت می‌شود.</value></data>
   <data name="Test_Gpu_Cycle" xml:space="preserve"><value>کارت گرافیک · چرخهٔ پیش‌تنظیم (بار ثابت، نوسانی و ضربه‌ای، حافظهٔ VRAM، صحنهٔ سه‌بعدی)</value></data>
   <data name="Test_GpuPreset_full" xml:space="preserve"><value>کامل: هر نوع بار یک بار در هر دور</value></data>
   <data name="Test_GpuPreset_transient" xml:space="preserve"><value>گذرا: پله‌های بار با سه ریتم (منبع تغذیه، اتصال 12V-2x6)</value></data>
