@@ -4349,4 +4349,21 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Files_Space_Note" xml:space="preserve"><value>اندازه‌ها حجم خود فایل‌هاست، مثل اکسپلورر. پوشه‌هایی که ویندوز اجازهٔ خواندنشان را نمی‌دهد علامت می‌خورند و اندازه‌شان معلوم نیست. میان‌برهای پوشه (junction) و فایل‌های ابری که فقط آنلاین هستند حساب نمی‌شوند. پوشهٔ WinSxS ویندوز بزرگ‌تر از واقع دیده می‌شود، چون فایل‌هایش مشترک‌اند.</value></data>
   <data name="Help_Files_Space_Title" xml:space="preserve"><value>یک درایو یا پوشه را بررسی می‌کند و نشان می‌دهد کدام پوشه‌ها و فایل‌ها فضایش را گرفته‌اند، از بزرگ به کوچک، تا ببینید چه چیزی دیسک را پر کرده و آن را در اکسپلورر باز کنید. از اینجا چیزی پاک نمی‌شود.</value></data>
   <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|روی یک درایو یا «انتخاب پوشه» بزنید و صبر کنید تا بررسی تمام شود (یک درایو کامل یک دقیقه یا بیشتر).|روی بزرگ‌ترین پوشه بزنید تا داخلش بروید؛ «بالاتر» برمی‌گرداند.|«جزئیات بیشتر» را باز کنید تا بزرگ‌ترین فایل‌ها را ببینید؛ «نشان بده» اکسپلورر را روی آن باز می‌کند تا خودتان تصمیم بگیرید چه چیزی پاک شود.</value></data>
+  <data name="Files_PickImages" xml:space="preserve"><value>انتخاب عکس‌ها</value></data>
+  <data name="Files_Img_Title" xml:space="preserve"><value>کوچک کردن عکس‌ها</value></data>
+  <data name="Files_Img_Sub" xml:space="preserve"><value>برای فرستادن در پیام‌رسان یا ایمیل: یک نسخهٔ کوچک‌تر کنار هر عکس، بدون دست زدن به اصل آن</value></data>
+  <data name="Files_Img_Size" xml:space="preserve"><value>بلندترین ضلع</value></data>
+  <data name="Files_Img_Custom" xml:space="preserve"><value>اندازهٔ دیگر…</value></data>
+  <data name="Files_Img_Quality" xml:space="preserve"><value>کیفیت</value></data>
+  <data name="Files_Img_Q_High" xml:space="preserve"><value>بالا (حجم بیشتر)</value></data>
+  <data name="Files_Img_Q_Normal" xml:space="preserve"><value>معمولی</value></data>
+  <data name="Files_Img_Q_Small" xml:space="preserve"><value>کمترین حجم</value></data>
+  <data name="Files_Img_Run" xml:space="preserve"><value>کوچک کن</value></data>
+  <data name="Files_Img_BadSize" xml:space="preserve"><value>اندازه‌ای بین ۱۶ تا ۲۰۰۰۰ پیکسل وارد کنید.</value></data>
+  <data name="Files_Img_Progress" xml:space="preserve"><value>عکس {0} از {1}…</value></data>
+  <data name="Files_Img_Done" xml:space="preserve"><value>{0} عکس از {1} کوچک شد.</value></data>
+  <data name="Files_Img_Format" xml:space="preserve"><value>این قالب اینجا خوانده نمی‌شود (مثلاً HEIC یا WebP).</value></data>
+  <data name="Files_Img_Note" xml:space="preserve"><value>هر فایل تازه کنار اصل ذخیره می‌شود و اندازه در نامش می‌آید، مثلاً photo (1280).jpg؛ خود عکس اصلی هرگز تغییر نمی‌کند. عکسی که از این اندازه کوچک‌تر است اندازه‌اش را نگه می‌دارد. JPEG، BMP و TIFF به JPEG و PNG و GIF به PNG تبدیل می‌شوند. عکس همان‌طور که دوربین گرفته صاف می‌شود و اطلاعات دیگرش (مکان، دوربین) کپی نمی‌شود.</value></data>
+  <data name="Help_Files_Img_Title" xml:space="preserve"><value>از عکس‌ها نسخه‌هایی با اندازه و حجم کمتر می‌سازد، برای فرستادن در پیام‌رسان، ایمیل یا فرمی که حجم را محدود می‌کند. عکس‌های اصلی دست نمی‌خورند.</value></data>
+  <data name="HelpHow_Files_Img_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|«انتخاب عکس‌ها» را بزنید و یک یا چند عکس انتخاب کنید.|بلندترین ضلع (۱۲۸۰ پیکسل برای پیام‌رسان مناسب است) و کیفیت را انتخاب کنید.|«کوچک کن» را بزنید؛ هر فایل تازه کنار اصل خودش است و اندازه در نامش آمده.</value></data>
 </root>

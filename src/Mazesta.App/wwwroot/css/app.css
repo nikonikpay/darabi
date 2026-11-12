@@ -1897,3 +1897,6 @@ div.findings { max-height: none; overflow: visible; }
 .fl-bar { display: block; height: 4px; margin-top: 6px; border-radius: 2px; background: var(--hue); transform: scaleX(var(--w)); transform-origin: var(--origin, right); }
 :root[dir="ltr"] .fl-bar { --origin: left; }
 .fl-h { font-size: 13px; margin: 12px 0 0; }
+.fl-opts { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; }
+.fl-opts label { display: grid; gap: 4px; font-size: 12px; color: var(--paper-2); }
+.fl-list small.fail { color: var(--fail); }

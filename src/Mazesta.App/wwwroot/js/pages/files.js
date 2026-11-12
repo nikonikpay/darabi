@@ -1,4 +1,4 @@
-// The file tools of the Windows tools page: what holds a file open, where the disk space went. Files come only from the host's own dialogs (files.pick); the host
+// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller. Files come only from the host's own dialogs (files.pick); the host
 // acts only on what was picked there. Every answer is what Windows reported; "could not check" is never shown as "nothing found".
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
@@ -36,6 +36,39 @@ export function lockBox(i) {
   }
   return box({ ico: "lock", cls: "p-tool", title: t("Files_Lock_Title"), sub: t("Files_Lock_Sub"), i, a: "locks",
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("files", "Files_PickFile", use), pickBtn("folder", "Files_PickFolder", use), h("span", { class: "grow" }), again), picked, msg, list] });
+}
+
+// ——— Pictures made smaller: the longest side down to a size, a new file beside each original ———
+export function imageBox(i, onEvent) {
+  let paths = [];
+  const picked = h("p", { class: "fl-picked" }), msg = h("p", { class: "msg", "aria-live": "polite" }), list = h("ul", { class: "fl-list" });
+  const size = h("select", { class: "field lat", "aria-label": t("Files_Img_Size") },
+    [800, 1280, 1920, 2560].map((n) => h("option", { value: n, selected: n === 1280 }, `${n} px`)), h("option", { value: "custom" }, t("Files_Img_Custom")));
+  const custom = h("input", { class: "field lat", inputmode: "numeric", hidden: true, "aria-label": t("Files_Img_Custom"), placeholder: "1600" });
+  const quality = h("select", { class: "field", "aria-label": t("Files_Img_Quality") },
+    [[95, "Files_Img_Q_High"], [85, "Files_Img_Q_Normal"], [70, "Files_Img_Q_Small"]].map(([v, k]) => h("option", { value: v, selected: v === 85 }, t(k))));
+  size.onchange = () => { custom.hidden = size.value !== "custom"; };
+  const run = h("button", { class: "btn primary", disabled: true, onclick: go }, icon("play"), t("Files_Img_Run"));
+  const use = (p) => { paths = p; picked.replaceChildren(shown(p)); run.disabled = false; list.replaceChildren(); msg.textContent = ""; };
+  async function go() {
+    run.disabled = true; list.replaceChildren(); msg.className = "msg"; msg.textContent = t("Tools_Working");
+    try {
+      const r = await call("img.resize", { paths, size: size.value === "custom" ? custom.value.trim() : size.value, quality: quality.value });
+      msg.className = `msg ${r.ok === r.total ? "ok" : "fail"}`; msg.textContent = t("Files_Img_Done", r.ok, r.total);
+    } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); }
+    finally { run.disabled = false; }
+  }
+  onEvent("imgdone", (x) => {
+    msg.textContent = t("Files_Img_Progress", x.index + 1, x.total);
+    list.append(h("li", {}, h("div", {}, h("b", {}, lat(x.name)), x.error
+      ? h("small", { class: "fail" }, x.error === "format" ? t("Files_Img_Format") : x.error)
+      : h("small", {}, lat(`${x.width}×${x.height} → ${x.newWidth}×${x.newHeight} · ${bytes(x.oldBytes)} → ${bytes(x.newBytes)}`), " ", lat(x.output))), h("span")));
+  });
+  return box({ ico: "camera", cls: "p-tool", title: t("Files_Img_Title"), sub: t("Files_Img_Sub"), i, a: "images",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("images", "Files_PickImages", use)), picked,
+      h("div", { class: "fl-opts" }, h("label", {}, t("Files_Img_Size"), size, custom), h("label", {}, t("Files_Img_Quality"), quality)),
+      h("div", { class: "btn-row" }, run), msg, list],
+    more: h("p", { class: "note" }, t("Files_Img_Note")) });
 }
 
 // Bytes as people read them (1 KB = 1024 bytes, as Explorer shows), Latin digits in a .lat run.

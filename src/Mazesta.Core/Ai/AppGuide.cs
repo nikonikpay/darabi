@@ -101,6 +101,7 @@ public static class AppGuide
         T("tools", "vm", "Tools_Vm_Title", "virtual memory (the page file)", null),
         T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null),
         T("tools", "space", "Files_Space_Title", "where the disk space went: scans a drive or folder and shows its biggest folders and files", null),
+        T("tools", "images", "Files_Img_Title", "makes pictures smaller (resize photos to 800-2560 px or any size, JPEG quality), a new file beside each", null),
         T("tools", "locks", "Files_Lock_Title", "which program holds a file or folder open (when Windows will not delete, move or rename it), and closing that program", null),
         T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null),
         P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable"),

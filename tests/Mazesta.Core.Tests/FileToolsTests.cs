@@ -26,6 +26,16 @@ public class FileToolsTests
         Assert.Equal(@"C:\Users\me", me.FullPath);
     }
 
+    [Theory, InlineData(4000, 3000, 1280, 1280, 960), InlineData(3000, 4000, 1280, 960, 1280), InlineData(800, 600, 1280, 800, 600), InlineData(10000, 10, 800, 800, 1)]
+    public void A_picture_is_brought_down_to_its_longest_side_never_up(int w, int h, int max, int nw, int nh) => Assert.Equal((nw, nh), ImageFit.Fit(w, h, max));
+
+    [Fact] public void The_new_picture_never_writes_over_a_file()
+    {
+        var taken = new HashSet<string> { Path.Combine("d", "a (800).jpg"), Path.Combine("d", "a (800) (2).jpg") };
+        Assert.Equal(Path.Combine("d", "a (800) (3).jpg"), ImageFit.OutputPath(Path.Combine("d", "a.png"), 800, ".jpg", taken.Contains));
+        Assert.Equal((".png", ".png", ".jpg", ".jpeg"), (ImageFit.OutputExtension("x.PNG"), ImageFit.OutputExtension("x.gif"), ImageFit.OutputExtension("x.bmp"), ImageFit.OutputExtension("x.jpeg")));
+    }
+
     [Fact] public void Only_the_biggest_files_are_kept()
     {
         var top = new TopFiles(2);

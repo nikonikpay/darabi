@@ -44,6 +44,24 @@ public sealed partial class WebBridge
             return new { error };
         });
 
+        // ——— Pictures made smaller: a new file beside each picked one, one at a time, each reported as it is done ("imgdone") ———
+        MethodAsync("img.resize", async p =>
+        {
+            var paths = Picked(p);
+            int longest = int.TryParse(Str(p, "size"), out int n) && n is >= 16 and <= 20000 ? n : throw new InvalidOperationException(Loc.Get("Files_Img_BadSize"));
+            int quality = int.TryParse(Str(p, "quality"), out int q) ? q : 85;
+            int ok = 0;
+            foreach (var (path, i) in paths.Select((x, i) => (x, i)))
+            {
+                var r = await Task.Run(() => Desktop.Services.ImageResizer.Resize(path, longest, quality)).ConfigureAwait(true);
+                if (r.Output is not null) { ok++; _picked.Add(r.Output); }
+                Push("imgdone", new { index = i, total = paths.Count, name = Path.GetFileName(path), output = r.Output is null ? null : Path.GetFileName(r.Output),
+                    width = r.Width, height = r.Height, newWidth = r.NewWidth, newHeight = r.NewHeight, oldBytes = r.OldBytes, newBytes = r.NewBytes, error = r.Error });
+            }
+            _log.LogInformation("Resized {Ok} of {Count} pictures to {Longest} px", ok, paths.Count, longest);
+            return new { ok, total = paths.Count, folder = paths.Count > 0 ? Path.GetDirectoryName(paths[0]) : null };
+        });
+
         // ——— Where the disk space went: one scan at a time, its progress pushed as "space"; the last result is kept for browsing until the next ———
         Method("space.drives", _ => DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady)
             .Select(d => new { root = d.Name, label = d.VolumeLabel, total = d.TotalSize, free = d.AvailableFreeSpace }).ToList());

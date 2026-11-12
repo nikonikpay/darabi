@@ -4349,4 +4349,21 @@ Cancel: stop.</value></data>
   <data name="Files_Space_Note" xml:space="preserve"><value>Sizes are what the files hold, as Explorer shows them. Folders Windows does not let anyone read are marked; their size is not known. Shortcuts to other folders (junctions) and cloud files kept only online are not counted. Windows' own WinSxS folder reads bigger than it is, because its files are shared.</value></data>
   <data name="Help_Files_Space_Title" xml:space="preserve"><value>Scans a drive or a folder and shows which folders and files take its space, biggest first, so you can see what fills the disk and open it in Explorer. Nothing is deleted from here.</value></data>
   <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press a drive, or Choose a folder, and wait for the scan (a full drive takes a minute or more).|Click the biggest folder to go into it; Up goes back.|Open details to see the biggest files; Show opens Explorer at one, where you decide what to delete.</value></data>
+  <data name="Files_PickImages" xml:space="preserve"><value>Choose pictures</value></data>
+  <data name="Files_Img_Title" xml:space="preserve"><value>Make pictures smaller</value></data>
+  <data name="Files_Img_Sub" xml:space="preserve"><value>For sending in a messenger or an e-mail: a smaller copy beside each picture, the original untouched</value></data>
+  <data name="Files_Img_Size" xml:space="preserve"><value>Longest side</value></data>
+  <data name="Files_Img_Custom" xml:space="preserve"><value>Other size…</value></data>
+  <data name="Files_Img_Quality" xml:space="preserve"><value>Quality</value></data>
+  <data name="Files_Img_Q_High" xml:space="preserve"><value>High (bigger file)</value></data>
+  <data name="Files_Img_Q_Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Files_Img_Q_Small" xml:space="preserve"><value>Smallest file</value></data>
+  <data name="Files_Img_Run" xml:space="preserve"><value>Make smaller</value></data>
+  <data name="Files_Img_BadSize" xml:space="preserve"><value>Enter a size between 16 and 20000 pixels.</value></data>
+  <data name="Files_Img_Progress" xml:space="preserve"><value>Picture {0} of {1}…</value></data>
+  <data name="Files_Img_Done" xml:space="preserve"><value>{0} of {1} pictures were made smaller.</value></data>
+  <data name="Files_Img_Format" xml:space="preserve"><value>This format cannot be read here (for example HEIC or WebP).</value></data>
+  <data name="Files_Img_Note" xml:space="preserve"><value>Each new file is saved beside the original with the size in its name, for example photo (1280).jpg; the original is never changed. A picture already smaller than the size keeps its size. JPEG, BMP and TIFF become JPEG; PNG and GIF become PNG. The picture is turned upright as the camera took it, and its other details (place, camera) are not copied.</value></data>
+  <data name="Help_Files_Img_Title" xml:space="preserve"><value>Makes copies of pictures with a smaller size and file, for sending in a messenger, an e-mail or a form that limits the size. The originals stay as they are.</value></data>
+  <data name="HelpHow_Files_Img_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press Choose pictures and pick one or many.|Choose the longest side (1280 px suits messengers) and the quality.|Press Make smaller; each new file is beside its original, with the size in its name.</value></data>
 </root>
