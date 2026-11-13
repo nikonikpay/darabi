@@ -3232,6 +3232,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} مگاپیکسل در ثانیه (صحنهٔ خود مازستا؛ امتیاز برنامه‌های تجاری نیست)</value></data>
   <data name="Detail_Gpu_Render" xml:space="preserve"><value>صحنهٔ رهگیری پرتو {0}x{1} با {2} کره و {3} بازتاب، روی {4}</value></data>
   <data name="Detail_Gpu_Scene" xml:space="preserve"><value>صحنهٔ باغ ایرانی با {0}، رسم‌شده در {1}x{2} (پنجره {3}x{4}) روی {5}</value></data>
+  <data name="Detail_Gpu_Gate" xml:space="preserve"><value>صحنهٔ دمای گرافیک، رسم‌شده در {0}x{1} (پنجره {2}x{3}) روی {4}؛ دروازهٔ ملل با {5} مثلث اسکن اصلی، بدون کم‌کردن جزئیات، در قاب HDR</value></data>
   <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>صحنهٔ دمای گرافیک، رسم‌شده در {0}x{1} (پنجره {2}x{3}) روی {4}؛ {5} لایهٔ شفق و {6} لایهٔ پرز روی هم در قاب HDR</value></data>
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>سطح بار {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} مثلث در {1} شیء؛ مدل وسط صحنه «{2}»</value></data>
@@ -3903,7 +3904,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Bench_Fur_Read_HotAvg" xml:space="preserve"><value>دمای هات‌اسپات، میانگین</value></data>
   <data name="Bench_Fur_Read_TempMax" xml:space="preserve"><value>دمای گرافیک، بیشترین</value></data>
   <data name="Bench_Fur_Read_TempAvg" xml:space="preserve"><value>دمای گرافیک، میانگین</value></data>
-  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>همان تست دمای گرافیک به‌صورت بنچمارک: صدها لایهٔ پرز و شفقی که می‌چرخد، بدون v-sync رسم می‌شوند و کارت گرافیک را مثل تست‌های پرز در حد توانش نگه می‌دارند. نرخ فریم میانگین، بیشترین و کمترین (نیم‌ثانیه‌ها، پس از پنج ثانیهٔ اول) و نوسان آن، دمای گرافیک، هات‌اسپات و VRAM (میانگین و بیشترین)، فرکانس و توان مصرفی را می‌دهد. کارتی که با داغ شدن کند شود، نوسان بیشتری نشان می‌دهد.</value></data>
+  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>همان تست دمای گرافیک به‌صورت بنچمارک: دروازهٔ ملل (اسکنی با حدود دو میلیون مثلث که کمی می‌چرخد) بدون v-sync رسم می‌شود و کارت گرافیک را در حد توانش نگه می‌دارد. نرخ فریم میانگین، بیشترین و کمترین (نیم‌ثانیه‌ها، پس از پنج ثانیهٔ اول) و نوسان آن، دمای گرافیک، هات‌اسپات و VRAM (میانگین و بیشترین)، فرکانس و توان مصرفی را می‌دهد. کارتی که با داغ شدن کند شود، نوسان بیشتری نشان می‌دهد.</value></data>
   <data name="HelpHow_Bench_Gpu_Fur" xml:space="preserve"><value>بازی‌ها و برنامه‌های سنگین را ببندید.|بنچمارک دمای گرافیک را تیک بزنید؛ اگر وضوحی غیر از 1920x1080 می‌خواهید انتخاب کنید.|اجرا کنید: در حین اجرا دماها، توان و FPS بزرگ روی صفحه است.|نرخ فریم و نوسان آن را با کارت‌های هم‌مدل مقایسه کنید.</value></data>
   <data name="Bench_Render_Single" xml:space="preserve"><value>رندر پردازنده — تک‌رشته</value></data>
   <data name="Bench_Render_Multi" xml:space="preserve"><value>رندر پردازنده — چندرشته (همه‌ی رشته‌ها)</value></data>

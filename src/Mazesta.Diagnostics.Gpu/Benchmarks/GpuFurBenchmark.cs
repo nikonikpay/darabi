@@ -65,6 +65,6 @@ public sealed class GpuFurBenchmark : IBenchmark, ITestAvailability
             (SensorRole.GpuVramTemp, "Bench_Fur_Read_VramAvg", Unit.Celsius, false), (SensorRole.GpuVramTemp, "Bench_Fur_Read_VramMax", Unit.Celsius, true),
             (SensorRole.GpuCoreClock, "Bench_Fur_Read_Clock", Unit.MegaHertz, false), (SensorRole.GpuPower, "Bench_Fur_Read_Power", Unit.Watt, false), (SensorRole.GpuPower, "Bench_Fur_Read_PowerMax", Unit.Watt, true) })
             metrics.AddSensor(request, HardwareKind.Gpu, role, from, to, key, unit, peak, node);
-        return (metrics, $"GPU temperature scene drawn at {w}x{h} (window {window.Width}x{window.Height}), {ShamsehScene.Layers} aurora layers and {ShamsehScene.FurLayers} fur layers into a float frame, {n} frames in {wall:F0} s, no v-sync; slowest and quickest half second counted after the first {Settle:F0} s");
+        return (metrics, $"GPU temperature scene drawn at {w}x{h} (window {window.Width}x{window.Height}), the gate of {scene.Triangles:N0} triangles into a float frame, {n} frames in {wall:F0} s, no v-sync; slowest and quickest half second counted after the first {Settle:F0} s");
     }
 }

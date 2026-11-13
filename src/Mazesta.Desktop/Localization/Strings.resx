@@ -3232,6 +3232,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} megapixels a second (Mazesta's own scene, not a commercial score)</value></data>
   <data name="Detail_Gpu_Render" xml:space="preserve"><value>Ray-traced scene {0}×{1}, {2} spheres, {3} bounces, on {4}</value></data>
   <data name="Detail_Gpu_Scene" xml:space="preserve"><value>The Persian garden scene with {0}, drawn at {1}x{2} (window {3}×{4}) on {5}</value></data>
+  <data name="Detail_Gpu_Gate" xml:space="preserve"><value>The GPU temperature scene, drawn at {0}×{1} (window {2}×{3}) on {4}: the Gate of All Nations, {5} triangles of the scan as they are, blended into a float (HDR) frame</value></data>
   <data name="Detail_Gpu_Shamseh" xml:space="preserve"><value>The GPU temperature scene, drawn at {0}×{1} (window {2}×{3}) on {4}; {5} aurora layers and {6} fur layers blended into a float (HDR) frame</value></data>
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>Load level {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} triangles in {1} objects; centre model “{2}”</value></data>
@@ -3903,7 +3904,7 @@ Cancel: stop.</value></data>
   <data name="Bench_Fur_Read_HotAvg" xml:space="preserve"><value>Hot spot, average</value></data>
   <data name="Bench_Fur_Read_TempMax" xml:space="preserve"><value>GPU temperature, peak</value></data>
   <data name="Bench_Fur_Read_TempAvg" xml:space="preserve"><value>GPU temperature, average</value></data>
-  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>The GPU temperature test as a benchmark: hundreds of fur layers and a turning aurora, drawn with no v-sync, hold the graphics card at its power limit as a fur test does. It gives the average, highest and lowest frame rate (half seconds, after the first five) and their spread, the GPU, hot spot and VRAM temperatures (average and peak), the clock and the power. A card that slows down as it heats shows a wider spread.</value></data>
+  <data name="Help_Bench_Gpu_Fur" xml:space="preserve"><value>The GPU temperature test as a benchmark: the Gate of All Nations (a scan of about two million triangles, swinging a little) drawn with no v-sync holds the graphics card at its power limit. It gives the average, highest and lowest frame rate (half seconds, after the first five) and their spread, the GPU, hot spot and VRAM temperatures (average and peak), the clock and the power. A card that slows down as it heats shows a wider spread.</value></data>
   <data name="HelpHow_Bench_Gpu_Fur" xml:space="preserve"><value>Close games and other heavy programs.|Tick the GPU temperature benchmark; pick the resolution if you want another than 1920x1080.|Run it: the large readout shows temperatures, power and FPS while it runs.|Compare the frame rate and its spread with other cards of the same model.</value></data>
   <data name="Bench_Render_Single" xml:space="preserve"><value>CPU render — single thread</value></data>
   <data name="Bench_Render_Multi" xml:space="preserve"><value>CPU render — all threads</value></data>

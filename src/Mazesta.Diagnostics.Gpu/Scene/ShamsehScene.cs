@@ -3,31 +3,35 @@ using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vort
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The temperature test's picture (Shaders/Shamseh.hlsl): an eight-point star in turquoise velvet, a gold medallion engraved "مازستا / MAZESTA"
-/// at its middle, swinging in front of an aurora that fills the window. The work is fur drawn as layers blended into a float frame (most of them on the
-/// star, read from the cache, so the cores work and the memory is not overheated): what draws a card to its power limit with the clock held well under its boost, as a fur test does.
+/// The temperature test's picture (Shaders/Shamseh.hlsl): the Gate of All Nations (a scan, every triangle of it: <see cref="GateModel"/>) standing on a lawn under an aurora
+/// that fills the window, swinging a little about facing the camera. The work is grass drawn as layers blended into a float frame (read from the cache,
+/// so the cores work and the memory is not overheated): what draws a card to its power limit with the clock held well under its boost, as a fur test does.
 /// Drawn into the window's swap chain with no v-sync, the readout laid over it; <see cref="CheckFrame"/> draws a fixed moment off screen for the run's checks.
+/// The picture before this one, a velvet star with the same fur, is the git tag pre-gate-thermal-scene.
 /// </summary>
 internal sealed unsafe class ShamsehScene : IDisposable
 {
     [StructLayout(LayoutKind.Sequential)] private struct Constants { public float Ry, Rx, Aspect; public uint Layers, FurLayers; public float Spread, FurLength, Time; public Vector2 Size, Pad2; }
     /// <summary>
-    /// The ground's layers and the star's. Measured on an RTX 3090 at 1080p, 180 s each, all at its 350 W limit: the ground's texture read at 7.6 texels
-    /// a pixel into a 16-bit frame (the first version) ran the card's memory to 100 C, hotter than FurMark here (91.5 C average, 98 C peak); read at
-    /// one texel a pixel, 24 ground layers and 512 fur layers into an 11-11-10 float frame gave 86.7 C average, 92 C peak, at about 208 FPS (FurMark 217):
-    /// the work moved from the memory to the cores and their caches, as a fur test's does. A fur pixel then got two more cached reads and a strand's
-    /// sheen, as FurMark held a 4070 Ti about 6% under our clock at the same power: on the 3090, 60 s at 344 W, 1563 -> 1470 MHz, 192 -> 169 FPS.
+    /// The sky's layers and the lawn's. The star's, measured on an RTX 3090 at 1080p, 180 s each, all at its 350 W limit: the texture read at 7.6 texels
+    /// a pixel into a 16-bit frame ran the card's memory to 100 C, hotter than FurMark here (91.5 C average, 98 C peak); read at one texel a pixel into an
+    /// 11-11-10 float frame the work moved from the memory to the cores and their caches, as a fur test's does (86.7 C average, 92 C peak). The lawn keeps that
+    /// way of reading; its layer count is set by what the gate's picture measured (see the commit that brought it).
     /// </summary>
-    public const int Layers = 24, FurLayers = 512;
-    private const float Spread = 1f, FurLength = 0.045f;
+    public const int Layers = 24, FurLayers = 160;
+    private const float Spread = 1f, FurLength = 0.07f;
     private const Format LightFormat = Format.R11G11B10_Float;
-    private const int StrandSize = 2048, WordSize = 512;
+    private const int StrandSize = 2048;
+    /// <summary>The lawn under the gate and the aurora behind it are left out for now (the gate alone, as the scan has it); both are still here to switch on.</summary>
+    private static readonly bool WithLawn = false, WithSky = false;
 
     private readonly D3D12Session _s; private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing;
     private readonly ID3D12Resource _light, _depth, _check, _vertices, _indices;
     private readonly ID3D12DescriptorHeap _views, _rtv, _dsv; private readonly uint _rtvSize;
     private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _solid, _fur, _ground, _lens;
-    private readonly uint _starIndices, _allIndices;
+    private readonly uint _gateIndices, _lawnIndices;
+    /// <summary>The triangles of the gate (and the lawn's two when it is on): what the evidence line reports.</summary>
+    public int Triangles => (int)((_gateIndices + _lawnIndices) / 3);
     public SceneOverlay Overlay { get; }
     public int Width { get; }
     public int Height { get; }
@@ -48,10 +52,11 @@ internal sealed unsafe class ShamsehScene : IDisposable
         _back = [.. Enumerable.Range(0, s.Frames + 1).Select(i => _swap.GetBuffer<ID3D12Resource>((uint)i))];
         Overlay = new SceneOverlay(s, _back, height, heat: true);
 
-        var (vertices, indices, starIndices) = ShamsehMesh.Build(); _starIndices = starIndices; _allIndices = (uint)indices.Length;
+        var gate = GateModel.Load(); _gateIndices = (uint)gate.Indices.Length;
+        var (vertices, indices) = WithLawn ? Lawn(gate.Vertices, gate.Indices) : (gate.Vertices, gate.Indices); _lawnIndices = (uint)indices.Length - _gateIndices;
         _vertices = s.Upload(vertices, ResourceStates.AllShaderResource); _indices = s.Upload(indices, ResourceStates.IndexBuffer);
         var strands = new byte[StrandSize * StrandSize * 4]; new Random(7).NextBytes(strands);   // the same strands every run: the check frames compare like with like
-        var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var words = Texture(Format.B8G8R8A8_UNorm, WordSize, WordSize, Engraving());
+        var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var colour = Mips(gate.Albedo, gate.Size);
 
         _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(LightFormat, Background)));
@@ -61,7 +66,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
 
         _views = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 3, DescriptorHeapFlags.ShaderVisible)));
         uint viewSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
-        ID3D12Resource[] read = [stranded, words, _light];
+        ID3D12Resource[] read = [stranded, colour, _light];
         for (int i = 0; i < read.Length; i++) s.Device.CreateShaderResourceView(read[i], null, _views.GetCPUDescriptorHandleForHeapStart().Offset(i, viewSize));
         _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)_back.Length + 2)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
@@ -88,39 +93,67 @@ internal sealed unsafe class ShamsehScene : IDisposable
     private static readonly Color4 Background = new(0.01f, 0.02f, 0.03f, 1);
     private CpuDescriptorHandle Rtv(int i) => _rtv.GetCPUDescriptorHandleForHeapStart().Offset(i, _rtvSize);
 
+    /// <summary>A four-bytes-a-texel texture with its whole mip chain (each level the mean of two by two of the one before): the grass reads it by its footprint, so far blades are cache-friendly.</summary>
     private ID3D12Resource Texture(Format format, int w, int h, byte[] data)
     {
-        var t = _s.Own(_s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(format, (uint)w, (uint)h, 1, 1), ResourceStates.CopyDest));
-        uint pitch = ((uint)w * 4 + 255) & ~255u;
-        using var staging = _s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(pitch * (ulong)h), ResourceStates.GenericRead);
-        var to = staging.Map<byte>(0, (int)(pitch * h)); for (int y = 0; y < h; y++) data.AsSpan(y * w * 4, w * 4).CopyTo(to[(int)(y * pitch)..]); staging.Unmap(0);
+        var levels = new List<(int W, int H, byte[] Data)> { (w, h, data) };
+        while (levels[^1].W > 1 || levels[^1].H > 1)
+        {
+            var (pw, ph, p) = levels[^1]; int nw = Math.Max(1, pw / 2), nh = Math.Max(1, ph / 2); var n = new byte[nw * nh * 4];
+            for (int y = 0; y < nh; y++) for (int x = 0; x < nw; x++) for (int c = 0; c < 4; c++)
+                n[(y * nw + x) * 4 + c] = (byte)((p[(Math.Min(ph - 1, 2 * y) * pw + Math.Min(pw - 1, 2 * x)) * 4 + c] + p[(Math.Min(ph - 1, 2 * y) * pw + Math.Min(pw - 1, 2 * x + 1)) * 4 + c]
+                    + p[(Math.Min(ph - 1, 2 * y + 1) * pw + Math.Min(pw - 1, 2 * x)) * 4 + c] + p[(Math.Min(ph - 1, 2 * y + 1) * pw + Math.Min(pw - 1, 2 * x + 1)) * 4 + c] + 2) / 4);
+            levels.Add((nw, nh, n));
+        }
+        var t = _s.Own(_s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(format, (uint)w, (uint)h, 1, (ushort)levels.Count), ResourceStates.CopyDest));
+        var places = new List<(ulong Offset, uint Pitch)>(); ulong total = 0;
+        foreach (var lv in levels) { uint pitch = ((uint)lv.W * 4 + 255) & ~255u; total = (total + 511) & ~511ul; places.Add((total, pitch)); total += pitch * (ulong)lv.H; }
+        using var staging = _s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(total), ResourceStates.GenericRead);
+        var to = staging.Map<byte>(0, (int)total);
+        for (int m = 0; m < levels.Count; m++) for (int y = 0; y < levels[m].H; y++) levels[m].Data.AsSpan(y * levels[m].W * 4, levels[m].W * 4).CopyTo(to[(int)(places[m].Offset + (ulong)y * places[m].Pitch)..]);
+        staging.Unmap(0);
         _s.Run(l =>
         {
-            l.CopyTextureRegion(new TextureCopyLocation(t, 0), 0, 0, 0, new TextureCopyLocation(staging, new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(format, (uint)w, (uint)h, 1, pitch) }));
+            for (int m = 0; m < levels.Count; m++)
+                l.CopyTextureRegion(new TextureCopyLocation(t, (uint)m), 0, 0, 0, new TextureCopyLocation(staging, new PlacedSubresourceFootPrint { Offset = places[m].Offset, Footprint = new SubresourceFootPrint(format, (uint)levels[m].W, (uint)levels[m].H, 1, places[m].Pitch) }));
             l.ResourceBarrierTransition(t, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
         });
         return t;
     }
 
-    /// <summary>The medallion's words, white on black, softened a little so their cut edges shade smoothly: a double ring, مازستا, MAZESTA.</summary>
-    private static byte[] Engraving()
+    /// <summary>The gate's vertices and indices with the lawn after them: a big square of soil at y = 0 (material 1, uv in blades' units), the grass's ground.</summary>
+    private static (float[] Vertices, uint[] Indices) Lawn(float[] vertices, uint[] indices)
     {
-        using var c = new Canvas(WordSize, WordSize, "Tahoma");
-        const uint white = 0xFFFFFF; int m = WordSize / 2;
-        c.Card(m - 236, m - 236, m + 236, m + 236, white, white, 236); c.Card(m - 226, m - 226, m + 226, m + 226, 0, 0, 226);
-        c.Card(m - 216, m - 216, m + 216, m + 216, white, white, 216); c.Card(m - 211, m - 211, m + 211, m + 211, 0, 0, 211);
-        c.Text(0, 140, WordSize, 290, "مازستا", white, 120, 700, centre: true, middle: true);
-        c.Text(0, 290, WordSize, 370, "MAZESTA", white, 74, 700, centre: true, middle: true);
-        c.Flush();
-        var px = c.Pixels.ToArray(); var soft = new byte[px.Length];
-        for (int y = 0; y < WordSize; y++)
-            for (int x = 0; x < WordSize; x++)
+        uint first = (uint)(vertices.Length / 9); const float E = 40, U = 0.4f;
+        float[] quad = [-E, 0, -E, 0, 1, 0, -E * U, -E * U, 1, E, 0, -E, 0, 1, 0, E * U, -E * U, 1, E, 0, E, 0, 1, 0, E * U, E * U, 1, -E, 0, E, 0, 1, 0, -E * U, E * U, 1];
+        return ([.. vertices, .. quad], [.. indices, first, first + 1, first + 2, first, first + 2, first + 3]);
+    }
+
+    /// <summary>A picture's mip chain (BC3, <paramref name="size"/> down to 4, largest first) as a texture: staged at 512-byte boundaries, rows 256-byte aligned, as buffer-to-texture copies require.</summary>
+    private ID3D12Resource Mips(byte[][] levels, int size)
+    {
+        var t = _s.Own(_s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.BC3_UNorm_SRgb, (uint)size, (uint)size, 1, (ushort)levels.Length), ResourceStates.CopyDest));
+        var places = new List<(ulong Offset, uint Pitch, int Rows, int Width)>(); ulong total = 0;
+        for (int m = 0, w = size; m < levels.Length; m++, w = Math.Max(4, w / 2))
+        {
+            int blocks = Math.Max(1, w / 4); uint pitch = (uint)((blocks * 16 + 255) & ~255);
+            total = (total + 511) & ~511ul; places.Add((total, pitch, blocks, w)); total += pitch * (ulong)blocks;
+        }
+        using var staging = _s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(total), ResourceStates.GenericRead);
+        var to = staging.Map<byte>(0, (int)total);
+        for (int m = 0; m < places.Count; m++)
+            for (int r = 0; r < places[m].Rows; r++) levels[m].AsSpan(r * places[m].Rows * 16, places[m].Rows * 16).CopyTo(to[(int)(places[m].Offset + (ulong)r * places[m].Pitch)..]);
+        staging.Unmap(0);
+        _s.Run(l =>
+        {
+            for (int m = 0; m < places.Count; m++)
             {
-                int sum = 0, n = 0;
-                for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) { int xx = x + dx, yy = y + dy; if ((uint)xx < WordSize && (uint)yy < WordSize) { sum += px[(yy * WordSize + xx) * 4 + 2]; n++; } }
-                byte v = (byte)(sum / n); int at = (y * WordSize + x) * 4; soft[at] = soft[at + 1] = soft[at + 2] = v; soft[at + 3] = 255;
+                var p = places[m]; var footprint = new PlacedSubresourceFootPrint { Offset = p.Offset, Footprint = new SubresourceFootPrint(Format.BC3_UNorm_SRgb, (uint)p.Width, (uint)p.Width, 1, p.Pitch) };
+                l.CopyTextureRegion(new TextureCopyLocation(t, (uint)m), 0, 0, 0, new TextureCopyLocation(staging, footprint));
             }
-        return soft;
+            l.ResourceBarrierTransition(t, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
+        });
+        return t;
     }
 
     // The star swings a little about facing the camera, never turning edge on: its fur is most of the frame's work, and turning it right round
@@ -140,10 +173,10 @@ internal sealed unsafe class ShamsehScene : IDisposable
         l.RSSetViewport(new Viewport(Width, Height)); l.RSSetScissorRect(Width, Height);
         l.SetGraphicsRootSignature(_root); l.SetDescriptorHeaps(1, [_views]);
         l.SetGraphicsRoot32BitConstants(0, k, 0); l.SetGraphicsRootShaderResourceView(1, _vertices.GPUVirtualAddress); l.SetGraphicsRootDescriptorTable(2, _views.GetGPUDescriptorHandleForHeapStart());
-        l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList); l.IASetIndexBuffer(new IndexBufferView(_indices.GPUVirtualAddress, _allIndices * 4, Format.R32_UInt));
-        l.SetPipelineState(_solid); l.DrawIndexedInstanced(_allIndices, 1, 0, 0, 0);
-        l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0);   // behind the star: the depth test keeps the ground off it
-        l.SetPipelineState(_fur); l.DrawIndexedInstanced(_starIndices, FurLayers, 0, 0, 0);   // the layers in instance order: the inner ones first
+        l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList); l.IASetIndexBuffer(new IndexBufferView(_indices.GPUVirtualAddress, (_gateIndices + _lawnIndices) * 4, Format.R32_UInt));
+        l.SetPipelineState(_solid); l.DrawIndexedInstanced(_gateIndices + _lawnIndices, 1, 0, 0, 0);   // the gate, and the soil under the grass
+        if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the sky behind them: the depth test keeps the aurora off them
+        if (WithLawn) { l.SetPipelineState(_fur); l.DrawIndexedInstanced(_lawnIndices, FurLayers, _gateIndices, 0, 0); }   // the grass, its layers in instance order: the inner ones first
         l.ResourceBarrierTransition(_light, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
         l.ResourceBarrierTransition(target, state, ResourceStates.RenderTarget);
         l.OMSetRenderTargets(Rtv(rtv)); l.SetPipelineState(_lens); l.DrawInstanced(3, 1, 0, 0);
@@ -183,82 +216,50 @@ internal sealed unsafe class ShamsehScene : IDisposable
 }
 
 /// <summary>
-/// The star's geometry, made here: the eight-point star of two squares (tips every 45 degrees), domed, thicker at the middle, its faces and rim
-/// in velvet (material 0); then the gold - the medallion's faces (material 1, which carry the words), its edge, a rim round each face and a
-/// piping round the star's outline (material 2). Each vertex is position, normal, uv, material: nine floats. The star's indices come first, so the fur draws them alone.
+/// The gate, read from the embedded Scene/gate.mzgate that tools/gate makes from the owner's scan (Mazesta-Art/gate.blend): every one of the scan's
+/// two million triangles and its colour picture (4096 square JPEG, the scan's 8192 halved), the numbers stored in fewer bytes. gzip of "MZG2", then
+/// (uint32 each) vertex count, index count, picture size, picture length, the bounding box (min xyz, extent xyz: float32), then plane by plane over the
+/// vertices (delta-coded modulo 2^16): x, y, z as uint16 across the box, the normal as two int16 (octahedral), u and v as uint16; then the indices as
+/// zigzag varint deltas, then the picture. The gate stands 1.8 tall on y = 0, its front to +z. The picture comes back as BC3 mips.
 /// </summary>
-internal static class ShamsehMesh
+internal sealed class GateModel
 {
-    public static (float[] Vertices, uint[] Indices, uint StarIndices) Build()
+    public float[] Vertices { get; private init; } = []; public uint[] Indices { get; private init; } = [];
+    public byte[][] Albedo { get; private init; } = []; public int Size { get; private init; }
+
+    public static GateModel Load()
     {
-        var v = new List<float>(); var ix = new List<uint>();
-        uint Add(Vector3 p, Vector3 n, Vector2 uv, int m) { v.AddRange([p.X, p.Y, p.Z, n.X, n.Y, n.Z, uv.X, uv.Y, m]); return (uint)(v.Count / 9 - 1); }
-        void Quad(uint a, uint b, uint c, uint d) => ix.AddRange([a, b, c, a, c, d]);
+        using var raw = typeof(GateModel).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.gate.mzgate") ?? throw new InvalidDataException("The gate model is not in this build.");
+        using var z = new System.IO.Compression.GZipStream(raw, System.IO.Compression.CompressionMode.Decompress); using var r = new BinaryReader(z);
+        if (r.ReadUInt32() != 0x3247_5A4D) throw new InvalidDataException("The gate model is not of a kind this build reads.");   // "MZG2"
+        int nv = r.ReadInt32(), ni = r.ReadInt32(), size = r.ReadInt32(), la = r.ReadInt32();
+        if (nv <= 0 || ni <= 0 || ni % 3 != 0 || size < 4 || (size & (size - 1)) != 0 || la <= 0) throw new InvalidDataException("The gate model is damaged.");
+        Span<float> box = stackalloc float[6]; for (int i = 0; i < 6; i++) box[i] = r.ReadSingle();
+        var planes = new ushort[7][]; for (int k = 0; k < 7; k++) { planes[k] = new ushort[nv]; Read(r, System.Runtime.InteropServices.MemoryMarshal.AsBytes(planes[k].AsSpan())); ushort run = 0; for (int i = 0; i < nv; i++) planes[k][i] = run += planes[k][i]; }
+        var vertices = new float[nv * 9];
+        for (int i = 0; i < nv; i++)
+        {
+            float ox = (short)planes[3][i] / 32767f, oy = (short)planes[4][i] / 32767f, oz = 1 - MathF.Abs(ox) - MathF.Abs(oy);   // octahedral back to a unit vector
+            if (oz < 0) { float fx = (1 - MathF.Abs(oy)) * (ox >= 0 ? 1 : -1), fy = (1 - MathF.Abs(ox)) * (oy >= 0 ? 1 : -1); ox = fx; oy = fy; }
+            float len = MathF.Sqrt(ox * ox + oy * oy + oz * oz); int at = i * 9;
+            vertices[at] = box[0] + planes[0][i] / 65535f * box[3]; vertices[at + 1] = box[1] + planes[1][i] / 65535f * box[4]; vertices[at + 2] = box[2] + planes[2][i] / 65535f * box[5];
+            vertices[at + 3] = ox / len; vertices[at + 4] = oy / len; vertices[at + 5] = oz / len; vertices[at + 6] = planes[5][i] / 65535f; vertices[at + 7] = planes[6][i] / 65535f;
+        }
+        var indices = new uint[ni]; long prev = 0;
+        for (int i = 0; i < ni; i++)
+        {
+            ulong zz = 0; int shift = 0; while (true) { byte b = r.ReadByte(); zz |= (ulong)(b & 0x7F) << shift; if (b < 0x80) break; shift += 7; if (shift > 63) throw new InvalidDataException("The gate model is damaged."); }
+            prev += (long)(zz >> 1) ^ -(long)(zz & 1); if ((ulong)prev >= (ulong)nv) throw new InvalidDataException("The gate model is damaged."); indices[i] = (uint)prev;
+        }
+        return new GateModel { Vertices = vertices, Indices = indices, Albedo = Chain(r.ReadBytes(la), size), Size = size };
+    }
 
-        const int Seg = 16, Rings = 24; float tip = 0.6f * MathF.Sqrt(2), inner = 0.6f / MathF.Cos(MathF.PI / 8);
-        var outline = new List<Vector2>();
-        for (int k = 0; k < 16; k++)
-        {
-            float a0 = k * MathF.PI / 8, a1 = (k + 1) * MathF.PI / 8, r0 = k % 2 == 1 ? inner : tip, r1 = (k + 1) % 2 == 1 ? inner : tip;
-            Vector2 p0 = new(MathF.Cos(a0) * r0, MathF.Sin(a0) * r0), p1 = new(MathF.Cos(a1) * r1, MathF.Sin(a1) * r1);
-            for (int s = 0; s < Seg; s++) outline.Add(Vector2.Lerp(p0, p1, s / (float)Seg));
-        }
-        int n = outline.Count; static float Thick(float r) => 0.19f - 0.07f * r;
-        foreach (int side in new[] { 1, -1 })
-        {
-            var rows = new uint[Rings + 1, n];
-            for (int k = 0; k <= Rings; k++)
-                for (int j = 0; j < n; j++)
-                {
-                    var p = outline[j] * (k / (float)Rings); float r = p.Length();
-                    var slope = r > 1e-5f ? p / r * 0.07f : Vector2.Zero;   // the dome's slope gives the face its normal
-                    rows[k, j] = Add(new(p, side * Thick(r)), Vector3.Normalize(new(slope.X, slope.Y, side)), new(p.X * 0.2f + 0.5f, p.Y * 0.2f + (side > 0 ? 0.5f : 0.1f)), 0);
-                }
-            for (int k = 0; k < Rings; k++)
-                for (int j = 0; j < n; j++)
-                {
-                    uint a = rows[k, j], b = rows[k, (j + 1) % n], c = rows[k + 1, (j + 1) % n], d = rows[k + 1, j];
-                    if (side > 0) Quad(a, d, c, b); else Quad(a, b, c, d);
-                }
-        }
-        {   // the rim, face to face, its normal outward
-            float along = 0; var rows = new uint[n + 1, 5];
-            for (int j = 0; j <= n; j++)
-            {
-                Vector2 p = outline[j % n], next = outline[(j + 1) % n], prev = outline[(j - 1 + n) % n], t = next - prev; var normal = Vector3.Normalize(new(t.Y, -t.X, 0)); float h = Thick(p.Length());
-                if (j > 0) along += Vector2.Distance(p, outline[j - 1]);
-                for (int z = 0; z <= 4; z++) { float zz = -h + 2 * h * z / 4; rows[j, z] = Add(new(p, zz), normal, new(along * 0.2f, zz * 0.2f + 0.8f), 0); }
-            }
-            for (int j = 0; j < n; j++) for (int z = 0; z < 4; z++) Quad(rows[j, z], rows[j + 1, z], rows[j + 1, z + 1], rows[j, z + 1]);
-        }
-        uint starIndices = (uint)ix.Count;
+    private static void Read(BinaryReader r, Span<byte> into) { int got = 0; while (got < into.Length) { int k = r.Read(into[got..]); if (k <= 0) throw new EndOfStreamException(); got += k; } }
 
-        const int Round = 256; const float Radius = 0.35f, Face = 0.23f;
-        foreach (int side in new[] { 1, -1 })
-        {
-            uint centre = Add(new(0, 0, side * Face), new(0, 0, side), Vector2.Zero, 1); var ring = new uint[Round];
-            for (int j = 0; j < Round; j++) { float a = j * MathF.Tau / Round; ring[j] = Add(new(MathF.Cos(a) * Radius, MathF.Sin(a) * Radius, side * Face), new(0, 0, side), Vector2.Zero, 1); }
-            for (int j = 0; j < Round; j++) ix.AddRange(side > 0 ? [centre, ring[j], ring[(j + 1) % Round]] : [centre, ring[(j + 1) % Round], ring[j]]);
-        }
-        {
-            var rows = new uint[Round + 1, 2];
-            for (int j = 0; j <= Round; j++) { float a = j * MathF.Tau / Round; Vector3 d = new(MathF.Cos(a), MathF.Sin(a), 0); rows[j, 0] = Add(d * Radius + new Vector3(0, 0, Face), d, Vector2.Zero, 2); rows[j, 1] = Add(d * Radius - new Vector3(0, 0, Face), d, Vector2.Zero, 2); }
-            for (int j = 0; j < Round; j++) Quad(rows[j, 1], rows[j + 1, 1], rows[j + 1, 0], rows[j, 0]);
-        }
-        void Tube(IReadOnlyList<Vector3> path, float radius, int sides)
-        {
-            var rows = new uint[path.Count, sides];
-            for (int j = 0; j < path.Count; j++)
-            {
-                Vector3 p = path[j], t = Vector3.Normalize(path[(j + 1) % path.Count] - path[(j - 1 + path.Count) % path.Count]), up = MathF.Abs(t.Z) > 0.9f ? Vector3.UnitX : Vector3.UnitZ;
-                Vector3 b = Vector3.Normalize(Vector3.Cross(t, up)), u = Vector3.Cross(b, t);
-                for (int s = 0; s < sides; s++) { float a = s * MathF.Tau / sides; var d = b * MathF.Cos(a) + u * MathF.Sin(a); rows[j, s] = Add(p + d * radius, d, Vector2.Zero, 2); }
-            }
-            for (int j = 0; j < path.Count; j++) for (int s = 0; s < sides; s++) Quad(rows[j, s], rows[j, (s + 1) % sides], rows[(j + 1) % path.Count, (s + 1) % sides], rows[(j + 1) % path.Count, s]);
-        }
-        Vector3[] Circle(float z) => [.. Enumerable.Range(0, Round).Select(j => new Vector3(MathF.Cos(j * MathF.Tau / Round) * Radius, MathF.Sin(j * MathF.Tau / Round) * Radius, z))];
-        Tube(Circle(0.21f), 0.045f, 24); Tube(Circle(-0.21f), 0.045f, 24);
-        Tube([.. outline.Select(p => new Vector3(p, 0))], 0.04f, 20);
-        return ([.. v], [.. ix], starIndices);
+    private static byte[][] Chain(byte[] jpeg, int size)
+    {
+        var rgb = Jpeg.Decode(jpeg, out int w, out int h); if (w != size || h != size) throw new InvalidDataException($"A picture of {w} x {h} in a model of {size}.");
+        var rgba = new byte[size * size * 4]; for (int i = 0, j = 0; i < rgba.Length; i += 4, j += 3) { rgba[i] = rgb[j]; rgba[i + 1] = rgb[j + 1]; rgba[i + 2] = rgb[j + 2]; rgba[i + 3] = 255; }
+        return Bc3.MipChain(rgba, size, false, false);
     }
 }

@@ -37,7 +37,7 @@ $jobs = @(
     @('GardenRaster.hlsl', 'RoundDownPS', 'ps_6_0', 'GardenRoundDownPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
-    # the temperature test's star (ShamsehScene)
+    # the temperature test's gate on its lawn (ShamsehScene)
     @('Shamseh.hlsl', 'SolidVS', 'vs_6_0', 'ShamsehSolidVS.cso'),
     @('Shamseh.hlsl', 'SolidPS', 'ps_6_0', 'ShamsehSolidPS.cso'),
     @('Shamseh.hlsl', 'FurVS', 'vs_6_0', 'ShamsehFurVS.cso'),
