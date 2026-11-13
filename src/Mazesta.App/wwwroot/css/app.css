@@ -1933,3 +1933,21 @@ div.findings { max-height: none; overflow: visible; }
 .fl-ren { max-height: 360px; overflow: auto; }
 .fl-ren li.fail { box-shadow: inset 3px 0 0 var(--fail); }
 .fl-check { display: flex !important; align-items: center; gap: 8px; }
+/* Dashboard in colour, like the tools page: each quick action and panel in its own hue, a tinted plate, a gradient key whose icon pops in once and wiggles on hover. Nothing moves on its own. */
+.dash-page .quick button:nth-child(1) { --hue: #4fd68a; } .dash-page .quick button:nth-child(2) { --hue: #fdd400; } .dash-page .quick button:nth-child(3) { --hue: #5ba8ff; }
+.dash-page .quick button:nth-child(4) { --hue: #b38bff; } .dash-page .quick button:nth-child(5) { --hue: #ff78b9; }
+.dash-page .quick button { --i: 0; border-color: color-mix(in oklab, var(--hue) 32%, var(--rule-2)); background: color-mix(in oklab, var(--hue) 10%, var(--ink-3)); transition: border-color var(--fast), background var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast); }
+.dash-page .quick button:nth-child(2) { --i: 1; } .dash-page .quick button:nth-child(3) { --i: 2; } .dash-page .quick button:nth-child(4) { --i: 3; } .dash-page .quick button:nth-child(5) { --i: 4; }
+.dash-page .quick button .ico { width: 28px; height: 28px; border-radius: 8px; color: var(--on-yellow); background: linear-gradient(135deg, var(--hue), color-mix(in oklab, var(--hue) 55%, #fff)); box-shadow: 0 5px 14px -7px var(--hue); }
+.dash-page .quick button .ico svg { stroke-width: 2.1; animation: pop 600ms var(--ease) both; animation-delay: calc(150ms + var(--i) * 45ms); }
+.dash-page .quick button:hover { border-color: var(--hue); background: color-mix(in oklab, var(--hue) 18%, var(--ink-3)); transform: translateY(-2px); box-shadow: var(--shadow), 0 10px 24px -14px var(--hue); }
+.dash-page .quick button:hover .ico svg { animation: wiggle 620ms var(--ease); }
+.dash-page .tile { background: linear-gradient(165deg, color-mix(in oklab, var(--hue) 13%, var(--ink-2)), var(--ink-2) 65%); transition: border-color var(--fast), background var(--fast), transform var(--fast) var(--ease), box-shadow var(--fast); }
+.dash-page a.tile:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 10px 26px -14px var(--hue); }
+.dash-page .p-shop { --hue: #ff9a4d; } .dash-page .p-shop + .p-shop { --hue: #35d0e0; } .dash-page .p-contact { --hue: #ff78b9; }
+.dash-page .panel { border-color: color-mix(in oklab, var(--hue) 28%, var(--rule)); border-top: 3px solid var(--hue); background: linear-gradient(165deg, color-mix(in oklab, var(--hue) 13%, var(--ink-2)), var(--ink-2) 60%);
+  transition: transform var(--fast) var(--ease), box-shadow var(--fast), border-color var(--fast); }
+.dash-page .panel:hover { transform: translateY(-3px); border-color: color-mix(in oklab, var(--hue) 55%, var(--rule)); border-top-color: var(--hue); box-shadow: var(--shadow), 0 12px 30px -14px color-mix(in oklab, var(--hue) 70%, transparent); }
+.dash-page .panel-head .ico { width: 36px; height: 36px; border-radius: 11px; color: var(--on-yellow); background: linear-gradient(135deg, var(--hue), color-mix(in oklab, var(--hue) 55%, #fff)); box-shadow: 0 6px 16px -7px var(--hue); }
+.dash-page .panel-head .ico svg { width: 19px; height: 19px; animation: pop 640ms var(--ease) both; animation-delay: calc(200ms + var(--i, 0) * 45ms); }
+.dash-page .panel:hover .panel-head .ico svg { animation: wiggle 620ms var(--ease); }
