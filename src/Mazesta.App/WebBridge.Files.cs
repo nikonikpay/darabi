@@ -101,21 +101,6 @@ public sealed partial class WebBridge
             return new { renamed = r.Renamed, failed = r.Failed.Select(f => new { name = Path.GetFileName(f.Path), error = f.Error }) };
         });
 
-        // ——— A file's checksum: MD5, SHA-1 and SHA-256 in one read, the progress pushed as "hash" ———
-        MethodAsync("hash.file", async p =>
-        {
-            var path = Picked(p).FirstOrDefault() ?? throw new InvalidOperationException("no files");
-            _hashCts?.Cancel(); var cts = _hashCts = new CancellationTokenSource();
-            try
-            {
-                var (md5, sha1, sha256) = await Task.Run(() => FileHash.Hash(path, x => Push("hash", new { share = x }), cts.Token)).ConfigureAwait(true);
-                return new { name = Path.GetFileName(path), size = new FileInfo(path).Length, md5, sha1, sha256 };
-            }
-            catch (OperationCanceledException) { return new { cancelled = true }; }
-            finally { if (_hashCts == cts) _hashCts = null; }
-        });
-        Method("hash.cancel", _ => { _hashCts?.Cancel(); return null; });
-        Method("hash.compare", p => new { kind = Checksum.KindOf(Str(p, "text")), clean = Checksum.Clean(Str(p, "text")) });
 
         // ——— A colour from anywhere on the screen: the tray's picker (it works with the app closed, and shows the pick in a window of its own) ———
         Method("color.pick", _ => new { open = SignalTray(Mazesta.Core.Tray.FileSearchSignals.ColorPick) });
@@ -139,8 +124,6 @@ public sealed partial class WebBridge
         using (e) e.Set();
         return true;
     }
-
-    private CancellationTokenSource? _hashCts;
 
     /// <summary>
     /// The files Explorer's right-click entries sent (through the tray), taken once: each tool's paths that still exist, remembered as picked, so the

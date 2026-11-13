@@ -73,21 +73,3 @@ public static class BatchRename
 
     private static bool TryMove(string from, string to) { try { File.Move(from, to); return true; } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; } }
 }
-
-public static class FileHash
-{
-    /// <summary>MD5, SHA-1 and SHA-256 of a file in one read (a big ISO is read once), with the share read so far.</summary>
-    public static (string Md5, string Sha1, string Sha256) Hash(string path, Action<double> progress, CancellationToken ct)
-    {
-        using var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5); using var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1); using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        using var f = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 20, FileOptions.SequentialScan);
-        var buf = new byte[1 << 20]; long read = 0, len = Math.Max(1, f.Length), next = Environment.TickCount64; int n;
-        while ((n = f.Read(buf, 0, buf.Length)) > 0)
-        {
-            ct.ThrowIfCancellationRequested();
-            md5.AppendData(buf, 0, n); sha1.AppendData(buf, 0, n); sha256.AppendData(buf, 0, n); read += n;
-            if (Environment.TickCount64 >= next) { progress((double)read / len); next = Environment.TickCount64 + 250; }
-        }
-        return (Convert.ToHexStringLower(md5.GetHashAndReset()), Convert.ToHexStringLower(sha1.GetHashAndReset()), Convert.ToHexStringLower(sha256.GetHashAndReset()));
-    }
-}

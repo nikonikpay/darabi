@@ -36,17 +36,4 @@ public class BatchRenameTests
         }
         finally { Directory.Delete(dir, true); }
     }
-
-    [Fact] public void A_files_checksums_are_read_in_one_pass()
-    {
-        string f = Path.GetTempFileName();
-        try
-        {
-            File.WriteAllText(f, "test");
-            var (md5, sha1, sha256) = FileHash.Hash(f, _ => { }, CancellationToken.None);
-            Assert.Equal("098f6bcd4621d373cade4e832627b4f6", md5); Assert.Equal("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3", sha1);
-            Assert.Equal("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", sha256);
-        }
-        finally { File.Delete(f); }
-    }
 }

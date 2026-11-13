@@ -84,15 +84,6 @@ public class FileToolsTests
         Assert.Equal(RenameState.Ready, RenamePlan.Make([P("a.txt")], new RenameRule("a", "A", MatchCase: true), p => p == P("A.txt"))[0].State);
     }
 
-    [Fact] public void A_pasted_checksum_is_found_and_its_kind_known()
-    {
-        const string sha = "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08";
-        Assert.Equal("SHA-256", Checksum.KindOf("SHA256: " + sha));
-        Assert.True(Checksum.Matches(sha.ToLowerInvariant(), "  sha256 = " + sha + "\n"));
-        Assert.Equal("MD5", Checksum.KindOf("d41d8cd98f00b204e9800998ecf8427e"));
-        Assert.Null(Checksum.KindOf("hello")); Assert.False(Checksum.Matches("abc", ""));
-    }
-
     [Theory, InlineData(255, 0, 0, "#FF0000", "rgb(255, 0, 0)", "hsl(0, 100%, 50%)"), InlineData(0, 128, 0, "#008000", "rgb(0, 128, 0)", "hsl(120, 100%, 25%)"),
      InlineData(30, 144, 255, "#1E90FF", "rgb(30, 144, 255)", "hsl(210, 100%, 56%)"), InlineData(128, 128, 128, "#808080", "rgb(128, 128, 128)", "hsl(0, 0%, 50%)"), InlineData(255, 0, 128, "#FF0080", "rgb(255, 0, 128)", "hsl(330, 100%, 50%)")]
     public void A_picked_colour_is_written_three_ways(byte r, byte g, byte b, string hex, string rgb, string hsl) => Assert.Equal((hex, rgb, hsl), (ColorText.Hex(r, g, b), ColorText.Rgb(r, g, b), ColorText.Hsl(r, g, b)));

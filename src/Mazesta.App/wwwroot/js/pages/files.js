@@ -1,4 +1,4 @@
-// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller, many files renamed, a file's checksum, a colour from the screen. Files come only from the host's own dialogs (files.pick); the host
+// The file tools of the Windows tools page: what holds a file open, where the disk space went, pictures made smaller, many files renamed, a colour from the screen. Files come only from the host's own dialogs (files.pick); the host
 // acts only on what was picked there. Every answer is what Windows reported; "could not check" is never shown as "nothing found".
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
@@ -129,40 +129,6 @@ export function renameBox(i) {
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("files", "Files_PickFile", use), pickBtn("folder", "Files_PickFolder", use), h("span", { class: "grow" }), undo), picked, mode,
       h("div", { class: "fl-opts" }, findRow, h("label", {}, replaceLabel, replace), startRow), flags, h("div", { class: "btn-row" }, run), msg, list],
     more: [h("p", { class: "note" }, t("Files_Ren_Note")), menuNote()] }));
-}
-
-// ——— A file's checksum, to compare with the one on its download page ———
-export function hashBox(i, onEvent) {
-  let sums = null;
-  const msg = h("p", { class: "msg", "aria-live": "polite" }), out = h("dl", { class: "kv fl-hash" });
-  const paste = h("input", { class: "field lat", "aria-label": t("Files_Hash_Paste"), placeholder: t("Files_Hash_Paste"), oninput: compare });
-  const verdict = h("p", { class: "msg" });
-  const cancel = h("button", { class: "btn stop", hidden: true, onclick: () => call("hash.cancel") }, icon("stop"), t("Test_Cancel"));
-  const copy = (v) => h("button", { class: "btn quiet", onclick: async () => { try { await navigator.clipboard.writeText(v); toast(t("Files_Copied")); } catch { /* the value is still shown */ } } }, t("Files_Copy"));
-  async function go(p) {
-    sums = null; out.replaceChildren(); verdict.textContent = ""; cancel.hidden = false; msg.className = "msg"; msg.textContent = t("Tools_Working");
-    try {
-      const r = await call("hash.file", { paths: p });
-      if (r.cancelled) { msg.textContent = t("Files_Space_Cancelled"); return; }
-      sums = r; msg.className = "msg"; msg.replaceChildren(lat(r.name), " · ", lat(bytes(r.size)));
-      out.replaceChildren(...[["MD5", r.md5], ["SHA-1", r.sha1], ["SHA-256", r.sha256]].flatMap(([k, v]) => [h("dt", {}, lat(k)), h("dd", {}, lat(v), " ", copy(v))]));
-      compare();
-    } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); }
-    finally { cancel.hidden = true; }
-  }
-  async function compare() {
-    const text = paste.value.trim();
-    if (!text) { verdict.textContent = ""; return; }
-    const r = await call("hash.compare", { text });
-    if (!r.kind) { verdict.className = "msg fail"; verdict.textContent = t("Files_Hash_NotHash"); return; }
-    if (!sums) { verdict.className = "msg"; verdict.textContent = t("Files_Hash_PickFirst", r.kind); return; }
-    const same = [sums.md5, sums.sha1, sums.sha256].includes(r.clean);
-    verdict.className = `msg ${same ? "ok" : "fail"}`;
-    verdict.textContent = same ? t("Files_Hash_Match", r.kind) : t("Files_Hash_NoMatch", r.kind);
-  }
-  onEvent("hash", (x) => { msg.textContent = t("Files_Hash_Reading", Math.round(x.share * 100)); });
-  return box({ ico: "check", cls: "p-tool", title: t("Files_Hash_Title"), sub: t("Files_Hash_Sub"), i, a: "checksum",
-    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("one", "Files_PickFile", go), h("span", { class: "grow" }), cancel), msg, out, paste, verdict] });
 }
 
 // ——— A colour from anywhere on the screen: the tray's picker (it works with the app closed and shows the pick in a window of its own) ———

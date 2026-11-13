@@ -60,9 +60,3 @@ public static class RenamePlan
 
 /// <summary>A file's checksum as people paste it from a download page ("SHA256: 9F86D081..."): the longest run of 32 or more hex digits,
 /// any case; its length says which kind it is.</summary>
-public static class Checksum
-{
-    public static string Clean(string text) => Regex.Matches(text, "[0-9a-fA-F]{32,}").Select(m => m.Value.ToLowerInvariant()).OrderByDescending(s => s.Length).FirstOrDefault() ?? "";
-    public static string? KindOf(string text) => Clean(text).Length switch { 32 => "MD5", 40 => "SHA-1", 64 => "SHA-256", 128 => "SHA-512", _ => null };
-    public static bool Matches(string computed, string pasted) => Clean(pasted).Length > 0 && Clean(computed) == Clean(pasted);
-}

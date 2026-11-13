@@ -137,13 +137,22 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 
 /* A family of pages (hardware, tests, gaming, optimization) shares one entry in the bar and a tab strip at the top of its pages. */
 /* The tabs of a family: a ruled strip across the page top; the open one underlined in yellow. */
-.tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 2px; padding: 0 var(--pad); background: var(--ink); border-bottom: 1px solid var(--rule); overflow-x: auto; }
-.tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 13px 14px 11px; font-weight: 600; font-size: 13px; color: var(--paper-3); text-decoration: none;
-  border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: color var(--fast), border-color var(--fast); }
-.tabs a svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 1.75; }
-.tabs a:hover { color: var(--paper); border-bottom-color: var(--rule-2); }
-.tabs a[aria-current="page"] { color: var(--paper); border-bottom-color: var(--yellow); }
-.tabs a[aria-current="page"] svg { stroke: var(--yellow); }
+.tabs { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 10px var(--pad); background: var(--ink); border-bottom: 1px solid var(--rule); overflow-x: auto; }
+/* Each tab a pill in its own colour with its icon in a round key; the open one filled. The icons move once when shown and on hover, never on their own. */
+.tabs a { --hue: var(--yellow); display: inline-flex; align-items: center; gap: 9px; padding: 5px 14px; padding-inline-start: 5px; border-radius: 999px; font-weight: 650; font-size: 13px; white-space: nowrap; text-decoration: none;
+  color: var(--paper-2); background: color-mix(in oklab, var(--hue) 9%, var(--ink-2)); border: 1px solid color-mix(in oklab, var(--hue) 32%, var(--rule));
+  animation: rise 420ms var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms); transition: color var(--fast), background var(--fast), border-color var(--fast), box-shadow var(--fast), transform var(--fast) var(--ease); }
+.tabs .t-ico { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--hue); background: color-mix(in oklab, var(--hue) 20%, transparent); transition: background var(--fast), color var(--fast); }
+.tabs .t-ico svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2.1; }
+.tabs a:hover { color: var(--paper); border-color: var(--hue); background: color-mix(in oklab, var(--hue) 17%, var(--ink-2)); transform: translateY(-1px); }
+.tabs a:hover .t-ico svg { animation: wiggle 620ms var(--ease); }
+.tabs a:focus-visible { outline: 2px solid var(--hue); outline-offset: 2px; }
+.tabs a[aria-current="page"] { color: var(--on-yellow); font-weight: 800; border-color: var(--hue); background: linear-gradient(135deg, var(--hue), color-mix(in oklab, var(--hue) 62%, #fff));
+  box-shadow: 0 6px 18px -8px var(--hue); }
+.tabs a[aria-current="page"] .t-ico { color: var(--hue); background: var(--ink); }
+.tabs a[aria-current="page"] .t-ico svg { animation: pop 700ms var(--ease) 180ms both; }
+@keyframes wiggle { 0%, 100% { transform: none; } 25% { transform: rotate(-14deg) scale(1.15); } 50% { transform: rotate(10deg) scale(1.15); } 75% { transform: rotate(-4deg); } }
+@keyframes pop { 0% { transform: scale(0.3) rotate(-30deg); opacity: 0; } 60% { transform: scale(1.2) rotate(8deg); opacity: 1; } 100% { transform: none; } }
 .tabs + .page { padding-top: 22px; }
 
 /* ———— Type roles ———— */
@@ -1538,7 +1547,24 @@ body.popout .chart { height: 100%; min-height: 120px; }
 @keyframes flash { 50% { outline-color: transparent; } }
 
 /* ——— Windows tools: sections, and DNS Jumper's table ——— */
-.tools-sec { margin-top: 22px; }
+.tools-sec { --sec: var(--yellow); margin-top: 26px; }
+/* Windows tools: each section and box in its own colour (tools.js), a tinted plate, a gradient key whose icon moves on hover */
+.tools-sec-title .sec-ico { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; color: var(--on-yellow);
+  background: linear-gradient(135deg, var(--sec), color-mix(in oklab, var(--sec) 55%, #fff)); box-shadow: 0 6px 16px -8px var(--sec); }
+.tools-sec-title .sec-ico svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 2.2; }
+.tools-sec .tools-sec-title::after { background: linear-gradient(to left, color-mix(in oklab, var(--sec) 60%, transparent), transparent); }
+[dir="ltr"] .tools-sec .tools-sec-title::after { background: linear-gradient(to right, color-mix(in oklab, var(--sec) 60%, transparent), transparent); }
+.tools-sec .panel { border-color: color-mix(in oklab, var(--hue) 28%, var(--rule)); border-top: 3px solid var(--hue);
+  background: linear-gradient(165deg, color-mix(in oklab, var(--hue) 14%, var(--ink-2)), var(--ink-2) 60%);
+  transition: transform var(--fast) var(--ease), box-shadow var(--fast), border-color var(--fast); }
+.tools-sec .panel:hover { transform: translateY(-3px); border-color: color-mix(in oklab, var(--hue) 55%, var(--rule)); border-top-color: var(--hue);
+  box-shadow: var(--shadow), 0 12px 30px -14px color-mix(in oklab, var(--hue) 70%, transparent); }
+.tools-sec .panel-head .ico { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, var(--hue), color-mix(in oklab, var(--hue) 55%, #fff));
+  box-shadow: 0 6px 16px -7px var(--hue); }
+.tools-sec .panel-head .ico svg { width: 20px; height: 20px; animation: pop 640ms var(--ease) both; animation-delay: calc(120ms + var(--i, 0) * 45ms); }
+.tools-sec .panel:hover .panel-head .ico svg { animation: wiggle 620ms var(--ease); }
+.tools-sec .btn.primary { background: var(--hue); border-color: var(--hue); }
+.tools-sec .btn.primary:hover:not(:disabled) { background: color-mix(in oklab, var(--hue) 80%, #fff); border-color: color-mix(in oklab, var(--hue) 80%, #fff); }
 .tools-sec > .panels { margin-top: 0; }
 .dns-h { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--paper); }
 .dns-h:first-child { margin-top: 0; }
@@ -1897,5 +1923,3 @@ div.findings { max-height: none; overflow: visible; }
 .fl-ren { max-height: 360px; overflow: auto; }
 .fl-ren li.fail { box-shadow: inset 3px 0 0 var(--fail); }
 .fl-check { display: flex !important; align-items: center; gap: 8px; }
-.fl-hash dd { overflow-wrap: anywhere; }
-.fl-hash + .field { width: 100%; box-sizing: border-box; margin-top: 10px; }

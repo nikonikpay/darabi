@@ -62,7 +62,12 @@ export const FAMILIES = [
   { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
   { key: "Nav_Help", icon: "doc", pages: ["help"] },
 ];
-export const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", play: "bolt", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", lights: "bulb", fans: "fan", tools: "wrench", tweaks: "layers", wake: "bolt", shield: "shield", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
+// each tab in a colour of its own (neighbours in a family never share one), so the tabs read as buttons, not a grey line
+const TAB_HUE = { monitoring: "#4fd68a", system: "#d9ccb0", cpu: "#5ba8ff", gpu: "#b38bff", ram: "#35d0e0", storage: "#ff9a4d", network: "#ff78b9",
+  tests: "#4fd68a", benchmarks: "#fdd400", checkup: "#5ba8ff", checks: "#35d0e0", apps: "#5ba8ff", ai: "#b38bff", play: "#fdd400", games: "#ff78b9", overlay: "#b38bff",
+  lights: "#fdd400", fans: "#35d0e0", tools: "#5ba8ff", tweaks: "#b38bff", wake: "#fdd400", autorun: "#ff9a4d", shield: "#4fd68a", updates: "#35d0e0", drivers: "#ff78b9",
+  settings: "#9fb6cf", appupdate: "#4fd68a" };
+export const TAB_ICON = { autorun: "play",  monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", play: "bolt", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", lights: "bulb", fans: "fan", tools: "wrench", tweaks: "layers", wake: "bolt", shield: "shield", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 
@@ -89,9 +94,10 @@ async function show(id) {
   const swap = () => {
     unmount?.(); unmount = null;
     clear(stage); stage.scrollTop = 0;
-    if (family.pages.length > 1) stage.append(h("nav", { class: "tabs", "aria-label": t(family.key) }, family.pages.map((id) => {
+    if (family.pages.length > 1) stage.append(h("nav", { class: "tabs", "aria-label": t(family.key) }, family.pages.map((id, i) => {
       const p = PAGES.find((x) => x.id === id);
-      return h("a", { href: `#/${id}`, "aria-current": id === page.id ? "page" : null }, icon(TAB_ICON[id] || "doc"), t(p.key), isLocked(id, family.key) ? h("span", { class: "lock-mark", title: t("Access_Locked") }, icon("lock")) : null);
+      return h("a", { href: `#/${id}`, "aria-current": id === page.id ? "page" : null, style: { "--hue": TAB_HUE[id] || "var(--yellow)", "--i": i } },
+        h("span", { class: "t-ico" }, icon(TAB_ICON[id] || "doc")), t(p.key), isLocked(id, family.key) ? h("span", { class: "lock-mark", title: t("Access_Locked") }, icon("lock")) : null);
     })));
     const el = h("div", { class: "page" }); stage.append(el);
     stage.style.setProperty("--tabs-h", `${stage.querySelector(".tabs")?.offsetHeight || 0}px`);

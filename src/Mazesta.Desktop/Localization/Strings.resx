@@ -4372,20 +4372,8 @@ Cancel: stop.</value></data>
   <data name="Files_Ren_Undo_N" xml:space="preserve"><value>Undo the last rename ({0} files)</value></data>
   <data name="Files_Ren_Undone" xml:space="preserve"><value>{0} files have their old names back.</value></data>
   <data name="Files_Ren_Note" xml:space="preserve"><value>Only the name changes; the extension (.jpg, .docx) stays. A chosen folder means the files directly in it, in name order. Nothing is renamed while any new name clashes with another or is not allowed. The last rename is remembered, also after a restart, and Undo gives every file still carrying its new name its old one back.</value></data>
-  <data name="Files_Hash_Title" xml:space="preserve"><value>File checksum</value></data>
-  <data name="Files_Hash_Sub" xml:space="preserve"><value>Check that a download (a Windows ISO, a driver) arrived whole and unchanged</value></data>
-  <data name="Files_Hash_Paste" xml:space="preserve"><value>Paste the checksum from the download page</value></data>
-  <data name="Files_Hash_Reading" xml:space="preserve"><value>Reading the file: {0}%</value></data>
-  <data name="Files_Hash_NotHash" xml:space="preserve"><value>This is not an MD5, SHA-1, SHA-256 or SHA-512 checksum.</value></data>
-  <data name="Files_Hash_PickFirst" xml:space="preserve"><value>A {0} checksum; choose the file to compare it with.</value></data>
-  <data name="Files_Hash_Match" xml:space="preserve"><value>The {0} matches: the file is the same as the one published.</value></data>
-  <data name="Files_Hash_NoMatch" xml:space="preserve"><value>The {0} does not match: the file is different or damaged; download it again.</value></data>
-  <data name="Files_Copy" xml:space="preserve"><value>Copy</value></data>
-  <data name="Files_Copied" xml:space="preserve"><value>Copied.</value></data>
   <data name="Help_Files_Ren_Title" xml:space="preserve"><value>Renames many files at once: a word found and replaced in every name, or one name with a number for each (photo 01, photo 02...). Every new name is shown first, nothing runs while two would clash, and the last rename can be undone.</value></data>
   <data name="HelpHow_Files_Ren_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Choose the files, or a folder for all the files in it.|Pick Find and replace or Name and number, and type; the list shows each new name as you type.|When nothing is marked red, press Rename. Undo the last rename puts the old names back.</value></data>
-  <data name="Help_Files_Hash_Title" xml:space="preserve"><value>Works out a file's MD5, SHA-1 and SHA-256 and compares them with the checksum you paste from its download page, to know a Windows ISO or a driver arrived whole and was not changed.</value></data>
-  <data name="HelpHow_Files_Hash_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press Choose files and pick the downloaded file; a big file takes a little while.|Paste the checksum shown on the download page into the field.|Green means the file is the published one; red means download it again.</value></data>
   <data name="Files_Color_Title" xml:space="preserve"><value>Colour picker</value></data>
   <data name="Files_Color_Sub" xml:space="preserve"><value>The code of any colour on the screen, for a designer, a website or a printer</value></data>
   <data name="Files_Color_Pick" xml:space="preserve"><value>Pick a colour</value></data>
@@ -4414,7 +4402,6 @@ Cancel: stop.</value></data>
   <data name="Files_Space_Note" xml:space="preserve"><value>Also in the tray icon's menu, with the app closed too. An NTFS drive is read straight from its file table, so even a full drive takes seconds; another drive, or a folder you choose, is walked. Sizes are what the files hold, as Explorer shows them; a file with several names (Windows' WinSxS) is counted once. Nothing is deleted from there.</value></data>
   <data name="Help_Files_Space_Title" xml:space="preserve"><value>Shows what fills a drive, as WizTree does, in a window of its own: an NTFS drive is read straight from its file table in seconds. Folders as a tree, biggest first, each with its share of its folder; or the biggest files of the whole drive; or type to find files and folders by name, biggest first. Folders and files have Windows' own icons. Double-click a file to see it in Explorer, where you decide what to delete; nothing is deleted from the window.</value></data>
   <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>Right-click the tray icon and choose Where the disk space went, or press the button here; the Windows drive is read at once.|Pick another drive at the top, or Another folder.|Double-click a folder (or the right arrow) to open it; Biggest files lists the drive's largest files.|Type in the search box to find by name; double-click a file to show it in Explorer, right-click to copy its path.</value></data>
-  <data name="Files_Space_Cancelled" xml:space="preserve"><value>Scan cancelled.</value></data>
   <data name="Files_Menu_lock" xml:space="preserve"><value>What holds this open? (Mazesta)</value></data>
   <data name="Files_Menu_resize" xml:space="preserve"><value>Make pictures smaller (Mazesta)</value></data>
   <data name="Files_Menu_rename" xml:space="preserve"><value>Rename together (Mazesta)</value></data>

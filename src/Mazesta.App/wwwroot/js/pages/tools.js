@@ -9,7 +9,11 @@ import { box } from "../groups.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
 import { crashesBox } from "./crashes.js";
-import { lockBox, spaceBox, imageBox, renameBox, hashBox, colorBox, searchBox, mixerBox } from "./files.js";
+import { lockBox, spaceBox, imageBox, renameBox, colorBox, searchBox, mixerBox } from "./files.js";
+
+// neighbours never share a colour
+const HUE = { dns: "#5ba8ff", netfix: "#ff78b9", crashes: "#ff6b6b", repair: "#4fd68a", cleanup: "#ff9a4d", hibernate: "#fdd400", vm: "#35d0e0", hosts: "#b38bff",
+  search: "#5ba8ff", space: "#ff9a4d", locks: "#ff6b8a", rename: "#4fd68a", images: "#f472d0", color: "#fdd400", mixer: "#35d0e0" };
 
 export function mount(el) {
   const offs = [];   // the file boxes' own event subscriptions
@@ -54,10 +58,12 @@ export function mount(el) {
 
   // Three sections, by what people come for: the connection and games first (DNS is what is asked for most), then repair and clean-up, then
   // the settings that change how Windows starts and uses memory.
-  const section = (key, ...boxes) => h("section", { class: "tools-sec" }, h("h2", { class: "tools-sec-title" }, t(key)), h("div", { class: "panels flow" }, boxes));
+  // Each section and each box in a colour of its own, so the boxes are told apart at a glance (see HUE below).
+  const section = (key, ico, hue, ...boxes) => h("section", { class: "tools-sec", style: { "--sec": hue } },
+    h("h2", { class: "tools-sec-title" }, h("span", { class: "sec-ico" }, icon(ico)), t(key)), h("div", { class: "panels flow" }, boxes));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
-    section("Tools_Sec_Network", dnsBox(0), netfixBox(0)),
-    section("Tools_Sec_Repair",
+    section("Tools_Sec_Network", "net", "#5ba8ff", dnsBox(0), netfixBox(0)),
+    section("Tools_Sec_Repair", "wrench", "#4fd68a",
       crashesBox(3),
       box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 3, a: "repair",
         body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar)],
@@ -66,14 +72,15 @@ export function mount(el) {
         body: h("div", { class: "btn-row", style: { marginTop: 0 } }, btn("cleanup", "Tools_DiskCleanup"), btn("update", "Tools_WindowsUpdate")) }),
       box({ kind: "Power", title: t("Tools_Hib_Title"), sub: t("Tools_Hib_Sub"), i: 5, a: "hibernate",
         body: [h("div", { class: "pw-row" }, hibTile, hibOff, hibOn), h("div", { class: "pw-row" }, fastTile, fastOff, fastOn), powerMsg, h("p", { class: "note" }, t("Tools_Hib_Note"))] })),
-    section("Tools_Sec_System",
+    section("Tools_Sec_System", "ram", "#35d0e0",
       box({ kind: "Memory", title: t("Tools_Vm_Title"), sub: t("Tools_Vm_Sub"), i: 6, a: "vm",
         actions: h("button", { class: "btn quiet", onclick: () => call("tools.exec", { cmd: "pagefile" }) }, icon("popout"), t("Tools_Vm_Windows")),
         body: [vmInUse, vmPending], more: [h("div", { style: { marginTop: "6px" } }, choice), custom, vmLimit, h("div", { class: "btn-row" }, vmApply), vmMsg] }),
       box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
         body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })),
-    section("Tools_Sec_Files", searchBox(7), spaceBox(8), lockBox(9), imageBox(10, (ev, fn) => offs.push(on(ev, fn))), renameBox(11), hashBox(12, (ev, fn) => offs.push(on(ev, fn))), colorBox(13), mixerBox(14)));
+    section("Tools_Sec_Files", "folder", "#b38bff", searchBox(7), spaceBox(8), lockBox(9), renameBox(10), imageBox(11, (ev, fn) => offs.push(on(ev, fn))), colorBox(12), mixerBox(13)));
+  for (const p of el.querySelectorAll(".tools-sec .panel[data-a]")) if (HUE[p.dataset.a]) p.style.setProperty("--hue", HUE[p.dataset.a]);
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;
