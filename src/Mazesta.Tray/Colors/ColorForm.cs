@@ -14,7 +14,7 @@ internal sealed class ColorForm : Form
     private readonly TableLayoutPanel _codes = new() { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 3, Padding = new Padding(12, 0, 0, 0) };
     private readonly FlowLayoutPanel _shades = new() { Dock = DockStyle.Top, Height = 40, Padding = new Padding(0, 8, 0, 0), WrapContents = false };
     private readonly FlowLayoutPanel _recent = new() { Dock = DockStyle.Fill, Padding = new Padding(0, 4, 0, 0) };
-    private readonly ToolTip _tip = new(); private List<Color> _history;
+    private readonly ToolTip _tip = new(); private readonly System.Windows.Forms.Timer _settle = new() { Interval = 400 }; private long _shown; private List<Color> _history;
 
     public ColorForm(string file, Action again)
     {
@@ -22,15 +22,17 @@ internal sealed class ColorForm : Form
         Text = TrayText.Color; FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual; KeyPreview = true;
         AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 10f); BackColor = Back; ForeColor = Text1; Padding = new Padding(14, 10, 14, 12);
         var head = new Panel { Dock = DockStyle.Top, Height = 34 };
-        head.Controls.Add(new Label { Text = TrayText.Color, Dock = DockStyle.Fill, Font = new Font("Segoe UI Semibold", 11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleRight });
+        head.Controls.Add(new Label { Text = TrayText.Color, Dock = DockStyle.Fill, Font = new Font("Segoe UI Semibold", 11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft });   // "left" is the reading start in a right-to-left label
         head.Controls.Add(Button(TrayText.ColorAgain, again, DockStyle.Left));
         var body = new Panel { Dock = DockStyle.Top, Height = 120 };
         body.Controls.Add(_codes); body.Controls.Add(_swatch);
         _codes.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); _codes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         for (int i = 0; i < 3; i++) _codes.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3f));
-        var recentTitle = new Label { Text = TrayText.ColorRecent, Dock = DockStyle.Top, Height = 26, ForeColor = Dim, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.BottomRight };
+        var recentTitle = new Label { Text = TrayText.ColorRecent, Dock = DockStyle.Top, Height = 26, ForeColor = Dim, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.BottomLeft };
         Controls.Add(_recent); Controls.Add(recentTitle); Controls.Add(_shades); Controls.Add(body); Controls.Add(head);
-        Deactivate += (_, _) => Hide();
+        // the picker's closing hands the front back to the window it took it from, a moment after this one is shown: that is not a click elsewhere
+        Deactivate += (_, _) => { if (Environment.TickCount64 - _shown > 700) Hide(); };
+        _settle.Tick += (_, _) => { _settle.Stop(); if (Visible && !ContainsFocus) Front(); };
         HandleCreated += (_, _) => { int dark = 1, round = 2; DwmSetWindowAttribute(Handle, 20, ref dark, 4); DwmSetWindowAttribute(Handle, 33 /* corner preference: round */, ref round, 4); };
     }
 
@@ -43,7 +45,7 @@ internal sealed class ColorForm : Form
         ShowColor(c);
         var area = Screen.FromPoint(Cursor.Position).WorkingArea; var size = new Size(LogicalToDeviceUnits(440), LogicalToDeviceUnits(300));
         Bounds = new Rectangle(Math.Clamp(Cursor.Position.X - size.Width / 2, area.X, area.Right - size.Width), Math.Clamp(Cursor.Position.Y + 24, area.Y, area.Bottom - size.Height), size.Width, size.Height);
-        base.Show(); Front();
+        _shown = Environment.TickCount64; base.Show(); Front(); _settle.Start();
     }
 
     private void ShowColor(Color c)
@@ -93,7 +95,7 @@ internal sealed class ColorForm : Form
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
     }
 
-    protected override void Dispose(bool disposing) { if (disposing) _tip.Dispose(); base.Dispose(disposing); }
+    protected override void Dispose(bool disposing) { if (disposing) { _tip.Dispose(); _settle.Dispose(); } base.Dispose(disposing); }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keys) { if (keys == Keys.Escape) { Hide(); return true; } return base.ProcessCmdKey(ref msg, keys); }
 

@@ -8,9 +8,10 @@ import { box } from "../groups.js";
 const lat = (s) => h("span", { class: "lat" }, s);
 const pickBtn = (kind, key, then) => h("button", { class: "btn", onclick: async () => { const p = await call("files.pick", { kind }); if (p?.length) then(p); } }, icon(kind === "folder" ? "folder" : "doc"), t(key));
 // Files sent from Explorer's right-click menu (through the host), by tool; each box takes its own when it is made
-const sent = {};
-export function shellFiles(list) { for (const r of list) sent[r.tool] = r.paths; }
-const take = (tool, use) => { const p = sent[tool]; if (p) { delete sent[tool]; queueMicrotask(() => use(p)); } };
+// (a box already on screen takes them at once: the page is not made again when it is the one shown)
+const sent = {}, live = {};
+export function shellFiles(list) { for (const r of list) { const b = live[r.tool]; if (b?.el.isConnected) b.use(r.paths); else sent[r.tool] = r.paths; } }
+const listen = (tool, use, el) => { live[tool] = { use, el }; const p = sent[tool]; if (p) { delete sent[tool]; queueMicrotask(() => use(p)); } return el; };
 const menuNote = () => h("p", { class: "note" }, t("Files_Menu_Note"));
 const shown = (paths) => paths.length === 1 ? lat(paths[0]) : t("Files_Picked_Many", paths.length);
 
@@ -39,9 +40,8 @@ export function lockBox(i) {
     if (r.error) toast(t("Files_Lock_CloseFailed", x.name, r.error), "fail"); else toast(t("Files_Lock_Closed", x.name));
     find();
   }
-  take("lock", use);
-  return box({ ico: "lock", cls: "p-tool", title: t("Files_Lock_Title"), sub: t("Files_Lock_Sub"), i, a: "locks",
-    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("files", "Files_PickFile", use), pickBtn("folder", "Files_PickFolder", use), h("span", { class: "grow" }), again), picked, msg, list, menuNote()] });
+  return listen("lock", use, box({ ico: "lock", cls: "p-tool", title: t("Files_Lock_Title"), sub: t("Files_Lock_Sub"), i, a: "locks",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("files", "Files_PickFile", use), pickBtn("folder", "Files_PickFolder", use), h("span", { class: "grow" }), again), picked, msg, list, menuNote()] }));
 }
 
 // ——— Pictures made smaller: the longest side down to a size, a new file beside each original ———
@@ -70,12 +70,11 @@ export function imageBox(i, onEvent) {
       ? h("small", { class: "fail" }, x.error === "format" ? t("Files_Img_Format") : x.error)
       : h("small", {}, lat(`${x.width}×${x.height} → ${x.newWidth}×${x.newHeight} · ${bytes(x.oldBytes)} → ${bytes(x.newBytes)}`), " ", lat(x.output))), h("span")));
   });
-  take("resize", use);
-  return box({ ico: "camera", cls: "p-tool", title: t("Files_Img_Title"), sub: t("Files_Img_Sub"), i, a: "images",
+  return listen("resize", use, box({ ico: "camera", cls: "p-tool", title: t("Files_Img_Title"), sub: t("Files_Img_Sub"), i, a: "images",
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("images", "Files_PickImages", use)), picked,
       h("div", { class: "fl-opts" }, h("label", {}, t("Files_Img_Size"), size, custom), h("label", {}, t("Files_Img_Quality"), quality)),
       h("div", { class: "btn-row" }, run), msg, list],
-    more: [h("p", { class: "note" }, t("Files_Img_Note")), menuNote()] });
+    more: [h("p", { class: "note" }, t("Files_Img_Note")), menuNote()] }));
 }
 
 // ——— Many files renamed: a preview of every new name first; the batch runs only when nothing clashes, and the last one can be undone ———
@@ -125,11 +124,11 @@ export function renameBox(i) {
     last();
   }
   const last = () => call("rename.last").then((x) => { undo.hidden = !x.count; undo.textContent = ""; undo.append(icon("refresh"), t("Files_Ren_Undo_N", x.count)); });
-  last(); take("rename", use);
-  return box({ ico: "doc", cls: "p-tool", title: t("Files_Ren_Title"), sub: t("Files_Ren_Sub"), wide: true, i, a: "rename",
+  last();
+  return listen("rename", use, box({ ico: "doc", cls: "p-tool", title: t("Files_Ren_Title"), sub: t("Files_Ren_Sub"), wide: true, i, a: "rename",
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, pickBtn("files", "Files_PickFile", use), pickBtn("folder", "Files_PickFolder", use), h("span", { class: "grow" }), undo), picked, mode,
       h("div", { class: "fl-opts" }, findRow, h("label", {}, replaceLabel, replace), startRow), flags, h("div", { class: "btn-row" }, run), msg, list],
-    more: [h("p", { class: "note" }, t("Files_Ren_Note")), menuNote()] });
+    more: [h("p", { class: "note" }, t("Files_Ren_Note")), menuNote()] }));
 }
 
 // ——— A file's checksum, to compare with the one on its download page ———
