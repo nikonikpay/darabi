@@ -6,7 +6,7 @@ import { setUnits } from "./format.js";
 import { loadHardware } from "./store.js";
 import { h, clear, icon, toast } from "./ui.js";
 import { LOGO_VIEWBOX, LOGO_PATHS } from "./logo.js";
-import { searchBox } from "./search.js";
+import { searchBox, mark as markBox } from "./search.js";
 import { isLocked, lockedPage, startAccess } from "./access.js";
 
 export const PAGES = [
@@ -201,6 +201,14 @@ async function start() {
   const quiet = (q) => { app.dataset.bench = q ? "on" : "off"; document.getElementById("bench-mode")?.toggleAttribute("hidden", !q); };
   on("quiet", quiet); call("app.quiet").then(quiet).catch(() => {});
   on("toast", (m) => toast(m.text, m.kind));
+  // Explorer's right-click entries (what holds it open, make pictures smaller, rename together): the host has the files; the tools page opens at that box with them
+  const shell = async () => {
+    const list = await call("files.pending").catch(() => null);
+    if (!list?.length) return;
+    (await import("./pages/files.js")).shellFiles(list);
+    go("tools"); markBox({ lock: "locks", resize: "images", rename: "rename" }[list[list.length - 1].tool]);
+  };
+  on("shellfiles", shell); shell();
   // A new release on the site marks the settings entry (the app update page is there); the host checks once, a while after start-up.
   const mark = (u) => index.querySelector(`a[data-family="${FAMILIES.length - 1}"]`)?.classList.toggle("has-update", ["Available", "Ready"].includes(u?.state));
   on("upd", mark); call("upd.state").then(mark).catch(() => {});

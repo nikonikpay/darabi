@@ -1,4 +1,4 @@
-using System.Text.Json; using System.Windows.Forms; using Mazesta.Core.Windows; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics.Windows; using Microsoft.Extensions.Logging;
+using System.Text.Json; using System.Windows.Forms; using Mazesta.Core.Windows; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics.Windows; using Microsoft.Extensions.Logging; using Mazesta.Core.Tray;
 namespace Mazesta.App;
 
 /// <summary>The file tools of the Windows tools page (what holds a file open, ...). A path reaches them only from a dialog the user picked it in.</summary>
@@ -8,6 +8,17 @@ public sealed partial class WebBridge
 
     private void RegisterFiles()
     {
+        // Explorer's right-click entries for these tools start the tray, with no UAC prompt (see ShellFiles); made at every start, so a moved copy or another language is put right
+        string tray = Path.Combine(AppContext.BaseDirectory, "MazestaTray.exe");
+        if (File.Exists(tray))
+            try { FileShellMenu.Set(tray, tool => Loc.Get("Files_Menu_" + tool)); }
+            catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException or IOException) { _log.LogWarning(e, "The file tools' right-click entries were not added"); }
+        // the tray has gathered a selection from Explorer: the window comes forward and the page takes the files (files.pending)
+        var shell = new EventWaitHandle(false, EventResetMode.AutoReset, ShellFiles.Event);
+        var wait = ThreadPool.RegisterWaitForSingleObject(shell, (_, _) => _window.Dispatcher.BeginInvoke(() => { _window.BringForward(); Push("shellfiles", null); }), null, Timeout.Infinite, false);
+        _cleanup.Add(() => { wait.Unregister(null); shell.Dispose(); });
+        Method("files.pending", _ => TakeShellFiles());
+
         // A dialog for files (several) or a folder; an empty list when the user closes it. What was picked is remembered, and the tools below act only on it.
         Method("files.pick", p =>
         {
@@ -130,6 +141,26 @@ public sealed partial class WebBridge
     }
 
     private CancellationTokenSource? _hashCts;
+
+    /// <summary>
+    /// The files Explorer's right-click entries sent (through the tray), taken once: each tool's paths that still exist, remembered as picked, so the
+    /// box acts on them as on files chosen in its own dialog - and still only when the user presses its button.
+    /// </summary>
+    private object TakeShellFiles()
+    {
+        string file = Path.Combine(_paths.DataRoot, "tray", ShellFiles.FileName); List<ShellFiles.Request> list;
+        try
+        {
+            if (!File.Exists(file)) return Array.Empty<object>();
+            list = JsonSerializer.Deserialize<List<ShellFiles.Request>>(File.ReadAllText(file)) ?? []; File.Delete(file);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { _log.LogWarning(e, "The right-click request could not be read"); return Array.Empty<object>(); }
+        var ok = list.Where(r => ShellFiles.Tools.Contains(r.Tool))
+            .Select(r => new { tool = r.Tool, paths = r.Paths.Where(x => Path.IsPathFullyQualified(x) && (File.Exists(x) || Directory.Exists(x))).ToList() }).Where(r => r.paths.Count > 0).ToList();
+        foreach (var r in ok) foreach (var x in r.paths) _picked.Add(x);
+        _log.LogInformation("Right-click request: {Requests}", string.Join(", ", ok.Select(r => $"{r.tool} {r.paths.Count}")));
+        return ok;
+    }
     private string RenameLog => Path.Combine(_paths.DataRoot, "rename", "last.json");
 
     /// <summary>The batch's files (a picked folder stands for the files directly in it, by name) and the rule the page sent, planned here.</summary>

@@ -4415,4 +4415,8 @@ Cancel: stop.</value></data>
   <data name="Help_Files_Space_Title" xml:space="preserve"><value>Shows what fills a drive, as WizTree does, in a window of its own: an NTFS drive is read straight from its file table in seconds. Folders as a tree, biggest first, each with its share of its folder; or the biggest files of the whole drive; or type to find files and folders by name, biggest first. Folders and files have Windows' own icons. Double-click a file to see it in Explorer, where you decide what to delete; nothing is deleted from the window.</value></data>
   <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>Right-click the tray icon and choose Where the disk space went, or press the button here; the Windows drive is read at once.|Pick another drive at the top, or Another folder.|Double-click a folder (or the right arrow) to open it; Biggest files lists the drive's largest files.|Type in the search box to find by name; double-click a file to show it in Explorer, right-click to copy its path.</value></data>
   <data name="Files_Space_Cancelled" xml:space="preserve"><value>Scan cancelled.</value></data>
+  <data name="Files_Menu_lock" xml:space="preserve"><value>What holds this open? (Mazesta)</value></data>
+  <data name="Files_Menu_resize" xml:space="preserve"><value>Make pictures smaller (Mazesta)</value></data>
+  <data name="Files_Menu_rename" xml:space="preserve"><value>Rename together (Mazesta)</value></data>
+  <data name="Files_Menu_Note" xml:space="preserve"><value>Also in Explorer's right-click menu (on Windows 11 under Show more options): select the files, right-click, and this box opens with them.</value></data>
 </root>

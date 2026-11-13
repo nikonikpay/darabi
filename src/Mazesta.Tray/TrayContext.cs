@@ -22,7 +22,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly PowerTimerMenu _power; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking; private FileSearch.FileSearchHost? _files; private readonly ToolStripMenuItem _search;
     // each program's volume: the panel is made on first use; the app opens it through a named event Windows waits on (nothing polls)
-    private readonly Colors.ColorHost _colors; private readonly ToolStripMenuItem _color;
+    private readonly Shell.ShellInbox _shell; private readonly Colors.ColorHost _colors; private readonly ToolStripMenuItem _color;
     private Space.SpaceForm? _space; private readonly EventWaitHandle _spaceSignal = new(false, EventResetMode.AutoReset, FileSearchSignals.Space); private readonly RegisteredWaitHandle _spaceWait;
     private Volume.VolumeForm? _mixer; private readonly EventWaitHandle _mixerSignal = new(false, EventResetMode.AutoReset, FileSearchSignals.Mixer); private readonly RegisteredWaitHandle _mixerWait; private readonly Control _ui = new();
     private LibreHardwareMonitorProvider? _sensors; private readonly object _sensorLock = new(); private readonly string _configFile;
@@ -50,6 +50,8 @@ internal sealed class TrayContext : ApplicationContext
         _search = new ToolStripMenuItem(TrayText.Search, null, (_, _) => _files?.Open());
         _ui.CreateControl();
         _spaceWait = ThreadPool.RegisterWaitForSingleObject(_spaceSignal, (_, _) => { try { _ui.BeginInvoke(ShowSpace); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
+        // Explorer's right-click entries for the file tools: a selection gathered here, then the app wakes (or starts) and opens that box with it
+        _shell = new Shell.ShellInbox(Path.Combine(paths.DataRoot, "tray", ShellFiles.FileName), () => { if (EventWaitHandle.TryOpenExisting(ShellFiles.Event, out var e)) using (e) e.Set(); else StartApp(""); });
         _colors = new Colors.ColorHost(Path.Combine(Path.GetDirectoryName(logFile) ?? "", "colors.txt"));
         _color = new ToolStripMenuItem(TrayText.Color, null, (_, _) => _colors.Pick());
         _mixerWait = ThreadPool.RegisterWaitForSingleObject(_mixerSignal, (_, _) => { try { _ui.BeginInvoke(ShowMixer); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
@@ -285,7 +287,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _power.Dispose(); _keys?.Dispose(); _files?.Dispose(); _mixerWait.Unregister(null); _mixerSignal.Dispose(); _mixer?.Dispose(); _spaceWait.Unregister(null); _spaceSignal.Dispose(); _space?.Dispose(); _colors.Dispose(); _ui.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _power.Dispose(); _keys?.Dispose(); _files?.Dispose(); _mixerWait.Unregister(null); _mixerSignal.Dispose(); _mixer?.Dispose(); _spaceWait.Unregister(null); _spaceSignal.Dispose(); _space?.Dispose(); _shell.Dispose(); _colors.Dispose(); _ui.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }
