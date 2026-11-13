@@ -26,6 +26,7 @@ export function val(text, cls = "num") {
 
 const ICONS = {
   search: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm9 16-4-4",
+  volume: "M4 9v6h4l5 4V5L8 9H4zm12-1a5 5 0 0 1 0 8m2.5-10.5a8.5 8.5 0 0 1 0 13",
   arrow: "M19 12H5m6-6-6 6 6 6",
   play: "M7 5v14l11-7z",
   stop: "M6 6h12v12H6z",

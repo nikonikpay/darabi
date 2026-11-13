@@ -21,6 +21,8 @@ internal sealed class TrayContext : ApplicationContext
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
     private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly PowerTimerMenu _power; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking; private FileSearch.FileSearchHost? _files; private readonly ToolStripMenuItem _search;
+    // each program's volume: the panel is made on first use; the app opens it through a named event Windows waits on (nothing polls)
+    private Volume.VolumeForm? _mixer; private readonly EventWaitHandle _mixerSignal = new(false, EventResetMode.AutoReset, FileSearchSignals.Mixer); private readonly RegisteredWaitHandle _mixerWait; private readonly Control _ui = new();
     private LibreHardwareMonitorProvider? _sensors; private readonly object _sensorLock = new(); private readonly string _configFile;
 
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
@@ -44,7 +46,9 @@ internal sealed class TrayContext : ApplicationContext
         _rgb = new RgbMenu(paths, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
         _fans = new FanMenu(paths, StartApp, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
         _search = new ToolStripMenuItem(TrayText.Search, null, (_, _) => _files?.Open());
-        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, _search, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
+        _ui.CreateControl();
+        _mixerWait = ThreadPool.RegisterWaitForSingleObject(_mixerSignal, (_, _) => { try { _ui.BeginInvoke(ShowMixer); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
+        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, _search, new ToolStripMenuItem(TrayText.Mixer, null, (_, _) => ShowMixer()), new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
             _status, new ToolStripSeparator(), new ToolStripMenuItem(TrayText.Exit, null, (_, _) => ExitThread())]);
         menu.Opening += (_, _) => { _overlay.Checked = OverlayShown(); _search.Visible = _files?.On == true; _search.Text = TrayText.SearchMenu(_files?.Shortcut); };
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
@@ -198,6 +202,8 @@ internal sealed class TrayContext : ApplicationContext
 
     private void Notify(string text) { _link = null; _icon.ShowBalloonTip(15000, TrayText.Title, text, ToolTipIcon.Warning); }
 
+    private void ShowMixer() { _mixer ??= new Volume.VolumeForm(); _mixer.Summon(); }
+
     private void ShowSummary()
     {
         if (_summary is { IsDisposed: false }) { _summary.WindowState = FormWindowState.Normal; _summary.Activate(); return; }
@@ -263,7 +269,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _power.Dispose(); _keys?.Dispose(); _files?.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _power.Dispose(); _keys?.Dispose(); _files?.Dispose(); _mixerWait.Unregister(null); _mixerSignal.Dispose(); _mixer?.Dispose(); _ui.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }

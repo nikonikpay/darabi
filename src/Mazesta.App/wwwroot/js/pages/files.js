@@ -201,6 +201,17 @@ export function searchBox(i) {
     body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, open), msg, how] });
 }
 
+// ——— Each program's volume: a panel of the tray, opened from here or from the tray icon's menu ———
+export function mixerBox(i) {
+  const msg = h("p", { class: "msg", "aria-live": "polite" });
+  const open = h("button", { class: "btn primary", onclick: async () => {
+    const r = await call("mixer.open");
+    msg.className = r.open ? "msg" : "msg fail"; msg.textContent = r.open ? "" : t("Files_Search_NoTray");
+  } }, icon("volume"), t("Files_Mixer_Open"));
+  return box({ ico: "volume", cls: "p-tool", title: t("Files_Mixer_Title"), sub: t("Files_Mixer_Sub"), i, a: "mixer",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, open), msg, h("p", { class: "note" }, t("Files_Mixer_How"))] });
+}
+
 // Bytes as people read them (1 KB = 1024 bytes, as Explorer shows), Latin digits in a .lat run.
 export function bytes(n) {
   const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0, v = n;

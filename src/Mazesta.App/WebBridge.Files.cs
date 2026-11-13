@@ -113,6 +113,8 @@ public sealed partial class WebBridge
         // ——— The quick file search lives in the tray (its index and window): the app only asks the tray to show it ———
         Method("search.open", _ => new { on = _config.FileSearch, key = Mazesta.Core.Tray.Hotkey.Normalize(_config.FileSearchKey) ?? Mazesta.Core.Tray.FileSearchSignals.DefaultKey,
             open = _config.FileSearch && SignalTray(Mazesta.Core.Tray.FileSearchSignals.Show) });
+        // each program's volume: the panel lives in the tray (it works with the app closed too)
+        Method("mixer.open", _ => new { open = SignalTray(Mazesta.Core.Tray.FileSearchSignals.Mixer) });
         Method("search.state", _ => new { on = _config.FileSearch, key = Mazesta.Core.Tray.Hotkey.Normalize(_config.FileSearchKey) ?? Mazesta.Core.Tray.FileSearchSignals.DefaultKey,
             tray = System.Diagnostics.Process.GetProcessesByName(Mazesta.Core.Tray.OverlaySignals.TrayProcess).Length > 0 });
 

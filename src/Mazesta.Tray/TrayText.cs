@@ -24,6 +24,14 @@ internal static class TrayText
     public const string AllGood = "مشکلی دیده نشد";
     public const string CheckFailed = "بررسی انجام نشد";
 
+    // each program's volume (Volume/VolumeForm)
+    public const string Mixer = "صدای برنامه‌ها";
+    public const string MixerDefault = "پیش‌فرض";
+    public const string MixerDevice = "صدای کل این خروجی";
+    public const string MixerWindows = "صداهای ویندوز";
+    public const string MixerNone = "هیچ برنامه‌ای روی این خروجی صدا ندارد.";
+    public const string MixerNoDevice = "هیچ خروجی صدایی پیدا نشد.";
+
     // the quick file search (FileSearch/SearchForm)
     public const string Search = "جستجوی فایل‌ها";
     public const string SearchTitle = "مازستا — جستجوی فایل";

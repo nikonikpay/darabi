@@ -105,6 +105,7 @@ public static class AppGuide
         T("tools", "rename", "Files_Ren_Title", "renames many files at once (find and replace, or a name and a number), with a preview and undo", null),
         T("tools", "checksum", "Files_Hash_Title", "a file's MD5, SHA-1 and SHA-256, compared with the one on its download page", null),
         T("tools", "search", "Files_Search_Title", "finds any file or folder on all drives by name in milliseconds as you type (the tray's index; Ctrl+Alt+F anywhere, even with the app closed); words, * and ? patterns; opens the file or its folder", null),
+        T("tools", "mixer", "Files_Mixer_Title", "each program's own volume and mute, and the output device's, in a panel beside the tray (also from the tray menu, with the app closed); another output can be chosen to set the programs on it", null),
         T("tools", "color", "Files_Color_Title", "picks a colour from anywhere on the screen (button or Win+Shift+C) with a magnifier; HEX copied, RGB and HSL shown, the recent ones kept", null),
         T("tools", "locks", "Files_Lock_Title", "which program holds a file or folder open (when Windows will not delete, move or rename it), and closing that program", null),
         T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null),
