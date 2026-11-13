@@ -57,7 +57,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0;
-        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0;
+        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0; var recent = new Queue<double>();
         try
         {
             while (total.Elapsed < duration)
@@ -79,7 +79,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                 {
                     // a half second with a check frame in it is not the scene's pace (the card idles while the check is read back): the last figure stands
                     if (checkTime == 0 || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
-                    double fps = lastFps; updateFrames = 0; updateClock.Restart(); checkTime = 0;
+                    recent.Enqueue(lastFps); if (recent.Count > 4) recent.Dequeue(); double fps = recent.Average(); updateFrames = 0;   // (the last two seconds averaged: the clock's dither at the power limit does not make the figure jump) updateClock.Restart(); checkTime = 0;
                     window.Title = $"Mazesta — GPU temperature — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
                     readout.Show(fps, request.Clock.UtcNow, total.Elapsed, duration, stats, $"{w} × {h} · check frames {checks} · errors {errors}", errors > 0);
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
@@ -116,17 +116,22 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
 internal sealed class FurStats
 {
     private const double Settle = 3;   // seconds
-    private readonly long _born = Stopwatch.GetTimestamp(); private long _last = Stopwatch.GetTimestamp(); private double _busyMs, _minMs = double.MaxValue, _maxMs;
+    // The slowest and quickest are rates over a quarter second, not of one frame: with two frames in flight a single frame's time is how the CPU
+    // happened to be scheduled (a late one is followed by an early one, thousands of FPS for a moment), not what the card drew.
+    private const double Window = 1.0;   // seconds
+    private readonly long _born = Stopwatch.GetTimestamp(); private long _last = Stopwatch.GetTimestamp(), _windowStart = Stopwatch.GetTimestamp(); private double _busyMs, _minFps = double.MaxValue, _maxFps; private int _inWindow;
     public long Frames { get; private set; }
-    public void Restart() => _last = Stopwatch.GetTimestamp();
+    public void Restart() { _last = _windowStart = Stopwatch.GetTimestamp(); _inWindow = 0; }
     public void Frame()
     {
-        long now = Stopwatch.GetTimestamp(); double ms = (now - _last) * 1000.0 / Stopwatch.Frequency; _last = now; Frames++; _busyMs += ms;
-        if (Stopwatch.GetElapsedTime(_born).TotalSeconds > Settle && ms > 0) { _minMs = Math.Min(_minMs, ms); _maxMs = Math.Max(_maxMs, ms); }
+        long now = Stopwatch.GetTimestamp(); double ms = (now - _last) * 1000.0 / Stopwatch.Frequency; _last = now; Frames++; _busyMs += ms; _inWindow++;
+        double span = (now - _windowStart) / (double)Stopwatch.Frequency; if (span < Window) return;
+        double fps = _inWindow / span; _windowStart = now; _inWindow = 0;
+        if (Stopwatch.GetElapsedTime(_born).TotalSeconds > Settle) { _minFps = Math.Min(_minFps, fps); _maxFps = Math.Max(_maxFps, fps); }
     }
     public double? Average => _busyMs > 0 ? Frames * 1000 / _busyMs : null;
-    public double? Slowest => _maxMs > 0 ? 1000 / _maxMs : null;
-    public double? Fastest => _minMs < double.MaxValue ? 1000 / _minMs : null;
+    public double? Slowest => _minFps < double.MaxValue ? _minFps : null;
+    public double? Fastest => _maxFps > 0 ? _maxFps : null;
 }
 
 /// <summary>The star's large readout, shared by the temperature test and its benchmark: core and hot spot with their traces, then the card's other

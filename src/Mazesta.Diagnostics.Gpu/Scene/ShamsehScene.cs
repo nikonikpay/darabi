@@ -19,7 +19,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
     /// way of reading; its layer count is set by what the gate's picture measured (see the commit that brought it).
     /// </summary>
     public const int Layers = 24;
-    public const int FurLayers = 680;   // set so the card, drawing as fast as it can, gives about 200 FPS at 1080p (RTX 3090: 193-209; 256 layers gave 437, 1100 gave 126)
+    public const int FurLayers = 855;   // set so the card, drawing as fast as it can, gives about 200 FPS at 1080p, with the camera as it is (RTX 3090 over 90 s: 680 gave 246, 830 gave 211, 880 gave 192)
     public const int Samples = 4;   // multisampling of the HDR frame: the gate's edges and the blades' outlines
     private const float Spread = 1f, FurLength = 0.07f;
     private const Format LightFormat = Format.R11G11B10_Float;
@@ -164,11 +164,10 @@ internal sealed unsafe class ShamsehScene : IDisposable
         return t;
     }
 
-    // The star swings a little about facing the camera, never turning edge on: its fur is most of the frame's work, and turning it right round
-    // made that work swing with the area it covered (RTX 3090: 190 FPS face on, 250 edge on). Over this swing (12-23 degrees) the frame rate moves by about 1%.
+    // The gate sways about its own vertical axis, 6 to 17 degrees off facing the camera, both carved pillars in view (Rx = 0 keeps the turf level): the area it covers, and so the card's work, hardly moves.
     private Constants At(float time) => new()
     {
-        Ry = 0.3f + 0.1f * MathF.Sin(time * 0.35f), Rx = 0.06f * MathF.Sin(time * 0.23f), Aspect = Width / (float)Height, Layers = Layers, FurLayers = FurLayers, Spread = Spread, FurLength = FurLength, Time = time, Size = new(Width, Height)
+        Ry = -0.2f + 0.1f * MathF.Sin(time * 0.25f), Rx = 0, Aspect = Width / (float)Height, Layers = Layers, FurLayers = FurLayers, Spread = Spread, FurLength = FurLength, Time = time, Size = new(Width, Height)
     };
 
     /// <summary>The frame at <paramref name="time"/> into render target view <paramref name="rtv"/> (<paramref name="target"/>, which is in <paramref name="state"/> before and after).</summary>
