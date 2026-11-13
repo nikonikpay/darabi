@@ -73,7 +73,7 @@ export function mount(el) {
       box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
         body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })),
-    section("Tools_Sec_Files", searchBox(7), spaceBox(8, (ev, fn) => offs.push(on(ev, fn))), lockBox(9), imageBox(10, (ev, fn) => offs.push(on(ev, fn))), renameBox(11), hashBox(12, (ev, fn) => offs.push(on(ev, fn))), colorBox(13, (ev, fn) => offs.push(on(ev, fn))), mixerBox(14)));
+    section("Tools_Sec_Files", searchBox(7), spaceBox(8, (ev, fn) => offs.push(on(ev, fn))), lockBox(9), imageBox(10, (ev, fn) => offs.push(on(ev, fn))), renameBox(11), hashBox(12, (ev, fn) => offs.push(on(ev, fn))), colorBox(13), mixerBox(14)));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;

@@ -11,4 +11,6 @@ public static class FileSearchSignals
     public const string DefaultKey = "Ctrl+Alt+F";
     /// <summary>Opens the tray's per-program volume panel.</summary>
     public const string Mixer = @"Local\Mazesta.Mixer.Show";
+    /// <summary>Starts the tray's screen colour picker.</summary>
+    public const string ColorPick = @"Local\Mazesta.Color.Pick";
 }

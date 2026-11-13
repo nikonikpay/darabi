@@ -106,9 +106,8 @@ public sealed partial class WebBridge
         Method("hash.cancel", _ => { _hashCts?.Cancel(); return null; });
         Method("hash.compare", p => new { kind = Checksum.KindOf(Str(p, "text")), clean = Checksum.Clean(Str(p, "text")) });
 
-        // ——— A colour from anywhere on the screen: the window steps aside, the picker shows the screen still, the colour's HEX is copied ———
-        MethodAsync("color.pick", async _ => await PickColorAsync(true).ConfigureAwait(true));
-        Method("color.key", _ => new { held = _window.ColorKeyHeld });
+        // ——— A colour from anywhere on the screen: the tray's picker (it works with the app closed, and shows the pick in a window of its own) ———
+        Method("color.pick", _ => new { open = SignalTray(Mazesta.Core.Tray.FileSearchSignals.ColorPick) });
 
         // ——— The quick file search lives in the tray (its index and window): the app only asks the tray to show it ———
         Method("search.open", _ => new { on = _config.FileSearch, key = Mazesta.Core.Tray.Hotkey.Normalize(_config.FileSearchKey) ?? Mazesta.Core.Tray.FileSearchSignals.DefaultKey,
@@ -176,31 +175,6 @@ public sealed partial class WebBridge
         if (!EventWaitHandle.TryOpenExisting(name, out var e)) return false;
         using (e) e.Set();
         return true;
-    }
-
-    private bool _picking;
-
-    /// <summary>The shortcut's pick: the page gets the colour as an event, to add it to its recent ones.</summary>
-    internal async void PickColorByKey() { if (await PickColorAsync(_window.InFront).ConfigureAwait(true) is { } c) Push("colorpicked", c); }
-
-    private async Task<object?> PickColorAsync(bool stepAside)
-    {
-        if (_picking) return null;
-        _picking = true; var state = _window.WindowState;
-        try
-        {
-            if (stepAside && state != FormWindowState.Minimized) { _window.WindowState = FormWindowState.Minimized; await Task.Delay(300).ConfigureAwait(true); }   // past the minimise animation
-            var c = ColorPicker.Pick();
-            if (c is not { } k) return null;
-            string hex = ColorText.Hex(k.R, k.G, k.B);
-            try { Clipboard.SetText(hex); } catch (System.Runtime.InteropServices.ExternalException) { /* another program holds the clipboard; the page still shows it */ }
-            return new { hex, rgb = ColorText.Rgb(k.R, k.G, k.B), hsl = ColorText.Hsl(k.R, k.G, k.B) };
-        }
-        finally
-        {
-            _picking = false;
-            if (stepAside && state != FormWindowState.Minimized) { _window.WindowState = state; _window.BringForward(); }
-        }
     }
 
     private (SpaceNode Root, TopFiles Top)? _space; private CancellationTokenSource? _spaceCts, _hashCts;

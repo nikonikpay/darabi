@@ -32,6 +32,14 @@ internal static class TrayText
     public const string MixerNone = "هیچ برنامه‌ای روی این خروجی صدا ندارد.";
     public const string MixerNoDevice = "هیچ خروجی صدایی پیدا نشد.";
 
+    // the screen colour picker (Colors/ColorForm)
+    public const string Color = "انتخاب رنگ از صفحه";
+    public const string ColorAgain = "انتخاب دوباره";
+    public const string ColorCopy = "کپی";
+    public const string ColorCopied = "کپی شد";
+    public const string ColorRecent = "رنگ‌های اخیر (کلیک: کپی HEX)";
+    public static string ColorMenu(string? key) => key is null ? Color : $"{Color}  ({key})";
+
     // the quick file search (FileSearch/SearchForm)
     public const string Search = "جستجوی فایل‌ها";
     public const string SearchTitle = "مازستا — جستجوی فایل";

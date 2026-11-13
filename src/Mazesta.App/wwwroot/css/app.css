@@ -1905,8 +1905,3 @@ div.findings { max-height: none; overflow: visible; }
 .fl-check { display: flex !important; align-items: center; gap: 8px; }
 .fl-hash dd { overflow-wrap: anywhere; }
 .fl-hash + .field { width: 100%; box-sizing: border-box; margin-top: 10px; }
-.fl-color { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.fl-codes { display: flex; flex-wrap: wrap; gap: 6px; }
-.fl-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.fl-swatch { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--rule); padding: 0; cursor: pointer; }
-.fl-swatch.big { width: 48px; height: 48px; cursor: default; }

@@ -1,5 +1,5 @@
 using System.Drawing; using System.Windows.Forms; using System.Drawing.Drawing2D; using Mazesta.Core.Windows;
-namespace Mazesta.App;
+namespace Mazesta.Tray.Colors;
 
 /// <summary>
 /// The screen colour picker: the whole screen (every monitor) is captured once and shown still in a borderless window over it, with a
