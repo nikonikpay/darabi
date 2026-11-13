@@ -4330,25 +4330,6 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Help_Files_Lock_Title" xml:space="preserve"><value>نشان می‌دهد کدام برنامه‌ها یک فایل یا فایل‌های یک پوشه را باز نگه داشته‌اند، همان‌طور که خود ویندوز گزارش می‌دهد، تا بدانید پیش از پاک کردن، جابه‌جا کردن یا تغییر نام چه چیزی را ببندید. برنامه را می‌شود از همین‌جا بست؛ سرویس‌ها و فرایندهای حیاتی ویندوز بسته نمی‌شوند.</value></data>
   <data name="HelpHow_Files_Lock_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|«انتخاب فایل» یا «انتخاب پوشه» را بزنید و همانی را انتخاب کنید که ویندوز رهایش نمی‌کند.|فهرست را بخوانید؛ کارتان را در آن برنامه ذخیره کنید و آن را ببندید یا «بستن» را بزنید.|«بررسی دوباره» را بزنید؛ وقتی هیچ برنامه‌ای آن را نگه نداشت، پاک، جابه‌جا یا تغییر نامش دهید.</value></data>
   <data name="Files_Space_Title" xml:space="preserve"><value>فضای دیسک کجا رفته؟</value></data>
-  <data name="Files_Space_Sub" xml:space="preserve"><value>یک درایو یا پوشه را بررسی کنید و به بزرگ‌ترین پوشه‌هایش بروید</value></data>
-  <data name="Files_Space_Free" xml:space="preserve"><value>{0} آزاد از {1}</value></data>
-  <data name="Files_Space_Busy" xml:space="preserve"><value>یک بررسی در حال انجام است.</value></data>
-  <data name="Files_Space_Scanning" xml:space="preserve"><value>در حال بررسی: {0} فایل، تا اینجا {1}…</value></data>
-  <data name="Files_Space_Done" xml:space="preserve"><value>بررسی تمام شد. روی هر پوشه بزنید تا داخلش بروید.</value></data>
-  <data name="Files_Space_Cancelled" xml:space="preserve"><value>بررسی لغو شد.</value></data>
-  <data name="Files_Space_Failed" xml:space="preserve"><value>بررسی متوقف شد: {0}</value></data>
-  <data name="Files_Space_Up" xml:space="preserve"><value>بالاتر</value></data>
-  <data name="Files_Space_Open" xml:space="preserve"><value>باز کردن در اکسپلورر</value></data>
-  <data name="Files_Space_Show" xml:space="preserve"><value>نشان بده</value></data>
-  <data name="Files_Space_Files" xml:space="preserve"><value>{0} فایل</value></data>
-  <data name="Files_Space_Unread" xml:space="preserve"><value>خوانده نشد</value></data>
-  <data name="Files_Space_AtLeast" xml:space="preserve"><value>دست‌کم</value></data>
-  <data name="Files_Space_Others" xml:space="preserve"><value>پوشه‌های دیگر:</value></data>
-  <data name="Files_Space_Here" xml:space="preserve"><value>فایل‌های خود این پوشه:</value></data>
-  <data name="Files_Space_Biggest" xml:space="preserve"><value>بزرگ‌ترین فایل‌ها</value></data>
-  <data name="Files_Space_Note" xml:space="preserve"><value>اندازه‌ها حجم خود فایل‌هاست، مثل اکسپلورر. پوشه‌هایی که ویندوز اجازهٔ خواندنشان را نمی‌دهد علامت می‌خورند و اندازه‌شان معلوم نیست. میان‌برهای پوشه (junction) و فایل‌های ابری که فقط آنلاین هستند حساب نمی‌شوند. پوشهٔ WinSxS ویندوز بزرگ‌تر از واقع دیده می‌شود، چون فایل‌هایش مشترک‌اند.</value></data>
-  <data name="Help_Files_Space_Title" xml:space="preserve"><value>یک درایو یا پوشه را بررسی می‌کند و نشان می‌دهد کدام پوشه‌ها و فایل‌ها فضایش را گرفته‌اند، از بزرگ به کوچک، تا ببینید چه چیزی دیسک را پر کرده و آن را در اکسپلورر باز کنید. از اینجا چیزی پاک نمی‌شود.</value></data>
-  <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>صفحهٔ ابزارهای ویندوز را باز کنید و به بخش فایل‌ها و صفحه بروید.|روی یک درایو یا «انتخاب پوشه» بزنید و صبر کنید تا بررسی تمام شود (یک درایو کامل یک دقیقه یا بیشتر).|روی بزرگ‌ترین پوشه بزنید تا داخلش بروید؛ «بالاتر» برمی‌گرداند.|«جزئیات بیشتر» را باز کنید تا بزرگ‌ترین فایل‌ها را ببینید؛ «نشان بده» اکسپلورر را روی آن باز می‌کند تا خودتان تصمیم بگیرید چه چیزی پاک شود.</value></data>
   <data name="Files_PickImages" xml:space="preserve"><value>انتخاب عکس‌ها</value></data>
   <data name="Files_Img_Title" xml:space="preserve"><value>کوچک کردن عکس‌ها</value></data>
   <data name="Files_Img_Sub" xml:space="preserve"><value>برای فرستادن در پیام‌رسان یا ایمیل: یک نسخهٔ کوچک‌تر کنار هر عکس، بدون دست زدن به اصل آن</value></data>
@@ -4428,4 +4409,10 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Files_Color_How" xml:space="preserve"><value>Win+Shift+C در هر جای ویندوز، حتی وقتی برنامه بسته است (اگر برنامهٔ دیگری مثل PowerToys آن را گرفته باشد Ctrl+Alt+C)، یا از منوی آیکون سینی. کد HEX کپی می‌شود و پنجره‌ای کوچک کدهای دیگر رنگ، سایه‌های روشن‌تر و تیره‌ترش و رنگ‌های اخیر را نشان می‌دهد.</value></data>
   <data name="Help_Files_Color_Title" xml:space="preserve"><value>رنگ هر نقطه از صفحه را با ذره‌بین برمی‌دارد و کد HEX آن را کپی می‌کند. بعد پنجره‌ای کوچک و جدا آن را با کدهای RGB و HSL (هرکدام با دکمهٔ کپی)، دو سایهٔ روشن‌تر و دو سایهٔ تیره‌تر و ۲۰ رنگ آخر نشان می‌دهد. در سینی کار می‌کند، پس Win+Shift+C حتی وقتی برنامه بسته است کار می‌کند (اگر برنامهٔ دیگری مثل PowerToys آن را گرفته باشد Ctrl+Alt+C).</value></data>
   <data name="HelpHow_Files_Color_Title" xml:space="preserve"><value>در هر جایی Win+Shift+C (یا Ctrl+Alt+C) را بزنید، از منوی آیکون سینی انتخابش کنید یا دکمهٔ همین‌جا را بزنید.|نشانگر را روی رنگ ببرید؛ ذره‌بین پیکسل‌ها و کد رنگ را نشان می‌دهد.|کلیک کنید (یا Enter) تا رنگ برداشته شود؛ Esc لغو می‌کند.|کد HEX کپی شده است؛ در پنجره‌ای که باز می‌شود «کپی» کنار RGB یا HSL آن‌ها را کپی می‌کند و کلیک روی یک سایه یا رنگ اخیر همان را نشان می‌دهد.</value></data>
+  <data name="Files_Space_Sub" xml:space="preserve"><value>پوشه‌ها و فایل‌های یک درایو به ترتیب حجم، در پنجره‌ای جدا، با جستجو</value></data>
+  <data name="Files_Space_Open" xml:space="preserve"><value>باز کردن پنجرهٔ فضای دیسک</value></data>
+  <data name="Files_Space_Note" xml:space="preserve"><value>در منوی آیکون سینی هم هست، حتی وقتی برنامه بسته است. درایو NTFS مستقیم از جدول فایل‌هایش خوانده می‌شود، پس حتی یک درایو پر چند ثانیه طول می‌کشد؛ درایو دیگر یا پوشه‌ای که انتخاب کنید پیمایش می‌شود. حجم‌ها همان اندازه‌ای است که Explorer نشان می‌دهد؛ فایلی که چند نام دارد (WinSxS ویندوز) یک بار شمرده می‌شود. از آنجا چیزی پاک نمی‌شود.</value></data>
+  <data name="Help_Files_Space_Title" xml:space="preserve"><value>نشان می‌دهد چه چیزی درایو را پر کرده، مثل WizTree، در پنجره‌ای جدا: درایو NTFS مستقیم از جدول فایل‌هایش در چند ثانیه خوانده می‌شود. پوشه‌ها به شکل درخت، بزرگ‌ترین اول و هرکدام با سهمش از پوشهٔ بالایی؛ یا بزرگ‌ترین فایل‌های کل درایو؛ یا با تایپ، فایل‌ها و پوشه‌ها را به نام پیدا کنید، بزرگ‌ترین اول. پوشه‌ها و فایل‌ها آیکون خود ویندوز را دارند. با دوبار کلیک روی فایل در Explorer نشانش می‌دهد تا خودتان دربارهٔ پاک کردن تصمیم بگیرید؛ از خود پنجره چیزی پاک نمی‌شود.</value></data>
+  <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>روی آیکون سینی راست‌کلیک کنید و «فضای دیسک کجا رفته» را بزنید، یا دکمهٔ همین‌جا را؛ درایو ویندوز همان لحظه خوانده می‌شود.|از بالا درایو دیگری یا «پوشه‌ای دیگر» را انتخاب کنید.|با دوبار کلیک (یا کلید جهت راست) پوشه را باز کنید؛ «بزرگ‌ترین فایل‌ها» بزرگ‌ترین فایل‌های درایو را نشان می‌دهد.|در کادر جستجو تایپ کنید تا به نام پیدا شود؛ با دوبار کلیک فایل در Explorer نشان داده می‌شود و با راست‌کلیک مسیرش کپی می‌شود.</value></data>
+  <data name="Files_Space_Cancelled" xml:space="preserve"><value>بررسی لغو شد.</value></data>
 </root>

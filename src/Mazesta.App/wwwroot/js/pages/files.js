@@ -205,39 +205,13 @@ export function bytes(n) {
   return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
 }
 
-// ——— Where the disk space went: scan a drive or a folder, then walk into the biggest folders ———
-export function spaceBox(i, onEvent) {
-  let at = [];
-  const drives = h("div", { class: "btn-row", style: { marginTop: 0 } }), msg = h("p", { class: "msg", "aria-live": "polite" });
-  const crumb = h("div", { class: "fl-crumb" }), list = h("ul", { class: "fl-list fl-space" }), top = h("ul", { class: "fl-list" });
-  const cancel = h("button", { class: "btn stop", hidden: true, onclick: () => call("space.cancel") }, icon("stop"), t("Test_Cancel"));
-  const start = async (r) => { at = []; list.replaceChildren(); top.replaceChildren(); crumb.replaceChildren(); try { await call("space.scan", { root: r }); cancel.hidden = false; msg.className = "msg"; msg.textContent = t("Tools_Working"); } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); } };
-  call("space.drives").then((ds) => drives.replaceChildren(...ds.map((d) => h("button", { class: "btn", onclick: () => start(d.root) }, icon("drive"), lat(d.root), " ",
-    h("span", { class: "caption" }, t("Files_Space_Free", bytes(d.free), bytes(d.total))))), pickBtn("folder", "Files_PickFolder", (p) => start(p[0]))));
-  const sizeText = (x) => (x.unread ? t("Files_Space_Unread") : (x.partUnread ? t("Files_Space_AtLeast") + " " : "") + bytes(x.size));
-  async function show() {
-    const r = await call("space.list", { at });
-    if (!r) return;
-    crumb.replaceChildren(...(at.length ? [h("button", { class: "btn quiet", onclick: () => { at = at.slice(0, -1); show(); } }, icon("arrow"), t("Files_Space_Up"))] : []), lat(r.path), " ",
-      h("span", { class: "caption" }, sizeText(r), " · ", t("Files_Space_Files", r.files)), h("button", { class: "btn quiet", onclick: () => call("space.open", { at }) }, icon("popout"), t("Files_Space_Open")));
-    const max = Math.max(1, ...r.children.map((c) => c.size), r.here);
-    const bar = (v) => h("i", { class: "fl-bar", style: { "--w": v / max } });
-    list.replaceChildren(...r.children.map((c) => h("li", { class: c.files ? "go" : "", onclick: c.files ? () => { at = [...at, c.name]; show(); } : null },
-      h("div", {}, h("b", {}, lat(c.name)), " ", h("span", { class: "caption" }, sizeText(c)), bar(c.size)), c.files ? icon("chevronend") : h("span"))),
-      ...(r.others ? [h("li", {}, h("div", {}, h("span", { class: "caption" }, t("Files_Space_Others"), " ", lat(bytes(r.others))), bar(r.others)), h("span"))] : []),
-      ...(r.here ? [h("li", {}, h("div", {}, h("span", { class: "caption" }, t("Files_Space_Here"), " ", lat(bytes(r.here))), bar(r.here)), h("span"))] : []));
-    if (r.top) top.replaceChildren(...r.top.map((f) => h("li", {}, h("div", {}, lat(bytes(f.size)), h("small", {}, lat(f.path))),
-      h("button", { class: "btn quiet", onclick: () => call("space.open", { file: f.path }) }, icon("popout"), t("Files_Space_Show")))));
-  }
-  onEvent("space", (s) => {
-    cancel.hidden = !s.busy;
-    if (s.busy) { msg.className = "msg"; msg.textContent = t("Files_Space_Scanning", s.files, bytes(s.bytes)); }
-    else if (s.done) { msg.className = "msg ok"; msg.textContent = t("Files_Space_Done"); show(); }
-    else if (s.cancelled) { msg.className = "msg"; msg.textContent = t("Files_Space_Cancelled"); }
-    else if (s.error) { msg.className = "msg fail"; msg.textContent = t("Files_Space_Failed", s.error); }
-  });
-  show();   // a scan finished earlier in this session is shown again
-  return box({ ico: "drive", cls: "p-tool", title: t("Files_Space_Title"), sub: t("Files_Space_Sub"), wide: true, i, a: "space",
-    body: [drives, h("div", { class: "btn-row" }, msg, h("span", { class: "grow" }), cancel), crumb, list],
-    more: [h("h3", { class: "fl-h" }, t("Files_Space_Biggest")), top, h("p", { class: "note" }, t("Files_Space_Note"))] });
+// ——— Where the disk space went: a window of the tray's, opened from here or from the tray icon's menu ———
+export function spaceBox(i) {
+  const msg = h("p", { class: "msg", "aria-live": "polite" });
+  const open = h("button", { class: "btn primary", onclick: async () => {
+    const r = await call("space.open");
+    msg.className = r.open ? "msg" : "msg fail"; msg.textContent = r.open ? "" : t("Files_Search_NoTray");
+  } }, icon("drive"), t("Files_Space_Open"));
+  return box({ ico: "drive", cls: "p-tool", title: t("Files_Space_Title"), sub: t("Files_Space_Sub"), i, a: "space",
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, open), msg, h("p", { class: "note" }, t("Files_Space_Note"))] });
 }

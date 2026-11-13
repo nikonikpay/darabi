@@ -40,6 +40,23 @@ internal static class TrayText
     public const string ColorRecent = "رنگ‌های اخیر (کلیک: کپی HEX)";
     public static string ColorMenu(string? key) => key is null ? Color : $"{Color}  ({key})";
 
+    // where the disk space went (Space/SpaceForm)
+    public const string Space = "فضای دیسک کجا رفته";
+    public const string SpaceFind = "جستجوی نام فایل یا پوشه…";
+    public const string SpaceTree = "درخت پوشه‌ها";
+    public const string SpaceBiggest = "بزرگ‌ترین فایل‌ها";
+    public const string SpaceAgain = "خواندن دوباره";
+    public const string SpaceFolder = "پوشه‌ای دیگر…";
+    public const string SpaceShare = "سهم";
+    public const string SpaceFiles = "فایل‌ها";
+    public const string SpaceUnread = "خوانده نشد";
+    public static string SpaceFree(string free, string total) => $"{free} آزاد از {total}";
+    public static string SpaceReading(string root, int? percent) => percent is { } p ? $"در حال خواندن {root} … {p}%" : $"در حال خواندن {root} …";
+    public static string SpaceWalking(string root, long files) => string.Create(CultureInfo.InvariantCulture, $"در حال خواندن {root} … {files:N0} فایل");
+    public static string SpaceDone(string size, int files, double seconds, bool table) => string.Create(CultureInfo.InvariantCulture, $"{size} در {files:N0} فایل · خوانده‌شده در {seconds:0.0} ثانیه{(table ? " از جدول فایل‌های درایو" : "")}");
+    public static string SpaceFound(int total, int shown) => total > shown ? string.Create(CultureInfo.InvariantCulture, $"{total:N0} مورد پیدا شد؛ {shown:N0} بزرگ‌ترین نشان داده شده‌اند") : string.Create(CultureInfo.InvariantCulture, $"{total:N0} مورد");
+    public static string SpaceFailed(string why) => $"خوانده نشد: {why}";
+
     // the quick file search (FileSearch/SearchForm)
     public const string Search = "جستجوی فایل‌ها";
     public const string SearchTitle = "مازستا — جستجوی فایل";

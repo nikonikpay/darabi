@@ -4330,25 +4330,6 @@ Cancel: stop.</value></data>
   <data name="Help_Files_Lock_Title" xml:space="preserve"><value>Shows which programs hold a file or the files of a folder open, as Windows itself reports them, so you know what to close before deleting, moving or renaming it. A program can be closed from here; Windows services and critical processes cannot.</value></data>
   <data name="HelpHow_Files_Lock_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press Choose files or Choose a folder and pick the one Windows will not let go.|Read the list; save your work in that program, then close it there or press Close it.|Press Check again; when no program holds it, delete, move or rename it.</value></data>
   <data name="Files_Space_Title" xml:space="preserve"><value>Where did the disk space go?</value></data>
-  <data name="Files_Space_Sub" xml:space="preserve"><value>Scan a drive or folder and walk into its biggest folders</value></data>
-  <data name="Files_Space_Free" xml:space="preserve"><value>{0} free of {1}</value></data>
-  <data name="Files_Space_Busy" xml:space="preserve"><value>A scan is already running.</value></data>
-  <data name="Files_Space_Scanning" xml:space="preserve"><value>Scanning: {0} files, {1} so far…</value></data>
-  <data name="Files_Space_Done" xml:space="preserve"><value>Scan finished. Click a folder to go into it.</value></data>
-  <data name="Files_Space_Cancelled" xml:space="preserve"><value>Scan cancelled.</value></data>
-  <data name="Files_Space_Failed" xml:space="preserve"><value>The scan stopped: {0}</value></data>
-  <data name="Files_Space_Up" xml:space="preserve"><value>Up</value></data>
-  <data name="Files_Space_Open" xml:space="preserve"><value>Open in Explorer</value></data>
-  <data name="Files_Space_Show" xml:space="preserve"><value>Show</value></data>
-  <data name="Files_Space_Files" xml:space="preserve"><value>{0} files</value></data>
-  <data name="Files_Space_Unread" xml:space="preserve"><value>not readable</value></data>
-  <data name="Files_Space_AtLeast" xml:space="preserve"><value>at least</value></data>
-  <data name="Files_Space_Others" xml:space="preserve"><value>Other folders:</value></data>
-  <data name="Files_Space_Here" xml:space="preserve"><value>Files in this folder itself:</value></data>
-  <data name="Files_Space_Biggest" xml:space="preserve"><value>Biggest files</value></data>
-  <data name="Files_Space_Note" xml:space="preserve"><value>Sizes are what the files hold, as Explorer shows them. Folders Windows does not let anyone read are marked; their size is not known. Shortcuts to other folders (junctions) and cloud files kept only online are not counted. Windows' own WinSxS folder reads bigger than it is, because its files are shared.</value></data>
-  <data name="Help_Files_Space_Title" xml:space="preserve"><value>Scans a drive or a folder and shows which folders and files take its space, biggest first, so you can see what fills the disk and open it in Explorer. Nothing is deleted from here.</value></data>
-  <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>Open Windows tools and find the Files and screen section.|Press a drive, or Choose a folder, and wait for the scan (a full drive takes a minute or more).|Click the biggest folder to go into it; Up goes back.|Open details to see the biggest files; Show opens Explorer at one, where you decide what to delete.</value></data>
   <data name="Files_PickImages" xml:space="preserve"><value>Choose pictures</value></data>
   <data name="Files_Img_Title" xml:space="preserve"><value>Make pictures smaller</value></data>
   <data name="Files_Img_Sub" xml:space="preserve"><value>For sending in a messenger or an e-mail: a smaller copy beside each picture, the original untouched</value></data>
@@ -4428,4 +4409,10 @@ Cancel: stop.</value></data>
   <data name="Files_Color_How" xml:space="preserve"><value>Win+Shift+C anywhere in Windows, even with the app closed (Ctrl+Alt+C when another program, such as PowerToys, holds Win+Shift+C), or the tray icon's menu. The HEX is copied and a small window shows the colour's other codes, its shades and the last colours picked.</value></data>
   <data name="Help_Files_Color_Title" xml:space="preserve"><value>Picks the colour of any point on the screen with a magnifier and copies its HEX code. A small window of its own then shows it with RGB and HSL (each with a copy button), two lighter and two darker shades, and the last 20 colours picked. It lives in the tray, so Win+Shift+C works with the app closed too (Ctrl+Alt+C when another program, such as PowerToys, holds Win+Shift+C).</value></data>
   <data name="HelpHow_Files_Color_Title" xml:space="preserve"><value>Press Win+Shift+C (or Ctrl+Alt+C) anywhere, choose it from the tray icon's menu, or press the button here.|Move the pointer onto the colour; the magnifier shows the pixels and the colour's code.|Click (or Enter) to pick it; Esc cancels.|The HEX is copied; in the window that opens, Copy beside RGB or HSL copies those, a shade or a recent colour shows that one.</value></data>
+  <data name="Files_Space_Sub" xml:space="preserve"><value>A drive's folders and files by size, in a window of its own, with a search</value></data>
+  <data name="Files_Space_Open" xml:space="preserve"><value>Open the disk space window</value></data>
+  <data name="Files_Space_Note" xml:space="preserve"><value>Also in the tray icon's menu, with the app closed too. An NTFS drive is read straight from its file table, so even a full drive takes seconds; another drive, or a folder you choose, is walked. Sizes are what the files hold, as Explorer shows them; a file with several names (Windows' WinSxS) is counted once. Nothing is deleted from there.</value></data>
+  <data name="Help_Files_Space_Title" xml:space="preserve"><value>Shows what fills a drive, as WizTree does, in a window of its own: an NTFS drive is read straight from its file table in seconds. Folders as a tree, biggest first, each with its share of its folder; or the biggest files of the whole drive; or type to find files and folders by name, biggest first. Folders and files have Windows' own icons. Double-click a file to see it in Explorer, where you decide what to delete; nothing is deleted from the window.</value></data>
+  <data name="HelpHow_Files_Space_Title" xml:space="preserve"><value>Right-click the tray icon and choose Where the disk space went, or press the button here; the Windows drive is read at once.|Pick another drive at the top, or Another folder.|Double-click a folder (or the right arrow) to open it; Biggest files lists the drive's largest files.|Type in the search box to find by name; double-click a file to show it in Explorer, right-click to copy its path.</value></data>
+  <data name="Files_Space_Cancelled" xml:space="preserve"><value>Scan cancelled.</value></data>
 </root>

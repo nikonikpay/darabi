@@ -13,4 +13,6 @@ public static class FileSearchSignals
     public const string Mixer = @"Local\Mazesta.Mixer.Show";
     /// <summary>Starts the tray's screen colour picker.</summary>
     public const string ColorPick = @"Local\Mazesta.Color.Pick";
+    /// <summary>Opens the tray's disk-space window.</summary>
+    public const string Space = @"Local\Mazesta.Space.Show";
 }

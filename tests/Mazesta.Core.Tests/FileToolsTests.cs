@@ -16,14 +16,26 @@ public class FileToolsTests
 
     [Fact] public void A_folders_size_is_everything_under_it_biggest_first_and_an_unread_folder_marks_its_parents()
     {
-        var root = new SpaceNode(@"C:\"); var users = root.Add("Users"); var win = root.Add("Windows"); var me = users.Add("me"); var locked = users.Add("Locked");
-        me.AddFile(700); me.AddFile(300); win.AddFile(500); root.AddFile(10); locked.Unread = true;
-        root.Seal();
-        Assert.Equal((1510L, 4L), (root.Size, root.Files)); Assert.Equal(1000, users.Size);
-        Assert.Equal(["Users", "Windows"], root.Children.Select(c => c.Name));
-        Assert.True(users.PartUnread); Assert.True(root.PartUnread); Assert.False(win.PartUnread); Assert.True(locked.Unread); Assert.False(locked.PartUnread);
-        Assert.Same(me, root.Find(["users", "ME"])); Assert.Null(root.Find(["Users", "nobody"]));
-        Assert.Equal(@"C:\Users\me", me.FullPath);
+        // filled as an NTFS table lists them: children before their folders, record numbers with gaps, a name whose folder never comes
+        var t = new DiskTree(@"C:\", rootEntry: 5);
+        t.Set(40, 30, "a.bin", false); t.AddSize(40, 700); t.Set(41, 30, "b.bin", false); t.AddSize(41, 300); t.Set(42, 31, "w.dll", false); t.AddSize(42, 500);
+        t.Set(30, 20, "me", true); t.Set(20, 5, "Users", true); t.Set(31, 5, "Windows", true); t.Set(43, 5, "x.txt", false); t.AddSize(43, 10);
+        t.Set(21, 20, "Locked", true); t.MarkUnread(21); t.Set(50, 99, "orphan", false); t.AddSize(50, 9999);
+        t.Set(40, 31, "a.bin second link", false);   // a hard link's other name: the first one wins, counted once
+        t.Seal();
+        Assert.Equal((1510L, 4, 8), (t.Size(5), t.Files(5), t.Count));
+        Assert.Equal(["Users", "Windows", "x.txt"], t.Children(5).ToArray().Select(t.Name));
+        Assert.Equal(1000, t.Size(20)); Assert.True(t.PartUnread(20)); Assert.True(t.PartUnread(5)); Assert.False(t.PartUnread(31)); Assert.True(t.Unread(21));
+        Assert.Equal(@"C:\Users\me\a.bin", t.PathOf(40));
+        Assert.Equal(["a.bin", "w.dll", "b.bin"], t.Find("", folders: false, 3, out int all).Select(t.Name)); Assert.Equal(4, all);
+        Assert.Equal(["Users"], t.Find("USE", folders: true, 10, out _).Select(t.Name));
+        Assert.Empty(t.Find("orphan", folders: true, 10, out _));
+    }
+
+    [Fact] public void A_walked_folder_numbers_its_own_entries()
+    {
+        var t = new DiskTree(@"D:\Photos"); int y = t.Add(0, "2024", true); int f = t.Add(y, "1.jpg", false); t.AddSize(f, 42); t.Seal();
+        Assert.Equal((42L, 1), (t.Size(0), t.Files(0))); Assert.Equal(@"D:\Photos\2024\1.jpg", t.PathOf(f));
     }
 
     [Theory, InlineData(4000, 3000, 1280, 1280, 960), InlineData(3000, 4000, 1280, 960, 1280), InlineData(800, 600, 1280, 800, 600), InlineData(10000, 10, 800, 800, 1)]
@@ -84,11 +96,4 @@ public class FileToolsTests
     [Theory, InlineData(255, 0, 0, "#FF0000", "rgb(255, 0, 0)", "hsl(0, 100%, 50%)"), InlineData(0, 128, 0, "#008000", "rgb(0, 128, 0)", "hsl(120, 100%, 25%)"),
      InlineData(30, 144, 255, "#1E90FF", "rgb(30, 144, 255)", "hsl(210, 100%, 56%)"), InlineData(128, 128, 128, "#808080", "rgb(128, 128, 128)", "hsl(0, 0%, 50%)"), InlineData(255, 0, 128, "#FF0080", "rgb(255, 0, 128)", "hsl(330, 100%, 50%)")]
     public void A_picked_colour_is_written_three_ways(byte r, byte g, byte b, string hex, string rgb, string hsl) => Assert.Equal((hex, rgb, hsl), (ColorText.Hex(r, g, b), ColorText.Rgb(r, g, b), ColorText.Hsl(r, g, b)));
-
-    [Fact] public void Only_the_biggest_files_are_kept()
-    {
-        var top = new TopFiles(2);
-        foreach (var (p, s) in new[] { ("a", 5L), ("b", 50L), ("c", 1L), ("d", 20L) }) top.Add(p, s);
-        Assert.Equal(["b", "d"], top.Biggest().Select(x => x.Path));
-    }
 }

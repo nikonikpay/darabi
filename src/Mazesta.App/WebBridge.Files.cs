@@ -117,56 +117,8 @@ public sealed partial class WebBridge
         Method("search.state", _ => new { on = _config.FileSearch, key = Mazesta.Core.Tray.Hotkey.Normalize(_config.FileSearchKey) ?? Mazesta.Core.Tray.FileSearchSignals.DefaultKey,
             tray = System.Diagnostics.Process.GetProcessesByName(Mazesta.Core.Tray.OverlaySignals.TrayProcess).Length > 0 });
 
-        // ——— Where the disk space went: one scan at a time, its progress pushed as "space"; the last result is kept for browsing until the next ———
-        Method("space.drives", _ => DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed && d.IsReady)
-            .Select(d => new { root = d.Name, label = d.VolumeLabel, total = d.TotalSize, free = d.AvailableFreeSpace }).ToList());
-        Method("space.scan", p =>
-        {
-            string root = Str(p, "root");
-            bool drive = DriveInfo.GetDrives().Any(d => d.DriveType == DriveType.Fixed && d.IsReady && string.Equals(d.Name, root, StringComparison.OrdinalIgnoreCase));
-            if (!drive && !(_picked.Contains(root) && Directory.Exists(root))) throw new InvalidOperationException("not picked");
-            if (_spaceCts is not null) throw new InvalidOperationException(Loc.Get("Files_Space_Busy"));
-            var cts = _spaceCts = new CancellationTokenSource(); _space = null;
-            _ = Task.Run(() =>
-            {
-                try
-                {
-                    var r = SpaceScan.Scan(root, x => Push("space", new { busy = true, files = x.Files, bytes = x.Bytes, folder = x.Folder }), cts.Token);
-                    _window.Dispatcher.BeginInvoke(() => { _space = r; _spaceCts = null; Push("space", new { busy = false, done = true }); });
-                    _log.LogInformation("Space scan of {Root}: {Files} files, {Bytes} bytes", root, r.Root.Files, r.Root.Size);
-                }
-                catch (OperationCanceledException) { _window.Dispatcher.BeginInvoke(() => { _spaceCts = null; Push("space", new { busy = false, cancelled = true }); }); }
-                catch (Exception ex) { _log.LogWarning(ex, "Space scan of {Root} failed", root); _window.Dispatcher.BeginInvoke(() => { _spaceCts = null; Push("space", new { busy = false, error = ex.Message }); }); }
-            });
-            return null;
-        });
-        Method("space.cancel", _ => { _spaceCts?.Cancel(); return null; });
-        // A folder of the last scan, by its names under the root: its biggest folders (the rest summed) and, at the root, the biggest files.
-        Method("space.list", p =>
-        {
-            if (_space is not { } s) return null;
-            var at = p.ValueKind == JsonValueKind.Object && p.TryGetProperty("at", out var a) && a.ValueKind == JsonValueKind.Array ? a.EnumerateArray().Select(x => x.GetString() ?? "").ToList() : [];
-            var n = s.Root.Find(at) ?? throw new InvalidOperationException("gone");
-            object Row(SpaceNode c) => new { name = c.Name, size = c.Size, files = c.Files, unread = c.Unread, partUnread = c.PartUnread };
-            long inFolders = n.Children.Sum(c => c.Size);
-            return new
-            {
-                path = n.FullPath, at, size = n.Size, files = n.Files, unread = n.Unread, partUnread = n.PartUnread, here = n.Size - inFolders,
-                children = n.Children.Take(40).Select(Row), others = n.Children.Count > 40 ? n.Children.Skip(40).Sum(c => c.Size) : 0,
-                top = at.Count == 0 ? s.Top.Biggest().Select(f => new { path = f.Path, size = f.Size }) : null,
-            };
-        });
-        // Explorer at a folder of the scan, or with one of its biggest files selected: only paths the scan itself found.
-        Method("space.open", p =>
-        {
-            if (_space is not { } s) return null;
-            string file = Str(p, "file");
-            string? arg = file.Length > 0 ? s.Top.Biggest().Any(f => f.Path == file) && File.Exists(file) ? $"/select,\"{file}\"" : null
-                : s.Root.Find(p.TryGetProperty("at", out var a) ? a.EnumerateArray().Select(x => x.GetString() ?? "") : []) is { } n && Directory.Exists(n.FullPath) ? $"\"{n.FullPath}\"" : null;
-            if (arg is null) throw new InvalidOperationException("gone");
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), arg) { UseShellExecute = false })?.Dispose();
-            return null;
-        });
+        // ——— Where the disk space went: a window of the tray's (an NTFS drive read from its file table in seconds), so it works with the app closed too ———
+        Method("space.open", _ => new { open = SignalTray(Mazesta.Core.Tray.FileSearchSignals.Space) });
     }
 
     /// <summary>Sets one of the tray's named events; false when no tray has made it (none running).</summary>
@@ -177,7 +129,7 @@ public sealed partial class WebBridge
         return true;
     }
 
-    private (SpaceNode Root, TopFiles Top)? _space; private CancellationTokenSource? _spaceCts, _hashCts;
+    private CancellationTokenSource? _hashCts;
     private string RenameLog => Path.Combine(_paths.DataRoot, "rename", "last.json");
 
     /// <summary>The batch's files (a picked folder stands for the files directly in it, by name) and the rule the page sent, planned here.</summary>

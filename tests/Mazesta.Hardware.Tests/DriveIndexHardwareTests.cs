@@ -34,4 +34,29 @@ public class DriveIndexHardwareTests(ITestOutputHelper output)
         }
         finally { Directory.Delete(dir, true); }
     }
+
+    [Fact] public void The_system_drives_sizes_are_read_from_its_table_as_explorer_shows_them()
+    {
+        string root = Path.GetPathRoot(Environment.SystemDirectory)!, dir = Directory.CreateTempSubdirectory("mz-space").FullName, big = Path.Combine(dir, "space-probe.bin");
+        try
+        {
+            File.WriteAllBytes(big, new byte[3_456_789]); File.WriteAllText(Path.Combine(dir, "small.txt"), "tiny");   // a resident file: its bytes live in the table record
+            using var drive = NtfsDrive.TryOpen(root, out var why) ?? throw new InvalidOperationException(why);
+            var clock = Stopwatch.StartNew(); var t = drive.Space(); long ms = clock.ElapsedMilliseconds;
+            var info = new DriveInfo(root); long used = info.TotalSize - info.TotalFreeSpace;
+            output.WriteLine($"{t.Count} entries, {t.Files(t.RootEntry)} files, {t.Size(t.RootEntry) / 1048576} MB in {ms} ms; the drive says {used / 1048576} MB used; {GC.GetTotalMemory(true) / 1048576} MB managed");
+            foreach (int e in t.Children(t.RootEntry)[..Math.Min(8, t.Children(t.RootEntry).Length)]) output.WriteLine($"  {t.Name(e)}: {t.Size(e) / 1048576} MB");
+            var probe = t.Find("space-probe.bin", folders: false, 5, out _).Single(e => string.Equals(t.PathOf(e), big, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(3_456_789, t.Size(probe));
+            int small = t.Find("small.txt", folders: false, 50, out _).Single(e => string.Equals(t.PathOf(e), Path.Combine(dir, "small.txt"), StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(4, t.Size(small));
+            // each copy of cmd.exe (System32's is a hard link of one in WinSxS, so it is listed under that name) as long as Windows says that very file is
+            var cmds = t.Find("cmd.exe", folders: false, 50, out _).Where(e => string.Equals(t.Name(e), "cmd.exe", StringComparison.OrdinalIgnoreCase)).ToList();
+            Assert.NotEmpty(cmds);
+            foreach (int e in cmds) { output.WriteLine($"  {t.PathOf(e)}: {t.Size(e)}"); Assert.Equal(new FileInfo(t.PathOf(e)).Length, t.Size(e)); }
+            // the files' total is near the space the drive reports used (hard links counted once; compressed files count their full length)
+            Assert.InRange(t.Size(t.RootEntry), used / 2, used * 2);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
 }

@@ -23,6 +23,7 @@ internal sealed class TrayContext : ApplicationContext
     private SummaryForm? _summary; private bool _checking; private FileSearch.FileSearchHost? _files; private readonly ToolStripMenuItem _search;
     // each program's volume: the panel is made on first use; the app opens it through a named event Windows waits on (nothing polls)
     private readonly Colors.ColorHost _colors; private readonly ToolStripMenuItem _color;
+    private Space.SpaceForm? _space; private readonly EventWaitHandle _spaceSignal = new(false, EventResetMode.AutoReset, FileSearchSignals.Space); private readonly RegisteredWaitHandle _spaceWait;
     private Volume.VolumeForm? _mixer; private readonly EventWaitHandle _mixerSignal = new(false, EventResetMode.AutoReset, FileSearchSignals.Mixer); private readonly RegisteredWaitHandle _mixerWait; private readonly Control _ui = new();
     private LibreHardwareMonitorProvider? _sensors; private readonly object _sensorLock = new(); private readonly string _configFile;
 
@@ -48,10 +49,11 @@ internal sealed class TrayContext : ApplicationContext
         _fans = new FanMenu(paths, StartApp, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
         _search = new ToolStripMenuItem(TrayText.Search, null, (_, _) => _files?.Open());
         _ui.CreateControl();
+        _spaceWait = ThreadPool.RegisterWaitForSingleObject(_spaceSignal, (_, _) => { try { _ui.BeginInvoke(ShowSpace); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
         _colors = new Colors.ColorHost(Path.Combine(Path.GetDirectoryName(logFile) ?? "", "colors.txt"));
         _color = new ToolStripMenuItem(TrayText.Color, null, (_, _) => _colors.Pick());
         _mixerWait = ThreadPool.RegisterWaitForSingleObject(_mixerSignal, (_, _) => { try { _ui.BeginInvoke(ShowMixer); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
-        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, _search, new ToolStripMenuItem(TrayText.Mixer, null, (_, _) => ShowMixer()), _color, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
+        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, _search, new ToolStripMenuItem(TrayText.Space, null, (_, _) => ShowSpace()), new ToolStripMenuItem(TrayText.Mixer, null, (_, _) => ShowMixer()), _color, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
             _status, new ToolStripSeparator(), new ToolStripMenuItem(TrayText.Exit, null, (_, _) => ExitThread())]);
         menu.Opening += (_, _) => { _overlay.Checked = OverlayShown(); _search.Visible = _files?.On == true; _search.Text = TrayText.SearchMenu(_files?.Shortcut); _color.Text = TrayText.ColorMenu(_colors.Shortcut); };
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
@@ -205,6 +207,17 @@ internal sealed class TrayContext : ApplicationContext
 
     private void Notify(string text) { _link = null; _icon.ShowBalloonTip(15000, TrayText.Title, text, ToolTipIcon.Warning); }
 
+    // closed, the window lets go of its tree and the memory is returned at once (a drive's tree is a hundred megabytes or more)
+    private void ShowSpace()
+    {
+        if (_space is null)
+        {
+            _space = new Space.SpaceForm();
+            _space.FormClosed += (_, _) => { _space = null; _ui.BeginInvoke(() => { GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true); Memory.Release(); }); };   // after Windows Forms has disposed it
+        }
+        _space.Summon();
+    }
+
     private void ShowMixer() { _mixer ??= new Volume.VolumeForm(); _mixer.Summon(); }
 
     private void ShowSummary()
@@ -272,7 +285,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _power.Dispose(); _keys?.Dispose(); _files?.Dispose(); _mixerWait.Unregister(null); _mixerSignal.Dispose(); _mixer?.Dispose(); _colors.Dispose(); _ui.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _power.Dispose(); _keys?.Dispose(); _files?.Dispose(); _mixerWait.Unregister(null); _mixerSignal.Dispose(); _mixer?.Dispose(); _spaceWait.Unregister(null); _spaceSignal.Dispose(); _space?.Dispose(); _colors.Dispose(); _ui.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }

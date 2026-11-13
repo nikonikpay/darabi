@@ -1,4 +1,4 @@
-using System.Buffers.Binary; using System.Runtime.InteropServices; using Microsoft.Win32.SafeHandles; using Mazesta.Core.Search;
+using System.Buffers.Binary; using System.Runtime.InteropServices; using Microsoft.Win32.SafeHandles; using Mazesta.Core.Search; using Mazesta.Core.Windows;
 namespace Mazesta.Hardware.Files;
 
 /// <summary>
@@ -38,21 +38,89 @@ public sealed unsafe class NtfsDrive : IDisposable
     {
         long* journal = stackalloc long[10];
         if (Io(QueryJournal, null, 0, journal, 80, out _)) { _journalId = journal[0]; _nextUsn = journal[2]; } else { _journalId = 0; _nextUsn = 0; }
-        byte* v = stackalloc byte[128];
-        if (!Io(VolumeData, null, 0, v, 128, out _)) throw new IOException($"The NTFS data of {Root} could not be read ({Marshal.GetLastWin32Error()}).");
-        // NTFS_VOLUME_DATA_BUFFER: BytesPerCluster at 44, BytesPerFileRecordSegment at 48, MftValidDataLength at 56, MftStartLcn at 64
-        int cluster = *(int*)(v + 44); _recordSize = *(int*)(v + 48); long valid = *(long*)(v + 56), mftStart = *(long*)(v + 64);
-        long records = valid / _recordSize;
-
-        // the table's own pieces on the disk, from its first record's data runs
-        var first = new byte[_recordSize]; RandomAccess.Read(_volume, first, mftStart * cluster);
-        var runs = Fixup(first) ? DataRuns(first) : [];
-        if (runs.Sum(r => r.Clusters) * cluster < valid) throw new IOException($"The file table of {Root} could not be placed on the disk.");
-
+        var (records, runs, cluster) = Table();
         int guess = (int)Math.Min(records, int.MaxValue / 64);
         _byRecord = new int[guess + 1024]; Array.Fill(_byRecord, -1); _byRecord[RootRecord] = 0; _links.Clear();
         var index = new FileIndex(Root, guess + guess / 8, guess * 24);
         var parentOf = new int[guess + guess / 8];
+        ReadTable(records, runs, cluster, ct, (record, r) => Names(r, record, (owner, parent, name, dir) =>
+        {
+            int e = index.Add(-1, name, dir);
+            if (e >= parentOf.Length) Array.Resize(ref parentOf, parentOf.Length * 2);
+            parentOf[e] = parent; Remember(owner, e);
+        }));
+        // the table is in its own order: children come before their folders, so the parents are joined at the end
+        for (int e = 1; e < index.Entries; e++)
+        {
+            int p = parentOf[e] < _byRecord.Length ? _byRecord[parentOf[e]] : -1;
+            if (p >= 0 && p != e) index.SetParent(e, p); else index.Remove(e);
+        }
+        index.Trim();
+        return index;
+    }
+
+    /// <summary>
+    /// Every file's size and place read from the table, for the disk-space window (as WizTree does): the size of its unnamed data stream (what
+    /// Explorer shows as Size), counted once under its first name however many hard links it has. Windows' own files at the root ($MFT, $LogFile)
+    /// are in it, since they take space too. <paramref name="progress"/> gets the share of the table read.
+    /// </summary>
+    // ponytail: logical size, not the clusters taken; a compressed or sparse file counts its full length (Explorer's Size, not Size on disk)
+    public DiskTree Space(CancellationToken ct = default, Action<double>? progress = null)
+    {
+        var (records, runs, cluster) = Table();
+        var tree = new DiskTree(Root, RootRecord, (int)Math.Min(records + 16, int.MaxValue / 64));
+        ReadTable(records, runs, cluster, ct, (record, r) => Sizes(r, record, tree), progress);
+        tree.Seal();
+        return tree;
+    }
+
+    private static void Sizes(Span<byte> r, long record, DiskTree tree)
+    {
+        if ((BinaryPrimitives.ReadUInt16LittleEndian(r[22..]) & 1) == 0) return;   // not in use
+        long baseRecord = BinaryPrimitives.ReadInt64LittleEndian(r[32..]) & RecordMask, owner = baseRecord != 0 ? baseRecord : record;
+        if (owner == RootRecord || owner > int.MaxValue / 2) return;
+        for (int a = BinaryPrimitives.ReadUInt16LittleEndian(r[20..]); a + 24 <= r.Length;)
+        {
+            uint type = BinaryPrimitives.ReadUInt32LittleEndian(r[a..]); int length = BinaryPrimitives.ReadInt32LittleEndian(r[(a + 4)..]);
+            if (type == 0xFFFFFFFF || length <= 0 || a + length > r.Length) break;
+            if (type == 0x30 && r[a + 8] == 0)
+            {
+                int value = a + BinaryPrimitives.ReadUInt16LittleEndian(r[(a + 20)..]);
+                int chars = r[value + 64];
+                if (r[value + 65] != 2 && value + 66 + chars * 2 <= r.Length)   // not the DOS 8.3 spelling
+                {
+                    long parent = BinaryPrimitives.ReadInt64LittleEndian(r[value..]) & RecordMask;
+                    bool dir = (BinaryPrimitives.ReadUInt32LittleEndian(r[(value + 56)..]) & 0x10000000) != 0;
+                    if (parent <= int.MaxValue / 2) tree.Set((int)owner, (int)parent, new string(MemoryMarshal.Cast<byte, char>(r.Slice(value + 66, chars * 2))), dir);
+                }
+            }
+            else if (type == 0x80 && r[a + 9] == 0)   // the unnamed $DATA: resident (its value's length) or, in its first piece (VCN 0), the real size
+            {
+                if (r[a + 8] == 0) tree.AddSize((int)owner, BinaryPrimitives.ReadUInt32LittleEndian(r[(a + 16)..]));
+                else if (a + 56 <= r.Length && BinaryPrimitives.ReadInt64LittleEndian(r[(a + 16)..]) == 0) tree.AddSize((int)owner, BinaryPrimitives.ReadInt64LittleEndian(r[(a + 48)..]));
+            }
+            a += length;
+        }
+    }
+
+    private delegate void RecordFound(long record, Span<byte> r);
+
+    /// <summary>The table's size and where its pieces lie on the disk (from its first record's data runs).</summary>
+    private (long Records, List<(long Lcn, long Clusters)> Runs, int Cluster) Table()
+    {
+        byte* v = stackalloc byte[128];
+        if (!Io(VolumeData, null, 0, v, 128, out _)) throw new IOException($"The NTFS data of {Root} could not be read ({Marshal.GetLastWin32Error()}).");
+        // NTFS_VOLUME_DATA_BUFFER: BytesPerCluster at 44, BytesPerFileRecordSegment at 48, MftValidDataLength at 56, MftStartLcn at 64
+        int cluster = *(int*)(v + 44); _recordSize = *(int*)(v + 48); long valid = *(long*)(v + 56), mftStart = *(long*)(v + 64);
+        var first = new byte[_recordSize]; RandomAccess.Read(_volume, first, mftStart * cluster);
+        var runs = Fixup(first) ? DataRuns(first) : [];
+        if (runs.Sum(r => r.Clusters) * cluster < valid) throw new IOException($"The file table of {Root} could not be placed on the disk.");
+        return (valid / _recordSize, runs, cluster);
+    }
+
+    /// <summary>Every record of the table, read from the disk in 4 MB pieces, each checked (<see cref="Fixup"/>) before it is handed on.</summary>
+    private void ReadTable(long records, List<(long Lcn, long Clusters)> runs, int cluster, CancellationToken ct, RecordFound each, Action<double>? progress = null)
+    {
         var chunk = new byte[Math.Max(_recordSize, 4 << 20) / _recordSize * _recordSize];
         long record = 0;
         foreach (var (lcn, clusters) in runs)
@@ -68,25 +136,12 @@ public sealed unsafe class NtfsDrive : IDisposable
                 for (int o = 0; o + _recordSize <= got && record < records; o += _recordSize, record++)
                 {
                     var r = chunk.AsSpan(o, _recordSize);
-                    if (!Fixup(r)) continue;
-                    Names(r, record, (owner, parent, name, dir) =>
-                    {
-                        int e = index.Add(-1, name, dir);
-                        if (e >= parentOf.Length) Array.Resize(ref parentOf, parentOf.Length * 2);
-                        parentOf[e] = parent; Remember(owner, e);
-                    });
+                    if (Fixup(r)) each(record, r);
                 }
                 at += got; left -= got;
+                progress?.Invoke((double)record / records);
             }
         }
-        // the table is in its own order: children come before their folders, so the parents are joined at the end
-        for (int e = 1; e < index.Entries; e++)
-        {
-            int p = parentOf[e] < _byRecord.Length ? _byRecord[parentOf[e]] : -1;
-            if (p >= 0 && p != e) index.SetParent(e, p); else index.Remove(e);
-        }
-        index.Trim();
-        return index;
     }
 
     /// <summary>
@@ -256,6 +311,40 @@ public sealed unsafe class NtfsDrive : IDisposable
     private static extern SafeFileHandle CreateFile(string name, uint access, uint share, nint security, uint disposition, uint flags, nint template);
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool DeviceIoControl(SafeFileHandle device, uint code, void* input, int inSize, void* output, int outSize, out int returned, nint overlapped);
+}
+
+/// <summary>
+/// A folder's (or a drive without a file table's) files and sizes for the disk-space window, its folders walked. Junctions are not entered (they
+/// point at space counted elsewhere), cloud files kept only online count nothing, and a folder Windows refuses to list is marked unread.
+/// </summary>
+public static class FolderSpace
+{
+    // recall-on-open / recall-on-data-access / offline: the file's bytes are not on this disk
+    private const FileAttributes NotHere = (FileAttributes)0x400000 | (FileAttributes)0x40000 | FileAttributes.Offline;
+
+    public static DiskTree Walk(string root, CancellationToken ct = default, Action<long>? progress = null)
+    {
+        var tree = new DiskTree(root);
+        var opts = new EnumerationOptions { IgnoreInaccessible = false, AttributesToSkip = 0, RecurseSubdirectories = false, ReturnSpecialDirectories = false };
+        var stack = new Stack<(string Path, int Entry)>(); stack.Push((root, 0)); long files = 0;
+        while (stack.Count > 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            var (path, entry) = stack.Pop();
+            try
+            {
+                foreach (var e in new DirectoryInfo(path).EnumerateFileSystemInfos("*", opts))
+                {
+                    if (e is DirectoryInfo d) { int i = tree.Add(entry, d.Name, true); if ((d.Attributes & FileAttributes.ReparsePoint) == 0) stack.Push((d.FullName, i)); }
+                    else if (e is FileInfo f) { int i = tree.Add(entry, f.Name, false); if ((f.Attributes & NotHere) == 0) tree.AddSize(i, f.Length); files++; }
+                }
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException) { tree.MarkUnread(entry); }
+            progress?.Invoke(files);
+        }
+        tree.Seal();
+        return tree;
+    }
 }
 
 /// <summary>A drive without a file table to read (exFAT, FAT32): its folders walked, junctions not followed. Read again when it is old.</summary>

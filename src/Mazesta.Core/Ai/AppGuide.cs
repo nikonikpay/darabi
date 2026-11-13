@@ -100,7 +100,7 @@ public static class AppGuide
         T("tools", "hibernate", "Tools_Hib_Title", "hibernation and Fast Startup on or off", null),
         T("tools", "vm", "Tools_Vm_Title", "virtual memory (the page file)", null),
         T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null),
-        T("tools", "space", "Files_Space_Title", "where the disk space went: scans a drive or folder and shows its biggest folders and files", null),
+        T("tools", "space", "Files_Space_Title", "where the disk space went, in a window of its own (also from the tray menu, with the app closed): a drive read from its file table in seconds, folders as a tree biggest first with icons, the biggest files, and a search by name", null),
         T("tools", "images", "Files_Img_Title", "makes pictures smaller (resize photos to 800-2560 px or any size, JPEG quality), a new file beside each", null),
         T("tools", "rename", "Files_Ren_Title", "renames many files at once (find and replace, or a name and a number), with a preview and undo", null),
         T("tools", "checksum", "Files_Hash_Title", "a file's MD5, SHA-1 and SHA-256, compared with the one on its download page", null),
