@@ -25,6 +25,7 @@ function card(p) {
     // Every temperature the session reached on the part (core and hot spot, VRAM, the hottest core, the drive); the one figure when the host sent none.
     ...(p.temps?.length ? p.temps.map((x) => [t(x.key), `${fa(Math.round(x.value))} °C`]) : [p.tempMax != null ? [t("Done_TempMax"), `${fa(Math.round(p.tempMax))} °C`] : null]),
     p.load != null ? [t("Done_Load"), `${fa(Math.round(p.load))}%`] : null,
+    p.fps != null ? [t("Done_Fps"), `${fa(Math.round(p.fps))} FPS`] : null,
     p.errors > 0 ? [t("Done_Errors"), fa(p.errors)] : null,
   ].filter(Boolean);
   const notGood = p.findings.filter((f) => f.level === "Problem" || f.level === "Attention");

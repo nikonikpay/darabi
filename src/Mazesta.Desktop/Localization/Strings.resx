@@ -3947,6 +3947,7 @@ Cancel: stop.</value></data>
   <data name="Done_Level_Problem" xml:space="preserve"><value>Problem</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>tests passed</value></data>
   <data name="Done_TempMax" xml:space="preserve"><value>highest temperature</value></data>
+  <data name="Done_Fps" xml:space="preserve"><value>Frame rate</value></data>
   <data name="Done_Load" xml:space="preserve"><value>load reached</value></data>
   <data name="Done_Errors" xml:space="preserve"><value>errors</value></data>
   <data name="Done_Details" xml:space="preserve"><value>Details of what was checked</value></data>

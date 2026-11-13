@@ -114,6 +114,14 @@ public sealed partial class WebBridge
 
     /// <summary>What the page's end-of-session window says: per part (processor, memory, graphics card, drives, the rest) how many of its tests passed,
     /// what failed, its hottest reading and load where they were judged, and the diagnosis' findings, with a level the worst of them sets.</summary>
+    /// <summary>The mean of the frame rates the scene tests measured ("... 196.1 FPS average" in their evidence), or null when none drew a scene.</summary>
+    private static double? FramesPerSecond(IEnumerable<string?> details)
+    {
+        var rates = details.Select(d => d is null ? null : System.Text.RegularExpressions.Regex.Match(d, @"(\d+(?:[.,]\d+)?) FPS average"))
+            .Where(m => m is { Success: true }).Select(m => double.Parse(m!.Groups[1].Value.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture)).ToList();
+        return rates.Count == 0 ? null : Math.Round(rates.Average());
+    }
+
     private object SessionVerdict(Desktop.Services.CheckupService.SessionJudgment j)
     {
         static string PartOf(string id) => id.Split('.')[0] switch { "cpu" => "Cpu", "memory" => "Memory", "gpu" => "Gpu", "storage" => "Storage", _ => "System" };
@@ -131,7 +139,7 @@ public sealed partial class WebBridge
             {
                 // The sentence about heat and clocks only when the monitor's record of them was judged (a run too short, or no sensors: only the tests' word).
                 part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed, failed, total = g.Count(), errors = g.Sum(r => r.ErrorCount),
-                tempMax = judged?.TempMaxC, load = judged?.LoadPercent, temps = judged?.Temps?.Select(x => new { key = x.Key, value = x.C }),
+                tempMax = judged?.TempMaxC, load = judged?.LoadPercent, fps = g.Key == "Gpu" ? FramesPerSecond(g.Select(r => r.Detail)) : null, temps = judged?.Temps?.Select(x => new { key = x.Key, value = x.C }),
                 tests = g.Select(r => new { name = Name(r.Id), outcome = r.Outcome.ToString(), outcomeText = Loc.Get("Test_Outcome_" + r.Outcome) }),
                 findings = findings.Select(FindingJson),
             };

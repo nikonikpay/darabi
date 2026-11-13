@@ -1,4 +1,4 @@
-# Packs export_original.py's output into the one file the temperature test embeds: python pack_gate.py <export dir> <out gate.mzgate>
+# Packs export_original.py's output into the one file the temperature test embeds: python pack_gate.py <export dir> <out gate.mzgate> [picture size, default 4096: the 2048 one is only 1.2 MB smaller, the geometry is the weight]
 # gzip of "MZG2", then little-endian: vertex count, index count, picture size, colour JPEG length (uint32 each), the bounding box (min xyz, extent xyz: float32),
 # then, plane by plane over all vertices (each plane delta-coded, so gzip finds the runs): x, y, z as uint16 across the box (0.03 mm on the 1.8 m gate),
 # the normal as two int16 (octahedral), u and v as uint16 (0..1); then the indices as zigzag varint deltas from the one before; then the colour JPEG (4:4:4).
@@ -6,7 +6,7 @@
 import sys, gzip, io, struct, numpy as np
 from PIL import Image
 
-src, dst = sys.argv[1], sys.argv[2]
+src, dst = sys.argv[1], sys.argv[2]; side = int(sys.argv[3]) if len(sys.argv) > 3 else 4096
 g = np.load(f"{src}/gate.npz"); v = g["verts"]; ix = g["indices"].astype(np.int64); nv = len(v)
 assert ix.max() < nv
 lo = v[:, :3].min(0); ext = v[:, :3].max(0) - lo
@@ -24,7 +24,7 @@ d = np.diff(ix, prepend=0); z = ((d << 1) ^ (d >> 63)).astype(np.uint64); out = 
 for val in z.tolist():
     while val >= 0x80: out.append(val & 0x7F | 0x80); val >>= 7
     out.append(val)
-im = Image.open(f"{src}/gate-albedo.png").convert("RGB"); b = io.BytesIO(); im.save(b, "JPEG", quality=90, subsampling=0, optimize=True); alb = b.getvalue()
+im = Image.open(f"{src}/gate-albedo.png").convert("RGB"); im = im.resize((side, side), Image.LANCZOS) if im.width != side else im; b = io.BytesIO(); im.save(b, "JPEG", quality=90, subsampling=0, optimize=True); alb = b.getvalue()
 with gzip.open(dst, "wb", 9) as f:
     f.write(b"MZG2" + struct.pack("<4I", nv, len(ix), im.width, len(alb)) + struct.pack("<6f", *lo, *ext)); f.write(body); f.write(bytes(out)); f.write(alb)
 print("vertices", nv, "triangles", len(ix) // 3, "index bytes", len(out), "albedo", len(alb))

@@ -19,8 +19,9 @@ internal sealed unsafe class ShamsehScene : IDisposable
     /// way of reading; its layer count is set by what the gate's picture measured (see the commit that brought it).
     /// </summary>
     public const int Layers = 24;
-    public const int FurLayers = 855;   // set so the card, drawing as fast as it can, gives about 200 FPS at 1080p, with the camera as it is (RTX 3090 over 90 s: 680 gave 246, 830 gave 211, 880 gave 192)
-    public const int Samples = 4;   // multisampling of the HDR frame: the gate's edges and the blades' outlines
+    public const int FurLayers = 570;   // set so the card, drawing as fast as it can, gives about 200 FPS at 1080p with 4x multisampling and the camera as it is (RTX 3090 over 90 s: 855 layers gave 140, 600 gave 191)
+    private const int WantedSamples = 4;   // multisampling of the HDR frame: the carving's edges and the blades; 8 halved the frame rate (95 FPS on an RTX 3090, which would leave a weaker card near 20)
+    private readonly uint _samples;
     private const float Spread = 1f, FurLength = 0.07f;
     private const Format LightFormat = Format.R11G11B10_Float;
     private const int StrandSize = 2048;
@@ -40,7 +41,8 @@ internal sealed unsafe class ShamsehScene : IDisposable
 
     public ShamsehScene(D3D12Session s, TestWindow w, int width, int height)
     {
-        _s = s; Width = width; Height = height;
+        _s = s; Width = width; Height = height; _samples = 1;
+        for (uint n = WantedSamples; n > 1; n /= 2) { var q = new FeatureDataMultisampleQualityLevels { Format = LightFormat, SampleCount = n }; if (s.Device.CheckFeatureSupport(Vortice.Direct3D12.Feature.MultisampleQualityLevels, ref q) && q.NumQualityLevels > 0) { _samples = n; break; } }
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);
         _tearing = factory.PresentAllowTearing;
         var desc = new SwapChainDescription1
@@ -60,9 +62,9 @@ internal sealed unsafe class ShamsehScene : IDisposable
         var strands = new byte[StrandSize * StrandSize * 4]; new Random(7).NextBytes(strands);   // the same strands every run: the check frames compare like with like
         var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var colour = Mips(gate.Albedo, gate.Size);
 
-        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, Samples, 0, flags: ResourceFlags.AllowRenderTarget),
+        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, _samples, 0, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(LightFormat, Background)));
-        _depth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)width, (uint)height, 1, 1, Samples, 0, flags: ResourceFlags.AllowDepthStencil),
+        _depth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)width, (uint)height, 1, 1, _samples, 0, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1, 0)));
         _check = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget), ResourceStates.CopySource));
 
@@ -81,10 +83,10 @@ internal sealed unsafe class ShamsehScene : IDisposable
         _root = s.Own(s.Device.CreateRootSignature(solidVs));
         var layered = new BlendDescription(Blend.One, Blend.InverseSourceAlpha);   // each layer over the ones beneath it (its colour is already times its cover)
         var under = new DepthStencilDescription(true, DepthWriteMask.Zero, ComparisonFunction.LessEqual);
-        ID3D12PipelineState Pipeline(byte[] vs, string ps, BlendDescription blend, DepthStencilDescription depth, Format target, uint samples = Samples) => s.Own(s.Device.CreateGraphicsPipelineState(new GraphicsPipelineStateDescription
+        ID3D12PipelineState Pipeline(byte[] vs, string ps, BlendDescription blend, DepthStencilDescription depth, Format target, uint samples = 0) => s.Own(s.Device.CreateGraphicsPipelineState(new GraphicsPipelineStateDescription
         {
             RootSignature = _root, VertexShader = vs, PixelShader = D3D12Session.Shader(ps), PrimitiveTopologyType = PrimitiveTopologyType.Triangle, BlendState = blend, RasterizerState = RasterizerDescription.CullNone,
-            SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = new SampleDescription(samples, 0)
+            SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = new SampleDescription(samples == 0 ? _samples : samples, 0)
         }));
         _solid = Pipeline(solidVs, "ShamsehSolidPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual), LightFormat);
         _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, under, LightFormat);

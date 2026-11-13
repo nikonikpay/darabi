@@ -14,13 +14,13 @@ struct Vertex { float3 Pos; float3 Normal; float2 Uv; float Material; };
 StructuredBuffer<Vertex> Vertices : register(t3);
 Texture2D<float4> Strands : register(t0);   // random heights, 2048 square, with mips (the grass reads by its footprint; the sky reads level 0)
 Texture2D<float4> Albedo : register(t1);    // the gate's colour (BC3, mips)
-Texture2DMS<float4, 4> Light : register(t2);   // the frame before the lens, four samples a pixel
+Texture2DMS<float4> Light : register(t2);   // the frame before the lens, several samples a pixel
 SamplerState Wrap : register(s0); SamplerState Aniso : register(s1);
 
 static const float3 L = normalize(float3(0.55, 0.7, 0.45));
 static const float3 Moon = float3(0.85, 0.93, 1.1) * 1.6;
-static const float3 Eye = float3(0, 1.5, 3.6);
-static const float Pitch = 0.24, TanHalf = 0.46, Turf = 1.2;   // the camera looking down at the gate and its whole turf (the stone's top and the turf's near edge both inside the frame); 49 degrees across the frame; the turf's radius
+static const float3 Eye = float3(0, 1.5, 3.4);
+static const float Pitch = 0.24, TanHalf = 0.40, Turf = 1.2;   // the camera looking down at the gate and its whole turf (the stone's top and the turf's near edge both inside the frame); 43 degrees across the frame; the turf's radius
 float2 Turn(float2 v, float a) { float c = cos(a), s = sin(a); return float2(c * v.x - s * v.y, s * v.x + c * v.y); }
 float3 ToWorld(float3 p) { p.yz = Turn(p.yz, -Rx); p.xz = Turn(p.xz, -Ry); return p; }
 // the camera at Eye, looking down by Pitch; depth d runs from 0.3 to 60
@@ -127,6 +127,7 @@ float4 LensVS(uint id : SV_VertexID) : SV_Position { float2 p = float2((id << 1)
 float4 LensPS(float4 pos : SV_Position) : SV_Target
 {
     float3 sum = 0;   // each sample to the screen's colours first, then the mean: a bright edge keeps its shape instead of blooming
-    [unroll] for (uint k = 0; k < 4; k++) { float3 c = Light.Load(int2(pos.xy), k).rgb; c = c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14); sum += pow(saturate(c), 1 / 2.2); }
-    return float4(sum / 4, 1);
+    uint w, h, n; Light.GetDimensions(w, h, n);
+    for (uint k = 0; k < n; k++) { float3 c = Light.Load(int2(pos.xy), k).rgb; c = c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14); sum += pow(saturate(c), 1 / 2.2); }
+    return float4(sum / n, 1);
 }

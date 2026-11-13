@@ -57,7 +57,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0;
-        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0; var recent = new Queue<double>();
+        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0; bool afterCheck = false; var recent = new Queue<double>();
         try
         {
             while (total.Elapsed < duration)
@@ -78,7 +78,9 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                 if (updateClock.Elapsed.TotalSeconds >= 0.5)
                 {
                     // a half second with a check frame in it is not the scene's pace (the card idles while the check is read back): the last figure stands
-                    if (checkTime == 0 || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
+                    // (and the half second after it: the card is still getting back to its clock)
+                    if ((checkTime == 0 && !afterCheck) || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
+                    afterCheck = checkTime > 0;
                     recent.Enqueue(lastFps); if (recent.Count > 4) recent.Dequeue(); double fps = recent.Average(); updateFrames = 0;   // (the last two seconds averaged: the clock's dither at the power limit does not make the figure jump) updateClock.Restart(); checkTime = 0;
                     window.Title = $"Mazesta — GPU temperature — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
                     readout.Show(fps, request.Clock.UtcNow, total.Elapsed, duration, stats, $"{w} × {h} · check frames {checks} · errors {errors}", errors > 0);
@@ -115,7 +117,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
 /// keeps its time out of the frame that follows.</summary>
 internal sealed class FurStats
 {
-    private const double Settle = 3;   // seconds
+    private const double Settle = 15;   // seconds: the clock and the temperature are still settling at the start, so the slowest and quickest are of the loaded card
     // The slowest and quickest are rates over a quarter second, not of one frame: with two frames in flight a single frame's time is how the CPU
     // happened to be scheduled (a late one is followed by an early one, thousands of FPS for a moment), not what the card drew.
     private const double Window = 1.0;   // seconds

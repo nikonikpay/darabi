@@ -3947,6 +3947,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Done_Level_Problem" xml:space="preserve"><value>مشکل دارد</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>آزمون موفق</value></data>
   <data name="Done_TempMax" xml:space="preserve"><value>بیشترین دما</value></data>
+  <data name="Done_Fps" xml:space="preserve"><value>فریم‌ریت</value></data>
   <data name="Done_Load" xml:space="preserve"><value>بار رسیده</value></data>
   <data name="Done_Errors" xml:space="preserve"><value>خطا</value></data>
   <data name="Done_Details" xml:space="preserve"><value>جزئیات موارد بررسی‌شده</value></data>
