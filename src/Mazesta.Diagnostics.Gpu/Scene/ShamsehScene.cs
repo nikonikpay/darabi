@@ -18,20 +18,22 @@ internal sealed unsafe class ShamsehScene : IDisposable
     /// 11-11-10 float frame the work moved from the memory to the cores and their caches, as a fur test's does (86.7 C average, 92 C peak). The lawn keeps that
     /// way of reading; its layer count is set by what the gate's picture measured (see the commit that brought it).
     /// </summary>
-    public const int Layers = 24, FurLayers = 160;
+    public const int Layers = 24;
+    public const int FurLayers = 680;   // set so the card, drawing as fast as it can, gives about 200 FPS at 1080p (RTX 3090: 193-209; 256 layers gave 437, 1100 gave 126)
+    public const int Samples = 4;   // multisampling of the HDR frame: the gate's edges and the blades' outlines
     private const float Spread = 1f, FurLength = 0.07f;
     private const Format LightFormat = Format.R11G11B10_Float;
     private const int StrandSize = 2048;
     /// <summary>The lawn under the gate and the aurora behind it are left out for now (the gate alone, as the scan has it); both are still here to switch on.</summary>
-    private static readonly bool WithLawn = false, WithSky = false;
+    private static readonly bool WithLawn = true, WithSky = false;
 
     private readonly D3D12Session _s; private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing;
     private readonly ID3D12Resource _light, _depth, _check, _vertices, _indices;
     private readonly ID3D12DescriptorHeap _views, _rtv, _dsv; private readonly uint _rtvSize;
     private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _solid, _fur, _ground, _lens;
-    private readonly uint _gateIndices, _lawnIndices;
-    /// <summary>The triangles of the gate (and the lawn's two when it is on): what the evidence line reports.</summary>
-    public int Triangles => (int)((_gateIndices + _lawnIndices) / 3);
+    private readonly uint _gateIndices, _lawnIndices, _discIndices;
+    /// <summary>The triangles of the gate itself (the turf is not counted): what the evidence line reports.</summary>
+    public int Triangles => (int)(_gateIndices / 3);
     public SceneOverlay Overlay { get; }
     public int Width { get; }
     public int Height { get; }
@@ -53,14 +55,14 @@ internal sealed unsafe class ShamsehScene : IDisposable
         Overlay = new SceneOverlay(s, _back, height, heat: true);
 
         var gate = GateModel.Load(); _gateIndices = (uint)gate.Indices.Length;
-        var (vertices, indices) = WithLawn ? Lawn(gate.Vertices, gate.Indices) : (gate.Vertices, gate.Indices); _lawnIndices = (uint)indices.Length - _gateIndices;
+        var (vertices, indices, disc) = WithLawn ? Lawn(gate.Vertices, gate.Indices) : (gate.Vertices, gate.Indices, 0); _lawnIndices = (uint)indices.Length - _gateIndices; _discIndices = (uint)disc;
         _vertices = s.Upload(vertices, ResourceStates.AllShaderResource); _indices = s.Upload(indices, ResourceStates.IndexBuffer);
         var strands = new byte[StrandSize * StrandSize * 4]; new Random(7).NextBytes(strands);   // the same strands every run: the check frames compare like with like
         var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var colour = Mips(gate.Albedo, gate.Size);
 
-        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, Samples, 0, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(LightFormat, Background)));
-        _depth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowDepthStencil),
+        _depth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)width, (uint)height, 1, 1, Samples, 0, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1, 0)));
         _check = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget), ResourceStates.CopySource));
 
@@ -79,15 +81,15 @@ internal sealed unsafe class ShamsehScene : IDisposable
         _root = s.Own(s.Device.CreateRootSignature(solidVs));
         var layered = new BlendDescription(Blend.One, Blend.InverseSourceAlpha);   // each layer over the ones beneath it (its colour is already times its cover)
         var under = new DepthStencilDescription(true, DepthWriteMask.Zero, ComparisonFunction.LessEqual);
-        ID3D12PipelineState Pipeline(byte[] vs, string ps, BlendDescription blend, DepthStencilDescription depth, Format target) => s.Own(s.Device.CreateGraphicsPipelineState(new GraphicsPipelineStateDescription
+        ID3D12PipelineState Pipeline(byte[] vs, string ps, BlendDescription blend, DepthStencilDescription depth, Format target, uint samples = Samples) => s.Own(s.Device.CreateGraphicsPipelineState(new GraphicsPipelineStateDescription
         {
             RootSignature = _root, VertexShader = vs, PixelShader = D3D12Session.Shader(ps), PrimitiveTopologyType = PrimitiveTopologyType.Triangle, BlendState = blend, RasterizerState = RasterizerDescription.CullNone,
-            SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = SampleDescription.Default
+            SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = new SampleDescription(samples, 0)
         }));
         _solid = Pipeline(solidVs, "ShamsehSolidPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual), LightFormat);
         _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, under, LightFormat);
         _fur = Pipeline(D3D12Session.Shader("ShamsehFurVS"), "ShamsehFurPS", layered, under, LightFormat);
-        _lens = Pipeline(D3D12Session.Shader("ShamsehLensVS"), "ShamsehLensPS", BlendDescription.Opaque, DepthStencilDescription.None, Format.R8G8B8A8_UNorm);
+        _lens = Pipeline(D3D12Session.Shader("ShamsehLensVS"), "ShamsehLensPS", BlendDescription.Opaque, DepthStencilDescription.None, Format.R8G8B8A8_UNorm, 1);   // the lens reads the samples and writes one pixel
     }
 
     private static readonly Color4 Background = new(0.01f, 0.02f, 0.03f, 1);
@@ -121,12 +123,18 @@ internal sealed unsafe class ShamsehScene : IDisposable
         return t;
     }
 
-    /// <summary>The gate's vertices and indices with the lawn after them: a big square of soil at y = 0 (material 1, uv in blades' units), the grass's ground.</summary>
-    private static (float[] Vertices, uint[] Indices) Lawn(float[] vertices, uint[] indices)
+    /// <summary>The gate's vertices and indices with the lawn after them: a round turf of radius <see cref="TurfRadius"/> at y = 0 (material 1, uv in blades' units) and an earth skirt round its edge. The disc's triangles come first, for the grass.</summary>
+    private const float TurfRadius = 1.2f, SkirtDepth = 0.1f, BladeUv = 0.45f; private const int Round = 128;
+    private static (float[] Vertices, uint[] Indices, int Disc) Lawn(float[] vertices, uint[] indices)
     {
-        uint first = (uint)(vertices.Length / 9); const float E = 40, U = 0.4f;
-        float[] quad = [-E, 0, -E, 0, 1, 0, -E * U, -E * U, 1, E, 0, -E, 0, 1, 0, E * U, -E * U, 1, E, 0, E, 0, 1, 0, E * U, E * U, 1, -E, 0, E, 0, 1, 0, -E * U, E * U, 1];
-        return ([.. vertices, .. quad], [.. indices, first, first + 1, first + 2, first, first + 2, first + 3]);
+        var v = new List<float>(vertices); var ix = new List<uint>(indices); uint first = (uint)(vertices.Length / 9);
+        void Add(float x, float y, float z, float nx, float ny, float nz) { v.AddRange([x, y, z, nx, ny, nz, x * BladeUv, z * BladeUv, 1]); }
+        Add(0, 0, 0, 0, 1, 0); for (int j = 0; j < Round; j++) { float a = j * MathF.Tau / Round; Add(MathF.Cos(a) * TurfRadius, 0, MathF.Sin(a) * TurfRadius, 0, 1, 0); }
+        for (int j = 0; j < Round; j++) ix.AddRange([first, first + 1 + (uint)j, first + 1 + (uint)((j + 1) % Round)]);
+        int disc = Round * 3; uint rim = first + 1 + Round;
+        for (int j = 0; j < Round; j++) { float a = j * MathF.Tau / Round, c = MathF.Cos(a), s = MathF.Sin(a); Add(c * TurfRadius, 0, s * TurfRadius, c, 0, s); Add(c * TurfRadius, -SkirtDepth, s * TurfRadius, c, 0, s); }
+        for (int j = 0; j < Round; j++) { uint a = rim + (uint)(2 * j), b = rim + (uint)(2 * ((j + 1) % Round)); ix.AddRange([a, b, a + 1, b, b + 1, a + 1]); }
+        return ([.. v], [.. ix], disc);
     }
 
     /// <summary>A picture's mip chain (BC3, <paramref name="size"/> down to 4, largest first) as a texture: staged at 512-byte boundaries, rows 256-byte aligned, as buffer-to-texture copies require.</summary>
@@ -176,7 +184,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
         l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList); l.IASetIndexBuffer(new IndexBufferView(_indices.GPUVirtualAddress, (_gateIndices + _lawnIndices) * 4, Format.R32_UInt));
         l.SetPipelineState(_solid); l.DrawIndexedInstanced(_gateIndices + _lawnIndices, 1, 0, 0, 0);   // the gate, and the soil under the grass
         if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the sky behind them: the depth test keeps the aurora off them
-        if (WithLawn) { l.SetPipelineState(_fur); l.DrawIndexedInstanced(_lawnIndices, FurLayers, _gateIndices, 0, 0); }   // the grass, its layers in instance order: the inner ones first
+        if (WithLawn) { l.SetPipelineState(_fur); l.DrawIndexedInstanced(_discIndices, FurLayers, _gateIndices, 0, 0); }   // the grass, its layers in instance order: the inner ones first
         l.ResourceBarrierTransition(_light, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
         l.ResourceBarrierTransition(target, state, ResourceStates.RenderTarget);
         l.OMSetRenderTargets(Rtv(rtv)); l.SetPipelineState(_lens); l.DrawInstanced(3, 1, 0, 0);

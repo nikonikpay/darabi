@@ -14,13 +14,13 @@ struct Vertex { float3 Pos; float3 Normal; float2 Uv; float Material; };
 StructuredBuffer<Vertex> Vertices : register(t3);
 Texture2D<float4> Strands : register(t0);   // random heights, 2048 square, with mips (the grass reads by its footprint; the sky reads level 0)
 Texture2D<float4> Albedo : register(t1);    // the gate's colour (BC3, mips)
-Texture2D<float4> Light : register(t2);     // the frame before the lens
+Texture2DMS<float4, 4> Light : register(t2);   // the frame before the lens, four samples a pixel
 SamplerState Wrap : register(s0); SamplerState Aniso : register(s1);
 
 static const float3 L = normalize(float3(0.55, 0.7, 0.45));
 static const float3 Moon = float3(0.85, 0.93, 1.1) * 1.6;
-static const float3 Eye = float3(0, 1.55, 4.4);
-static const float Pitch = 0.17, TanHalf = 0.364;   // the camera looks a little down at the gate; 40 degrees across the frame
+static const float3 Eye = float3(0, 1.45, 3.3);
+static const float Pitch = 0.23, TanHalf = 0.42, Turf = 1.2;   // the camera close, looking down at the gate and its turf; 45 degrees across the frame; the turf's radius
 float2 Turn(float2 v, float a) { float c = cos(a), s = sin(a); return float2(c * v.x - s * v.y, s * v.x + c * v.y); }
 float3 ToWorld(float3 p) { p.yz = Turn(p.yz, -Rx); p.xz = Turn(p.xz, -Ry); return p; }
 // the camera at Eye, looking down by Pitch; depth d runs from 0.3 to 60
@@ -31,7 +31,7 @@ float4 Project(float3 p)
     return float4(q.x / (TanHalf * Aspect), y / TanHalf, 60 * (d - 0.3) / 59.7, d);
 }
 static const float3 Horizon = float3(0.025, 0.04, 0.06);
-float3 Fog(float3 c, float3 world) { return lerp(c, Horizon, 1 - exp(-length(world - Eye) * 0.045)); }
+float3 Fog(float3 c, float3 world) { return lerp(c, Horizon, 1 - exp(-length(world - Eye) * 0.012)); }
 
 struct Lit { float4 Pos : SV_Position; float3 World : W; float3 Normal : N; float3 Object : O; float2 Uv : UV; nointerpolation uint Material : M; float H : H; };
 
@@ -47,7 +47,7 @@ float4 SolidPS(Lit i) : SV_Target
 {
     float3 n = normalize(i.Normal), v = normalize(Eye - i.World);
     float2 du1 = ddx(i.Uv), du2 = ddy(i.Uv);   // taken before the branch: the derivatives are of the whole quad
-    if (i.Material != 0) return float4(Fog(float3(0.012, 0.04, 0.012) * (0.3 + 0.7 * saturate(dot(n, L))) * Moon, i.World), 1);   // the soil, under the grass
+    if (i.Material != 0) return float4(Fog((i.Object.y < -0.001 || abs(n.y) < 0.5 ? float3(0.07, 0.045, 0.03) : float3(0.012, 0.04, 0.012)) * (0.3 + 0.7 * saturate(dot(n, L))) * Moon, i.World), 1);   // the soil under the grass, and the earth round the turf's edge
     float3 nn = n;   // the scan's own geometry carries the detail: no map
     float3 a = Albedo.SampleGrad(Aniso, i.Uv, du1, du2).rgb;
     float dif = saturate(dot(nn, L)), fres = pow(1 - saturate(dot(n, v)), 4), spec = pow(saturate(dot(nn, normalize(L + v))), 28) * 0.12;
@@ -78,16 +78,16 @@ float4 FurPS(Lit i) : SV_Target
     // which holds the clock lower at the power limit, as a fur test's does, without sending more reads to the memory
     float4 s = Strands.Sample(Wrap, i.Uv * 0.55), s2 = Strands.Sample(Wrap, i.Uv * 1.27 + 0.37);
     float4 s3 = Strands.Sample(Wrap, i.Uv * 0.83 + 0.71), s4 = Strands.Sample(Wrap, i.Uv * 0.21 + 0.19);
-    float dist = length(i.World - Eye), reach = 1 - smoothstep(7, 18, dist);   // far blades are finer than a pixel: they fade into the soil's colour
+    float dist = length(i.World - Eye), reach = smoothstep(Turf, Turf - 0.04, length(i.Object.xz));   // the turf's round edge
     float outside = max(abs(i.Object.x) - 0.75, abs(i.Object.z) - 0.8);       // how far from the gate's foot (its footprint, about 1.4 by 1.5)
-    float tall = s.r * 0.6 + s2.r * 0.25 + s3.r * 0.15, a = saturate((tall - (0.22 + 0.6 * i.H)) * 9) * 0.85 * reach * smoothstep(-0.05, 0.05, outside);
+    float tall = s.r * 0.6 + s2.r * 0.25 + s3.r * 0.15, a = saturate((tall - (0.22 + 0.6 * i.H)) * 9) * 0.85 * reach;
     float3 base = lerp(float3(0.05, 0.3, 0.05), float3(0.3, 0.55, 0.08), s.g) * (0.85 + 0.3 * s4.b);   // the lawn's colour in soft patches
-    float shut = lerp(0.3, 1, saturate(outside / 0.7));   // the gate keeps the light off the grass at its foot
+    float shut = lerp(0.45, 1, saturate(outside / 0.7));   // the gate keeps the light off the grass at its foot
     float dif = saturate(dot(n, L)) * 0.8 + 0.2, rim = pow(1 - abs(dot(n, v)), 2);
     // the blade's sheen (Kajiya-Kay): it lies along the blade, which leans out along the normal, bent a little by its own tuft
     float3 t = normalize(n + (s3.gba - 0.5) * 0.6), hv = normalize(L + v); float th = dot(t, hv), sheen = pow(sqrt(saturate(1 - th * th)), 48);
     float3 c = (base * (0.2 + 0.8 * i.H) * dif * Moon * 0.7 + base * rim * 0.5 * i.H + float3(0.7, 0.9, 1) * (0.05 * pow(saturate(dot(reflect(-L, n), v)), 6) + 0.1 * sheen) * i.H) * shut;
-    c = lerp(c, Horizon, 1 - exp(-dist * 0.045));
+    c = lerp(c, Horizon, 1 - exp(-dist * 0.012));
     return float4(c * a, a);
 }
 
@@ -126,7 +126,7 @@ float4 LensVS(uint id : SV_VertexID) : SV_Position { float2 p = float2((id << 1)
 [RootSignature(RS)]
 float4 LensPS(float4 pos : SV_Position) : SV_Target
 {
-    float3 c = Light.Load(int3(pos.xy, 0)).rgb;
-    c = c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14);
-    return float4(pow(saturate(c), 1 / 2.2), 1);
+    float3 sum = 0;   // each sample to the screen's colours first, then the mean: a bright edge keeps its shape instead of blooming
+    [unroll] for (uint k = 0; k < 4; k++) { float3 c = Light.Load(int2(pos.xy), k).rgb; c = c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14); sum += pow(saturate(c), 1 / 2.2); }
+    return float4(sum / 4, 1);
 }
