@@ -120,6 +120,9 @@ function logo() {
 // The narrow bar (icons only) is a per-viewer convenience kept in the browser profile.
 function setNav(mini) { app.dataset.nav = mini ? "mini" : ""; try { localStorage.setItem("mazesta.nav", mini ? "mini" : ""); } catch { /* not kept */ } }
 
+// the side menu's entries each in a colour of their own, in the order of FAMILIES (neighbours never share one)
+const MENU_HUE = ["#fdd400", "#4fd68a", "#5ba8ff", "#b38bff", "#ff78b9", "#ff9a4d", "#35d0e0", "#5ba8ff", "#d9ccb0", "#ff6b8a", "#9fb6cf", "#4fd68a"];
+
 function renderIndex(info) {
   clear(index);
   // Until the viewer picks, the bar is open (the search and the page names show); only their own choice narrows it.
@@ -131,9 +134,9 @@ function renderIndex(info) {
     searchBox(PAGES, go),
     h("ul", { class: "index-list" }, FAMILIES.map((f, i) => [
       i === 2 || i === 6 ? h("li", { class: "sep", role: "presentation" }) : null,
-      h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`,
+      h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`, style: { "--hue": MENU_HUE[i % MENU_HUE.length], "--i": i },
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
-        icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no", "aria-hidden": "true" }, icon("chevronend")))),
+        h("span", { class: "n-ico" }, icon(f.icon)), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no", "aria-hidden": "true" }, icon("chevronend")))),
     ])),
     // The assistant lives in its own column at the other edge; this entry, right under the pages, opens and folds it from any page.
     h("button", { class: "index-asst", type: "button", title: `${t("Nav_Assistant")} · Ctrl+J`, onclick: () => window.dispatchEvent(new Event("assistant:toggle")) },
