@@ -81,7 +81,8 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                     // (and the half second after it: the card is still getting back to its clock)
                     if ((checkTime == 0 && !afterCheck) || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
                     afterCheck = checkTime > 0;
-                    recent.Enqueue(lastFps); if (recent.Count > 4) recent.Dequeue(); double fps = recent.Average(); updateFrames = 0;   // (the last two seconds averaged: the clock's dither at the power limit does not make the figure jump) updateClock.Restart(); checkTime = 0;
+                    // the shown figure is the last two seconds averaged: the clock's dither at the power limit does not make it jump
+                    recent.Enqueue(lastFps); if (recent.Count > 4) recent.Dequeue(); double fps = recent.Average(); updateFrames = 0; updateClock.Restart(); checkTime = 0;
                     window.Title = $"Mazesta — GPU temperature — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
                     readout.Show(fps, request.Clock.UtcNow, total.Elapsed, duration, stats, $"{w} × {h} · check frames {checks} · errors {errors}", errors > 0);
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
