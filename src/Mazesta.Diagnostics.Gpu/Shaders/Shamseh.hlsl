@@ -5,7 +5,7 @@
 // Compiled offline by tools/compile-gpu-shaders.ps1 (the entry names are the star's: SolidVS/PS the gate and the lawn's soil,
 // FurVS/PS the grass, GroundVS/PS the sky).
 
-#define RS "RootConstants(num32BitConstants=12, b0), SRV(t3), DescriptorTable(SRV(t0, numDescriptors=3)), " \
+#define RS "RootConstants(num32BitConstants=12, b0), SRV(t3), DescriptorTable(SRV(t0, numDescriptors=3), SRV(t4)), " \
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_WRAP, addressV=TEXTURE_ADDRESS_WRAP), " \
            "StaticSampler(s1, filter=FILTER_ANISOTROPIC, maxAnisotropy=8, addressU=TEXTURE_ADDRESS_WRAP, addressV=TEXTURE_ADDRESS_WRAP)"
 
@@ -14,11 +14,12 @@ struct Vertex { float3 Pos; float3 Normal; float2 Uv; float Material; };
 StructuredBuffer<Vertex> Vertices : register(t3);
 Texture2D<float4> Strands : register(t0);   // random heights, 2048 square, with mips (the grass reads by its footprint; the sky reads level 0)
 Texture2D<float4> Albedo : register(t1);    // the gate's colour (BC3, mips)
+Texture2D<float4> Sky : register(t4);       // the daylight panorama behind the gate (sRGB, 2000 x 848: all the way round, 153 degrees up and down)
 Texture2DMS<float4> Light : register(t2);   // the frame before the lens, several samples a pixel
 SamplerState Wrap : register(s0); SamplerState Aniso : register(s1);
 
-static const float3 L = normalize(float3(0.55, 0.7, 0.45));
-static const float3 Moon = float3(0.85, 0.93, 1.1) * 1.6;
+static const float3 L = normalize(float3(0.72, 0.5, 0.5));   // the panorama's sun, turned to shine on the gate from the front right, a little higher than in the picture
+static const float3 Moon = float3(1.0, 0.9, 0.75) * 1.5;   // (the name is the night scene's) the sun's light
 static const float3 Eye = float3(0, 1.5, 3.4);
 static const float Pitch = 0.24, TanHalf = 0.40, Turf = 1.2;   // the camera looking down at the gate and its whole turf (the stone's top and the turf's near edge both inside the frame); 43 degrees across the frame; the turf's radius
 float2 Turn(float2 v, float a) { float c = cos(a), s = sin(a); return float2(c * v.x - s * v.y, s * v.x + c * v.y); }
@@ -30,7 +31,7 @@ float4 Project(float3 p)
     float d = -q.y * s - q.z * c, y = q.y * c - q.z * s;
     return float4(q.x / (TanHalf * Aspect), y / TanHalf, 60 * (d - 0.3) / 59.7, d);
 }
-static const float3 Horizon = float3(0.025, 0.04, 0.06);
+static const float3 Horizon = float3(0.5, 0.42, 0.33);   // the haze
 float3 Fog(float3 c, float3 world) { return lerp(c, Horizon, 1 - exp(-length(world - Eye) * 0.012)); }
 
 struct Lit { float4 Pos : SV_Position; float3 World : W; float3 Normal : N; float3 Object : O; float2 Uv : UV; nointerpolation uint Material : M; float H : H; };
@@ -51,7 +52,7 @@ float4 SolidPS(Lit i) : SV_Target
     float3 nn = n;   // the scan's own geometry carries the detail: no map
     float3 a = Albedo.SampleGrad(Aniso, i.Uv, du1, du2).rgb;
     float dif = saturate(dot(nn, L)), fres = pow(1 - saturate(dot(n, v)), 4), spec = pow(saturate(dot(nn, normalize(L + v))), 28) * 0.12;
-    float3 amb = lerp(float3(0.025, 0.05, 0.03), float3(0.1, 0.17, 0.2), nn.y * 0.5 + 0.5);   // the grass's bounce below, the aurora's glow above
+    float3 amb = lerp(float3(0.06, 0.07, 0.04), float3(0.22, 0.27, 0.34), nn.y * 0.5 + 0.5);   // the grass's bounce below, the aurora's glow above
     float ao = lerp(0.4, 1, saturate(i.Object.y / 0.3));   // the foot of the stone, where the grass shuts the light out
     float3 c = a * (amb + Moon * dif) * ao + spec * Moon + a * float3(0.1, 0.5, 0.3) * fres * 0.15;
     return float4(Fog(c, i.World), 1);
@@ -118,6 +119,19 @@ float4 GroundPS(Flat i) : SV_Target
     float cover = saturate(band * band * arc * rays * rays * (0.7 + 0.3 * grain.r) * 0.45);
     float3 c = hue * (0.6 + 1.6 * band * rays) + float3(0.6, 0.9, 1) * pow(grain.g, 40) * 0.6 * (1 - band);   // a few stars between the curtains
     return float4(c * cover, max(cover, 0.002));
+}
+
+// ----- the sky: the panorama as the camera sees it, drawn at the far plane so only where nothing else is; its sun is behind the camera, where L comes from
+static const float SkyTurn = -0.2417, SkySpan = 2.664, SkyGain = 0.85;   // the picture's turn about the vertical; its height in radians (848 / 2000 of a turn); its brightness before the lens
+[RootSignature(RS)]
+float4 SkyVS(uint id : SV_VertexID) : SV_Position { float2 p = float2((id << 1) & 2, id & 2); return float4(p * float2(2, -2) + float2(-1, 1), 1, 1); }
+[RootSignature(RS)]
+float4 SkyPS(float4 pos : SV_Position) : SV_Target
+{
+    float2 n = pos.xy / Size * 2 - 1; n.y = -n.y; float c = cos(Pitch), s = sin(Pitch), x = n.x * TanHalf * Aspect, y = n.y * TanHalf;
+    float3 d = normalize(float3(x, y * c - s, -y * s - c));
+    float2 uv = float2(atan2(d.x, -d.z) / 6.2831853 + 0.5 + SkyTurn, saturate(0.5 - asin(d.y) / SkySpan));
+    return float4(Sky.SampleLevel(Wrap, uv, 0).rgb * SkyGain, 1);
 }
 
 // ----- the lens: the light to the screen's colours
