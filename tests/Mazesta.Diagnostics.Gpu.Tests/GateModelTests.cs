@@ -9,7 +9,7 @@ public class GateModelTests
     public void The_embedded_gate_reads_whole_and_stands_where_it_should()
     {
         var g = GateModel.Load(); int nv = g.Vertices.Length / 9;
-        Assert.True(nv > 1_000_000 && g.Indices.Length / 3 > 1_900_000 && g.Indices.Length % 3 == 0);
+        Assert.True(nv > 250_000 && g.Indices.Length / 3 > 490_000 && g.Indices.Length % 3 == 0);
         Assert.All(g.Indices, i => Assert.True(i < nv));
         float minY = float.MaxValue, maxY = float.MinValue;
         for (int i = 0; i < nv; i += 997)

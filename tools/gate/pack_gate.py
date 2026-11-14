@@ -12,6 +12,7 @@ assert ix.max() < nv
 lo = v[:, :3].min(0); ext = v[:, :3].max(0) - lo
 q = np.round((v[:, :3] - lo) / ext * 65535).astype(np.uint16)
 n = v[:, 3:6] / np.linalg.norm(v[:, 3:6], axis=1, keepdims=True).clip(1e-9)   # octahedral: fold the lower hemisphere over the upper
+n[np.abs(n).sum(1) == 0] = (0, 0, 1)   # a vertex no triangle shades has no normal; up is as good as any
 p = n[:, :2] / np.abs(n).sum(1, keepdims=True); neg = n[:, 2] < 0
 fold = (1 - np.abs(p[:, ::-1])) * np.where(p >= 0, 1, -1); p = np.where(neg[:, None], fold, p)
 o = np.round(p * 32767).astype(np.int16)

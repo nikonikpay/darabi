@@ -13,8 +13,12 @@ lo_, hi_ = v.min(0), v.max(0); k = HEIGHT / (hi_[2] - lo_[2]); c = (lo_ + hi_) /
 me.transform(Matrix.Translation((-c[0] * k, -c[1] * k, -lo_[2] * k)) @ Matrix.Scale(k, 4)); me.update()
 
 # the colour picture of the material (the node wired to Base Color), at SIZE
-mat = bpy.data.materials["pbr_material"]; bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
-img = bsdf.inputs["Base Color"].links[0].from_node.image; print("ALBEDO", img.name, img.size[:])
+if "pbr_material" in bpy.data.materials:
+    bsdf = next(n for n in bpy.data.materials["pbr_material"].node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    img = bsdf.inputs["Base Color"].links[0].from_node.image
+else:   # gate500K.blend: a baked material with labelled picture nodes and no shader wired
+    img = next(n.image for n in bpy.data.materials["normal_bake"].node_tree.nodes if n.type == "TEX_IMAGE" and n.label == "BASE COLOR")
+print("ALBEDO", img.name, img.size[:])
 img.scale(SIZE, SIZE); img.filepath_raw = f"{out}/gate-albedo.png"; img.file_format = "PNG"; img.save()
 flat = bpy.data.images.new("flat", SIZE, SIZE, alpha=False); flat.colorspace_settings.name = "Non-Color"; flat.pixels.foreach_set(np.tile(np.array([0.5, 0.5, 1.0, 1.0], np.float32), SIZE * SIZE))
 flat.filepath_raw = f"{out}/gate-normal.png"; flat.file_format = "PNG"; flat.save()
