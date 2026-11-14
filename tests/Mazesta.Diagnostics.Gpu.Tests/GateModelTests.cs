@@ -12,7 +12,7 @@ public class GateModelTests
         Assert.True(nv > 250_000 && g.Indices.Length / 3 > 490_000 && g.Indices.Length % 3 == 0);
         Assert.All(g.Indices, i => Assert.True(i < nv));
         float minY = float.MaxValue, maxY = float.MinValue;
-        for (int i = 0; i < nv; i += 997)
+        for (int i = 0; i < nv; i += 97)
         {
             int a = i * 9; minY = Math.Min(minY, g.Vertices[a + 1]); maxY = Math.Max(maxY, g.Vertices[a + 1]);
             float len = MathF.Sqrt(g.Vertices[a + 3] * g.Vertices[a + 3] + g.Vertices[a + 4] * g.Vertices[a + 4] + g.Vertices[a + 5] * g.Vertices[a + 5]);
