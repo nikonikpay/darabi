@@ -5,7 +5,7 @@
 // Compiled offline by tools/compile-gpu-shaders.ps1 (the entry names are the star's: SolidVS/PS the gate and the lawn's soil,
 // FurVS/PS the grass, GroundVS/PS the sky).
 
-#define RS "RootConstants(num32BitConstants=12, b0), SRV(t3), DescriptorTable(SRV(t0, numDescriptors=3), SRV(t4)), " \
+#define RS "RootConstants(num32BitConstants=12, b0), SRV(t3), DescriptorTable(SRV(t0, numDescriptors=3)), " \
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_WRAP, addressV=TEXTURE_ADDRESS_WRAP), " \
            "StaticSampler(s1, filter=FILTER_ANISOTROPIC, maxAnisotropy=8, addressU=TEXTURE_ADDRESS_WRAP, addressV=TEXTURE_ADDRESS_WRAP)"
 
@@ -14,7 +14,6 @@ struct Vertex { float3 Pos; float3 Normal; float2 Uv; float Material; };
 StructuredBuffer<Vertex> Vertices : register(t3);
 Texture2D<float4> Strands : register(t0);   // random heights, 2048 square, with mips (the grass reads by its footprint; the sky reads level 0)
 Texture2D<float4> Albedo : register(t1);    // the gate's colour (BC3, mips)
-Texture2D<float4> Sky : register(t4);       // the daylight panorama behind the gate (sRGB, 2000 x 848: all the way round, 153 degrees up and down)
 Texture2DMS<float4> Light : register(t2);   // the frame before the lens, several samples a pixel
 SamplerState Wrap : register(s0); SamplerState Aniso : register(s1);
 
@@ -92,7 +91,7 @@ float4 FurPS(Lit i) : SV_Target
     return float4(c * a, a);
 }
 
-// ----- the sky behind: an aurora turning in a cone, as layers over the whole screen behind the gate (the depth test keeps them off it).
+// ----- the sky behind: golden curtains of light turning in a cone, as layers over the whole screen behind the gate (the depth test keeps them off it).
 // Every pixel of every layer does the same work wherever the gate is, so the frame's cost hardly changes as it turns.
 struct Flat { float4 Pos : SV_Position; float H : H; };
 [RootSignature(RS)]
@@ -114,24 +113,22 @@ float4 GroundPS(Flat i) : SV_Target
     float band = exp(-pow((r - ring) * (16 - 7 * i.H), 2));
     float rays = 0.45 + 0.55 * Soft(float2(a * 900 + spin * 200, Time * 0.4) / 2048);   // the curtain's folds, streaming along the wall
     float4 grain = Strands.SampleLevel(Wrap, i.Pos.xy * (Spread / 2048) + i.H * float2(0.37, 0.13), 0);   // a texel a pixel, a layer at a time: as before, the memory's share
-    float3 hue = lerp(float3(0.1, 1.0, 0.55), float3(0.55, 0.25, 1.0), smoothstep(0.35, 0.9, i.H + 0.3 * (n - 0.5)));
+    float3 hue = lerp(float3(1.0, 0.7, 0.2), float3(1.0, 0.3, 0.5), smoothstep(0.35, 0.9, i.H + 0.3 * (n - 0.5)));   // gold to rose
     float arc = smoothstep(0.5, 0.75, Soft(q * float2(20, 10) / 2048 + 0.13));   // the curtains come and go round the ring: separate arcs, sky between
     float cover = saturate(band * band * arc * rays * rays * (0.7 + 0.3 * grain.r) * 0.45);
     float3 c = hue * (0.6 + 1.6 * band * rays) + float3(0.6, 0.9, 1) * pow(grain.g, 40) * 0.6 * (1 - band);   // a few stars between the curtains
     return float4(c * cover, max(cover, 0.002));
 }
 
-// ----- the sky: the panorama as the camera sees it, drawn at the far plane so only where nothing else is; its sun is behind the camera, where L comes from
-static const float SkyTurn = -0.2417, SkySpan = 2.664, SkyGain = 0.85;   // the picture's turn about the vertical; its height in radians (848 / 2000 of a turn); its brightness before the lens
+// ----- the sky: a dusk, indigo overhead to amber at the horizon, drawn at the far plane so only where nothing else is; the golden curtains (GroundPS) turn over it
 [RootSignature(RS)]
 float4 SkyVS(uint id : SV_VertexID) : SV_Position { float2 p = float2((id << 1) & 2, id & 2); return float4(p * float2(2, -2) + float2(-1, 1), 1, 1); }
 [RootSignature(RS)]
 float4 SkyPS(float4 pos : SV_Position) : SV_Target
 {
-    float2 n = pos.xy / Size * 2 - 1; n.y = -n.y; float c = cos(Pitch), s = sin(Pitch), x = n.x * TanHalf * Aspect, y = n.y * TanHalf;
-    float3 d = normalize(float3(x, y * c - s, -y * s - c));
-    float2 uv = float2(atan2(d.x, -d.z) / 6.2831853 + 0.5 + SkyTurn, saturate(0.5 - asin(d.y) / SkySpan));
-    return float4(Sky.SampleLevel(Wrap, uv, 0).rgb * SkyGain, 1);
+    float t = saturate(1 - pos.y / Size.y);   // 0 at the bottom of the frame, 1 at the top
+    float3 c = lerp(float3(0.85, 0.42, 0.16), float3(0.36, 0.16, 0.26), smoothstep(0.0, 0.55, t));
+    return float4(lerp(c, float3(0.04, 0.05, 0.15), smoothstep(0.4, 1.0, t)), 1);
 }
 
 // ----- the lens: the light to the screen's colours

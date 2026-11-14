@@ -19,14 +19,14 @@ internal sealed unsafe class ShamsehScene : IDisposable
     /// way of reading; its layer count is set by what the gate's picture measured (see the commit that brought it).
     /// </summary>
     public const int Layers = 24;
-    public const int FurLayers = 525;   // (570 before the panorama behind the gate, which costs 0.35 ms) set so the card, drawing as fast as it can, gives about 200 FPS at 1080p with 4x multisampling and the camera as it is (RTX 3090 over 90 s: 855 layers gave 140, 600 gave 191)
+    public const int FurLayers = 445;   // (570 before the dusk sky behind the gate, whose curtains cost 0.6 ms a frame) set so the card, drawing as fast as it can, gives about 200 FPS at 1080p with 4x multisampling and the camera as it is (RTX 3090 over 90 s: 855 layers gave 140, 600 gave 191)
     private const int WantedSamples = 4;   // multisampling of the HDR frame: the carving's edges and the blades; 8 halved the frame rate (95 FPS on an RTX 3090, which would leave a weaker card near 20)
     private readonly uint _samples;
     private const float Spread = 1f, FurLength = 0.07f;
     private const Format LightFormat = Format.R11G11B10_Float;
     private const int StrandSize = 2048;
-    /// <summary>The lawn under the gate and the aurora behind it are left out for now (the gate alone, as the scan has it); both are still here to switch on.</summary>
-    private static readonly bool WithLawn = true, WithSky = false;
+    /// <summary>The lawn under the gate and the golden curtains of light turning behind it (the old aurora, in a dusk's colours); both can be switched off.</summary>
+    private static readonly bool WithLawn = true, WithSky = true;
 
     private readonly D3D12Session _s; private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing;
     private readonly ID3D12Resource _light, _depth, _check, _vertices, _indices;
@@ -60,7 +60,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
         var (vertices, indices, disc) = WithLawn ? Lawn(gate.Vertices, gate.Indices) : (gate.Vertices, gate.Indices, 0); _lawnIndices = (uint)indices.Length - _gateIndices; _discIndices = (uint)disc;
         _vertices = s.Upload(vertices, ResourceStates.AllShaderResource); _indices = s.Upload(indices, ResourceStates.IndexBuffer);
         var strands = new byte[StrandSize * StrandSize * 4]; new Random(7).NextBytes(strands);   // the same strands every run: the check frames compare like with like
-        var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var colour = Mips(gate.Albedo, gate.Size); var panorama = Panorama();
+        var stranded = Texture(Format.R8G8B8A8_UNorm, StrandSize, StrandSize, strands); var colour = Mips(gate.Albedo, gate.Size);
 
         _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(LightFormat, (uint)width, (uint)height, 1, 1, _samples, 0, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(LightFormat, Background)));
@@ -68,9 +68,9 @@ internal sealed unsafe class ShamsehScene : IDisposable
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1, 0)));
         _check = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget), ResourceStates.CopySource));
 
-        _views = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 4, DescriptorHeapFlags.ShaderVisible)));
+        _views = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 3, DescriptorHeapFlags.ShaderVisible)));
         uint viewSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
-        ID3D12Resource[] read = [stranded, colour, _light, panorama];
+        ID3D12Resource[] read = [stranded, colour, _light];
         for (int i = 0; i < read.Length; i++) s.Device.CreateShaderResourceView(read[i], null, _views.GetCPUDescriptorHandleForHeapStart().Offset(i, viewSize));
         _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)_back.Length + 2)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
@@ -93,16 +93,6 @@ internal sealed unsafe class ShamsehScene : IDisposable
         _sky = Pipeline(D3D12Session.Shader("ShamsehSkyVS"), "ShamsehSkyPS", BlendDescription.Opaque, under, LightFormat);   // at the far plane: only where nothing is drawn
         _fur = Pipeline(D3D12Session.Shader("ShamsehFurVS"), "ShamsehFurPS", layered, under, LightFormat);
         _lens = Pipeline(D3D12Session.Shader("ShamsehLensVS"), "ShamsehLensPS", BlendDescription.Opaque, DepthStencilDescription.None, Format.R8G8B8A8_UNorm, 1);   // the lens reads the samples and writes one pixel
-    }
-
-    /// <summary>The panorama behind the gate (embedded Scene/sky.jpg, 2000 x 848), as an sRGB texture.</summary>
-    private ID3D12Resource Panorama()
-    {
-        using var raw = typeof(ShamsehScene).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.sky.jpg") ?? throw new InvalidDataException("The sky picture is not in this build.");
-        using var ms = new MemoryStream(); raw.CopyTo(ms);
-        var rgb = Jpeg.Decode(ms.ToArray(), out int w, out int h); var rgba = new byte[w * h * 4];
-        for (int i = 0, j = 0; i < rgba.Length; i += 4, j += 3) { rgba[i] = rgb[j]; rgba[i + 1] = rgb[j + 1]; rgba[i + 2] = rgb[j + 2]; rgba[i + 3] = 255; }
-        return Texture(Format.R8G8B8A8_UNorm_SRgb, w, h, rgba);
     }
 
     private static readonly Color4 Background = new(0.01f, 0.02f, 0.03f, 1);
@@ -195,7 +185,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
         l.SetGraphicsRoot32BitConstants(0, k, 0); l.SetGraphicsRootShaderResourceView(1, _vertices.GPUVirtualAddress); l.SetGraphicsRootDescriptorTable(2, _views.GetGPUDescriptorHandleForHeapStart());
         l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList); l.IASetIndexBuffer(new IndexBufferView(_indices.GPUVirtualAddress, (_gateIndices + _lawnIndices) * 4, Format.R32_UInt));
         l.SetPipelineState(_solid); l.DrawIndexedInstanced(_gateIndices + _lawnIndices, 1, 0, 0, 0);   // the gate, and the soil under the grass
-        l.SetPipelineState(_sky); l.DrawInstanced(3, 1, 0, 0);   // the daylight panorama behind the gate
+        l.SetPipelineState(_sky); l.DrawInstanced(3, 1, 0, 0);   // the dusk gradient behind the gate
         if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the sky behind them: the depth test keeps the aurora off them
         if (WithLawn) { l.SetPipelineState(_fur); l.DrawIndexedInstanced(_discIndices, FurLayers, _gateIndices, 0, 0); }   // the grass, its layers in instance order: the inner ones first
         l.ResourceBarrierTransition(_light, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);

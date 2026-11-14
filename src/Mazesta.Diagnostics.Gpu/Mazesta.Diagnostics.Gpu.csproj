@@ -29,8 +29,6 @@
     <EmbeddedResource Include="Scene/garden-night.mp3" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden-night.mp3" />
     <EmbeddedResource Include="Scene/garden-ambience.mp3" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden-ambience.mp3" />
     <EmbeddedResource Include="Scene/gate.mzgate" LogicalName="Mazesta.Diagnostics.Gpu.Scene.gate.mzgate" />
-    <!-- The daylight panorama behind the gate in the temperature test (Persepolis; the owner's picture). -->
-    <EmbeddedResource Include="Scene/sky.jpg" LogicalName="Mazesta.Diagnostics.Gpu.Scene.sky.jpg" />
     <EmbeddedResource Include="Scene/garden.mzscene" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.mzscene" />
     <!-- The light bounced round that garden, worked out for the Direct3D test by the ray tracer (Scene/GardenLightVolume.cs). -->
     <EmbeddedResource Include="Scene/garden.light" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.light" Condition="Exists('Scene/garden.light')" />
