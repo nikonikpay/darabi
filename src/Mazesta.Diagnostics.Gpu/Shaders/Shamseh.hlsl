@@ -30,6 +30,8 @@ float4 Project(float3 p)
     float d = -q.y * s - q.z * c, y = q.y * c - q.z * s;
     return float4(q.x / (TanHalf * Aspect), y / TanHalf, 60 * (d - 0.3) / 59.7, d);
 }
+// a normalize that cannot return NaN (a zero vector): one NaN sample is a black or white pixel in the frame
+float3 Nrm(float3 v) { return v * rsqrt(max(dot(v, v), 1e-12)); }
 static const float3 Horizon = float3(0.5, 0.42, 0.33);   // the haze
 float3 Fog(float3 c, float3 world) { return lerp(c, Horizon, 1 - exp(-length(world - Eye) * 0.012)); }
 
@@ -47,12 +49,12 @@ Lit SolidVS(uint id : SV_VertexID)
 [RootSignature(RS)]
 float4 SolidPS(Lit i) : SV_Target
 {
-    float3 n = normalize(i.Normal), v = normalize(Eye - i.World);
+    float3 n = Nrm(i.Normal), v = Nrm(Eye - i.World);
     float2 du1 = ddx(i.Uv), du2 = ddy(i.Uv);   // taken before the branch: the derivatives are of the whole quad
     if (i.Material != 0) return float4(Fog((i.Object.y < -0.001 || abs(n.y) < 0.5 ? float3(0.07, 0.045, 0.03) : float3(0.012, 0.04, 0.012)) * (0.3 + 0.7 * saturate(dot(n, L))) * Moon, i.World), 1);   // the soil under the grass, and the earth round the turf's edge
     float3 nn = n;   // the scan's own geometry carries the detail: no map
     float3 a = Albedo.SampleGrad(Aniso, i.Uv, du1, du2).rgb;
-    float dif = saturate(dot(nn, L)), fres = pow(1 - saturate(dot(n, v)), 4), spec = pow(saturate(dot(nn, normalize(L + v))), 28) * 0.12;
+    float dif = saturate(dot(nn, L)), fres = pow(1 - saturate(dot(n, v)), 4), spec = pow(saturate(dot(nn, Nrm(L + v))), 28) * 0.12;
     float3 amb = lerp(float3(0.06, 0.07, 0.04), float3(0.22, 0.27, 0.34), nn.y * 0.5 + 0.5);   // the grass's bounce below, the aurora's glow above
     float ao = lerp(0.4, 1, saturate(i.Object.y / 0.3));   // the foot of the stone, where the grass shuts the light out
     float3 c = a * (amb + Moon * dif) * ao + spec * Moon + a * float3(0.1, 0.5, 0.3) * fres * 0.15;
@@ -75,7 +77,7 @@ Lit FurVS(uint id : SV_VertexID, uint layer : SV_InstanceID)
 [RootSignature(RS)]
 float4 FurPS(Lit i) : SV_Target
 {
-    float3 n = normalize(i.Normal), v = normalize(Eye - i.World);
+    float3 n = Nrm(i.Normal), v = Nrm(Eye - i.World);
     // four reads near the blade's own scale (so they stay in the cache) and a blade's own highlight: more work for the cores per blended pixel,
     // which holds the clock lower at the power limit, as a fur test's does, without sending more reads to the memory
     float4 s = Strands.Sample(Wrap, i.Uv * 0.55), s2 = Strands.Sample(Wrap, i.Uv * 1.27 + 0.37);
@@ -87,7 +89,7 @@ float4 FurPS(Lit i) : SV_Target
     float shut = lerp(0.45, 1, saturate(outside / 0.7));   // the gate keeps the light off the grass at its foot
     float dif = saturate(dot(n, L)) * 0.8 + 0.2, rim = pow(1 - abs(dot(n, v)), 2);
     // the blade's sheen (Kajiya-Kay): it lies along the blade, which leans out along the normal, bent a little by its own tuft
-    float3 t = normalize(n + (s3.gba - 0.5) * 0.6), hv = normalize(L + v); float th = dot(t, hv), sheen = pow(sqrt(saturate(1 - th * th)), 48);
+    float3 t = Nrm(n + (s3.gba - 0.5) * 0.6), hv = Nrm(L + v); float th = dot(t, hv), sheen = pow(sqrt(saturate(1 - th * th)), 48);
     float3 c = (base * (0.2 + 0.8 * i.H) * dif * Moon * 0.7 + base * rim * 0.5 * i.H + float3(0.7, 0.9, 1) * (0.05 * pow(saturate(dot(reflect(-L, n), v)), 6) + 0.1 * sheen) * i.H) * shut;
     c = lerp(c, Horizon, 1 - exp(-dist * 0.012));
     return float4(c * a, a);
@@ -141,6 +143,6 @@ float4 LensPS(float4 pos : SV_Position) : SV_Target
 {
     float3 sum = 0;   // each sample to the screen's colours first, then the mean: a bright edge keeps its shape instead of blooming
     uint w, h, n; Light.GetDimensions(w, h, n);
-    for (uint k = 0; k < n; k++) { float3 c = Light.Load(int2(pos.xy), k).rgb; c = c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14); sum += pow(saturate(c), 1 / 2.2); }
+    for (uint k = 0; k < n; k++) { float3 c = Light.Load(int2(pos.xy), k).rgb; if (!all(isfinite(c))) c = 0; c = min(c, 1000); c = c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14); sum += pow(saturate(c), 1 / 2.2); }
     return float4(sum / n, 1);
 }
