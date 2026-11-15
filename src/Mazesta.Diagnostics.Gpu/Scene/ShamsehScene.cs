@@ -89,7 +89,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
             SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = new SampleDescription(samples == 0 ? _samples : samples, 0)
         }));
         _solid = Pipeline(solidVs, "ShamsehSolidPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual), LightFormat);
-        _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, under, LightFormat);
+        _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, DepthStencilDescription.None, LightFormat);   // no depth test: it is drawn right after the sky and the gate then covers it, so no edge sample's colour depends on the depth buffer
         // Drawn first, over everything (it always passes the depth test), and the gate and the lawn then cover it. (Drawn last with a depth test "only where
         // nothing is", the card left silhouette samples unpainted - black dashes round the gate - once the garden had run in the same process, and the check frames differed.)
         _sky = Pipeline(D3D12Session.Shader("ShamsehSkyVS"), "ShamsehSkyPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.Always), LightFormat);   // and it writes the far depth itself: a clear alone left stale depth at silhouette samples
@@ -187,8 +187,8 @@ internal sealed unsafe class ShamsehScene : IDisposable
         l.SetGraphicsRoot32BitConstants(0, k, 0); l.SetGraphicsRootShaderResourceView(1, _vertices.GPUVirtualAddress); l.SetGraphicsRootDescriptorTable(2, _views.GetGPUDescriptorHandleForHeapStart());
         l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList); l.IASetIndexBuffer(new IndexBufferView(_indices.GPUVirtualAddress, (_gateIndices + _lawnIndices) * 4, Format.R32_UInt));
         l.SetPipelineState(_sky); l.DrawInstanced(3, 1, 0, 0);   // the dusk gradient behind the gate
+        if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the aurora over the dusk, behind everything: the gate and the lawn are drawn over it
         l.SetPipelineState(_solid); l.DrawIndexedInstanced(_gateIndices + _lawnIndices, 1, 0, 0, 0);   // the gate, and the soil under the grass
-        if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the sky behind them: the depth test keeps the aurora off them
         if (WithLawn) { l.SetPipelineState(_fur); l.DrawIndexedInstanced(_discIndices, FurLayers, _gateIndices, 0, 0); }   // the grass, its layers in instance order: the inner ones first
         l.ResourceBarrierTransition(_light, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
         l.ResourceBarrierTransition(target, state, ResourceStates.RenderTarget);

@@ -33,7 +33,9 @@ float4 Project(float3 p)
 static const float3 Horizon = float3(0.5, 0.42, 0.33);   // the haze
 float3 Fog(float3 c, float3 world) { return lerp(c, Horizon, 1 - exp(-length(world - Eye) * 0.012)); }
 
-struct Lit { float4 Pos : SV_Position; float3 World : W; float3 Normal : N; float3 Object : O; float2 Uv : UV; nointerpolation uint Material : M; float H : H; };
+// centroid: an edge pixel whose centre lies outside the triangle (only some of its samples are inside) is shaded from a point inside it. Without it the
+// inputs are extrapolated past the edge, and the gate's colour there lands in the scan's unused margin of the picture: odd-coloured dots round the outline.
+struct Lit { float4 Pos : SV_Position; centroid float3 World : W; centroid float3 Normal : N; centroid float3 Object : O; centroid float2 Uv : UV; nointerpolation uint Material : M; centroid float H : H; };
 
 // ----- the gate and the soil under the grass, solid
 [RootSignature(RS)]
