@@ -13,12 +13,12 @@ public sealed class RgbConflicts
     private sealed record Maker(string Name, string[] Processes, string[] Services);
     private static readonly Maker[] Makers =
     [
-        new("ASUS Armoury Crate / Aura", ["ArmouryCrate.UserSessionHelper", "ArmouryCrate.Service", "ArmourySocketServer", "AacAmbientLighting", "LightingService", "ArmouryCrate", "ArmourySwAgent", "AuraService", "ROGLiveService"], ["LightingService", "ArmouryCrateService", "AuraService"]),
+        new("ASUS Armoury Crate / Aura", ["ArmouryCrate.UserSessionHelper", "ArmouryCrate.Service", "ArmourySocketServer", "AacAmbientLighting", "LightingService", "ArmouryCrate", "ArmourySwAgent", "AuraService", "ROGLiveService", "Aac*"], ["LightingService", "ArmouryCrateService", "AuraService", "ROG Live Service"]),   // (ROG Live Service starts Armoury Crate again a few seconds after it was ended: seen on an X870 board)
         new("MSI Center / Mystic Light", ["MysticLight", "LEDKeeper2", "MSI Center", "MSI_Central_Service", "Dragon Center", "MSI.CentralServer"], ["MSI_Central_Service", "LEDKeeper2", "MSI Mystic Light Service"]),
         new("Gigabyte RGB Fusion", ["RGBFusion", "GigabyteUpdateService", "RGBFusionService", "GCC", "GigabyteControlCenter"], ["GigabyteUpdateService", "GBTUpdateService"]),
         new("ASRock Polychrome / RGB LED", ["ASRock Polychrome RGB", "ASRRGBLED", "Polychrome", "ASRockRGBLED"], ["ASRRGBLEDService", "ASRockRGBLEDService"]),
         new("Lian Li L-Connect", ["L-Connect 3", "LConnect3", "L-Connect", "LianLi.LConnect"], ["LConnectService", "L-Connect Service", "LianLiService"]),
-        new("Corsair iCUE", ["iCUE", "Corsair.Service", "CueLLAccessService", "iCUEDevicePluginHost"], ["CorsairService", "CorsairLLAService", "Corsair Service"]),
+        new("Corsair iCUE", ["iCUE", "Corsair.Service", "CueLLAccessService", "iCUEDevicePluginHost", "CorsairDeviceControlService", "CorsairDeviceListerService"], ["CorsairService", "CorsairLLAService", "Corsair Service", "CorsairDeviceControlService", "CorsairDeviceListerService", "iCUEUpdateService"]),
         new("NZXT CAM", ["NZXT CAM", "NZXT.CAM"], ["NZXT Service", "NZXTCAMService"]),
         new("SignalRGB", ["SignalRgb", "SignalRgbLauncher"], ["SignalRgbService"]),
         new("Razer Synapse / Chroma", ["Razer Synapse 3", "Razer Synapse", "RazerCentral", "Razer Central", "RzSDKService", "RazerAppEngine", "Razer Chroma SDK Server", "Razer Chroma SDK Service", "RzSDKServer"], ["RzActionSvc", "RazerCentralService", "Razer Synapse Service", "Razer Chroma SDK Service", "Razer Chroma SDK Server", "Razer Game Manager Service", "Razer Game Manager Service 3"]),
@@ -37,7 +37,11 @@ public sealed class RgbConflicts
     public RgbConflicts(string? journal = null) { _journal = journal; }
 
     /// <summary>The makers' programs that are running now (their names), nothing is changed.</summary>
-    public IReadOnlyList<string> Running() => [.. Makers.Where(m => m.Processes.Any(p => Process.GetProcessesByName(p).Length > 0) || m.Services.Any(IsRunning)).Select(m => m.Name)];
+    public IReadOnlyList<string> Running() => [.. Makers.Where(m => m.Processes.Any(p => Find(p).Length > 0) || m.Services.Any(IsRunning)).Select(m => m.Name)];
+
+    // A name ending in * is a prefix: ASUS runs one hardware-access helper per board (Aac3572MbHal_x86, AacKingstonDramHal_x86 ...), and the one for this board crashes
+    // and is started again by Armoury's service while another program talks to the same chip - the lights then flash with every restart.
+    private static Process[] Find(string name) => name.EndsWith('*') ? [.. Process.GetProcesses().Where(p => { try { return p.ProcessName.StartsWith(name[..^1], StringComparison.OrdinalIgnoreCase); } catch (InvalidOperationException) { return false; } })] : Process.GetProcessesByName(name);
 
     /// <summary>Names of the makers' programs this object has stopped and not yet put back.</summary>
     public IReadOnlyList<string> StoppedNow { get { lock (_gate) return [.. _stopped.Select(s => s.Maker).Distinct()]; } }
@@ -64,12 +68,12 @@ public sealed class RgbConflicts
                 }
             }
             foreach (var name in m.Processes)
-                foreach (var p in Process.GetProcessesByName(name))
+                foreach (var p in Find(name))
                 {
                     using (p)
                     {
                         string? exe = null; try { exe = p.MainModule?.FileName; } catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
-                        try { p.Kill(true); p.WaitForExit(3000); lock (_gate) if (!_stopped.Any(x => x.Exe is not null && string.Equals(x.Exe, exe, StringComparison.OrdinalIgnoreCase))) _stopped.Add(new(m.Name, exe, null, null)); } catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
+                        try { p.Kill(true); p.WaitForExit(3000); if (name.EndsWith('*')) continue;   /* (helpers are started by their own program, never by us) */ lock (_gate) if (!_stopped.Any(x => x.Exe is not null && string.Equals(x.Exe, exe, StringComparison.OrdinalIgnoreCase))) _stopped.Add(new(m.Name, exe, null, null)); } catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
                     }
                 }
         }
