@@ -2711,14 +2711,14 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Wifi" xml:space="preserve"><value>Wi-Fi</value></data>
   <data name="Checks_Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
   <data name="Checks_Usb_Sub" xml:space="preserve"><value>a device in each port</value></data>
-  <data name="Checks_Usb_Text" xml:space="preserve"><value>Press Start, then plug a flash drive, a disk or any USB device into each port of the case or laptop in turn. Every port where Windows recognises the device is ticked as working, with what was plugged in. A port that stays unticked recognised nothing.</value></data>
+  <data name="Checks_Usb_Text" xml:space="preserve"><value>Press Start: every port that already holds a recognised device is ticked at once. Then plug a flash drive, a disk or any USB device into each empty port in turn; every port where Windows recognises it is ticked as working, with the device&apos;s name. A port that stays unticked recognised nothing.</value></data>
   <data name="Checks_Usb_Start" xml:space="preserve"><value>Start</value></data>
   <data name="Checks_Usb_Waiting" xml:space="preserve"><value>Waiting: plug a device into a port.</value></data>
   <data name="Checks_Usb_Port" xml:space="preserve"><value>Port {0} · hub {1}</value></data>
   <data name="Checks_Usb_NoPort" xml:space="preserve"><value>Port not reported</value></data>
   <data name="Checks_Usb_Count" xml:space="preserve"><value>{0} ports working</value></data>
   <data name="Checks_Usb_Error" xml:space="preserve"><value>Windows reports a problem with this device</value></data>
-  <data name="Help_Checks_Usb" xml:space="preserve"><value>Finds which USB ports of the case or laptop work: after Start, each port where a plugged-in device (a flash drive, a disk, a mouse) is recognised by Windows gets a tick with the device&apos;s name. Devices already plugged in before Start do not count, so each port is proven by a new plug.</value></data>
+  <data name="Help_Checks_Usb" xml:space="preserve"><value>Finds which USB ports of the case or laptop work: after Start, each port holding a device Windows recognises (a flash drive, a disk, a mouse) is ticked with the device&apos;s name, whether it was plugged in before or during the check. Moving one flash drive from port to port ticks each port in turn.</value></data>
   <data name="HelpHow_Checks_Usb" xml:space="preserve"><value>Press Start.|Plug a flash drive or any USB device into one port and wait for its tick.|Unplug it and move to the next port, until every port is tried.|Mark the card as fine, or as a problem if a port stayed unticked.</value></data>
   <data name="Checks_Usb" xml:space="preserve"><value>USB ports</value></data>
   <data name="Checks_VideoOut" xml:space="preserve"><value>Video out (HDMI)</value></data>

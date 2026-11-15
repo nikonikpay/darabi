@@ -189,22 +189,20 @@ function speakers(cleanup) {
       h("button", { class: "btn quiet", onclick: () => { stop(); show(false, false); } }, icon("stop"), t("Checks_Stop")), h("span", { class: "grow" }), lamps.l, lamps.r), note));
 }
 
-// The USB ports: what was plugged in before Start does not count, so a port is ticked only when a device newly put into it is recognised by Windows.
+// The USB ports: each port holding a device Windows recognises is ticked, what is plugged in now and what is plugged in while the check runs.
 // Read every two seconds while the check runs, never otherwise.
 function usb(cleanup) {
   const list = h("div", { class: "chk-usb" }), status = h("p", { class: "caption" });
   const ports = new Map();   // "hub:port" (or the device id when Windows gives no port) -> its row
-  let before = null, timer = 0;
+  const seen = new Set(); let timer = 0;
   const end = () => { clearInterval(timer); timer = 0; start.hidden = false; stop.hidden = true; };
   async function read() {
     let all; try { all = await call("usb.read"); } catch (e) { status.textContent = String(e.message || e); end(); return; }
-    // A flash drive keeps its id from port to port, so a device counts by id and place, and one that was pulled out counts again when it comes back.
-    const place = (d) => (d.port != null ? `${d.hub}:${d.port}` : d.id), key = (d) => `${d.id}@${place(d)}`, now = new Set(all.map(key));
-    if (!before) { before = now; return; }
-    for (const k of before) if (!now.has(k)) before.delete(k);
+    // Every device Windows recognises proves its port, plugged before Start or after; a flash drive keeps its id from port to port, so it counts by id and place.
+    const place = (d) => (d.port != null ? `${d.hub}:${d.port}` : d.id), key = (d) => `${d.id}@${place(d)}`;
     for (const d of all) {
-      if (before.has(key(d))) continue;
-      before.add(key(d));
+      if (seen.has(key(d))) continue;
+      seen.add(key(d));
       const at = place(d);
       const row = h("div", { class: `chk-usb-row ${d.ok ? "ok" : "bad"}` }, icon(d.ok ? "check" : "alert"),
         h("b", { class: "fa" }, d.port != null ? t("Checks_Usb_Port", d.port, d.hub) : t("Checks_Usb_NoPort")), h("span", {}, d.name || d.id),
@@ -214,7 +212,7 @@ function usb(cleanup) {
     const good = [...ports.values()].filter((r) => r.classList.contains("ok")).length;
     status.textContent = ports.size ? t("Checks_Usb_Count", good) : t("Checks_Usb_Waiting");
   }
-  const start = h("button", { class: "btn go", onclick: () => { before = null; ports.clear(); list.replaceChildren(); start.hidden = true; stop.hidden = false; status.textContent = t("Checks_Usb_Waiting"); read(); timer = setInterval(read, 2000); } }, icon("play"), t("Checks_Usb_Start"));
+  const start = h("button", { class: "btn go", onclick: () => { seen.clear(); ports.clear(); list.replaceChildren(); start.hidden = true; stop.hidden = false; status.textContent = t("Checks_Usb_Waiting"); read(); timer = setInterval(read, 2000); } }, icon("play"), t("Checks_Usb_Start"));
   const stop = h("button", { class: "btn quiet", hidden: true, onclick: end }, icon("stop"), t("Checks_Stop"));
   cleanup.push(end);
   return card("Usb", "drive", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Usb_Text")), h("div", { class: "btn-row" }, start, stop), list, status));

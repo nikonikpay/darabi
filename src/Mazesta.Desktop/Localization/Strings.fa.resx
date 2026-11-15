@@ -2711,14 +2711,14 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Checks_Wifi" xml:space="preserve"><value>وای‌فای</value></data>
   <data name="Checks_Bluetooth" xml:space="preserve"><value>بلوتوث</value></data>
   <data name="Checks_Usb_Sub" xml:space="preserve"><value>یک دستگاه در هر پورت</value></data>
-  <data name="Checks_Usb_Text" xml:space="preserve"><value>«شروع» را بزنید و بعد یک فلش، هارد یا هر وسیلهٔ USB را یکی‌یکی به پورت‌های کیس یا لپ‌تاپ بزنید. هر پورتی که ویندوز وسیله را در آن شناخت، با نام همان وسیله تیک سالم می‌خورد. پورتی که تیک نخورد، چیزی را نشناخته است.</value></data>
+  <data name="Checks_Usb_Text" xml:space="preserve"><value>«شروع» را بزنید: هر پورتی که همین الان وسیلهٔ شناخته‌شده‌ای در آن است فوراً تیک می‌خورد. بعد یک فلش، هارد یا هر وسیلهٔ USB را یکی‌یکی به پورت‌های خالی بزنید؛ هر پورتی که ویندوز وسیله را در آن بشناسد، با نام همان وسیله تیک سالم می‌خورد. پورتی که تیک نخورد، چیزی را نشناخته است.</value></data>
   <data name="Checks_Usb_Start" xml:space="preserve"><value>شروع</value></data>
   <data name="Checks_Usb_Waiting" xml:space="preserve"><value>در انتظار: یک وسیله را به یک پورت بزنید.</value></data>
   <data name="Checks_Usb_Port" xml:space="preserve"><value>پورت {0} · هاب {1}</value></data>
   <data name="Checks_Usb_NoPort" xml:space="preserve"><value>پورت گزارش نشد</value></data>
   <data name="Checks_Usb_Count" xml:space="preserve"><value>{0} پورت سالم</value></data>
   <data name="Checks_Usb_Error" xml:space="preserve"><value>ویندوز برای این وسیله خطا گزارش می‌کند</value></data>
-  <data name="Help_Checks_Usb" xml:space="preserve"><value>مشخص می‌کند کدام پورت‌های USB کیس یا لپ‌تاپ کار می‌کنند: بعد از «شروع»، هر پورتی که ویندوز وسیلهٔ وصل‌شده (فلش، هارد، ماوس) را در آن بشناسد با نام همان وسیله تیک می‌خورد. وسیله‌هایی که پیش از «شروع» وصل بودند حساب نمی‌شوند، تا هر پورت با یک اتصال تازه ثابت شود.</value></data>
+  <data name="Help_Checks_Usb" xml:space="preserve"><value>مشخص می‌کند کدام پورت‌های USB کیس یا لپ‌تاپ کار می‌کنند: بعد از «شروع»، هر پورتی که ویندوز وسیلهٔ داخلش (فلش، هارد، ماوس) را بشناسد با نام همان وسیله تیک می‌خورد، چه پیش از شروع وصل بوده باشد چه حین بررسی. با جابه‌جا کردن یک فلش بین پورت‌ها، هر پورت به‌نوبت تیک می‌خورد.</value></data>
   <data name="HelpHow_Checks_Usb" xml:space="preserve"><value>«شروع» را بزنید.|یک فلش یا هر وسیلهٔ USB را به یک پورت بزنید و منتظر تیک بمانید.|آن را جدا کنید و سراغ پورت بعدی بروید تا همهٔ پورت‌ها امتحان شوند.|کارت را «سالم است» بزنید، یا اگر پورتی تیک نخورد «مشکل دارد».</value></data>
   <data name="Checks_Usb" xml:space="preserve"><value>پورت‌های USB</value></data>
   <data name="Checks_VideoOut" xml:space="preserve"><value>خروجی تصویر (HDMI)</value></data>
