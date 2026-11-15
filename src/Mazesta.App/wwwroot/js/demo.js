@@ -350,6 +350,7 @@ export async function call(m, p, emit) {
         { at: "2026/08/02 10:05", atIsRestart: true, code: "0x00000116", name: "VIDEO_TDR_FAILURE", parameters: ["0xFFFFC98F0A3D1010", "0xFFFFF8056E2A1F40", "0xFFFFFFFFC000009A", "0x4"], parametersMean: strings.Bsod_Params_Tdr, notes: [],
           causes: ["GpuDriver", "Gpu", "Heat", "Psu"].map((id) => ({ id, title: strings[`Bsod_Cause_${id}`], check: strings[`Bsod_Cause_${id}_Check`] })), dump: null, uptimeMinutes: null }] };
     case "battery.read": return [demoBattery];
+    case "usb.read": return [];
     case "battery.test": return p.cmd === "stop" ? null : { state: "running", minutes: p.cmd === "start" ? 0 : 12.5, battery: demoBattery, drain: p.cmd === "start" ? null : { usedMwh: 3050, meanWatts: 14.6, fullChargeMinutes: 187 } };
     case "netfix.check": await new Promise((r) => setTimeout(r, 900)); return { verdict: "DnsFails", suggested: ["proxy", "dns", "flush"], proxy: { set: true, enabled: true, server: "127.0.0.1:10809", script: null },
       checks: [{ id: "adapter", result: "Ok", detail: "Wi-Fi: 192.168.1.34" }, { id: "gateway", result: "Ok", detail: "192.168.1.1: 2 ms" }, { id: "internet", result: "Ok", detail: "8.8.8.8: echo 41 ms; 1.1.1.1: TCP 53 open" },

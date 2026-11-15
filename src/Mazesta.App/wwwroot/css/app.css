@@ -1959,3 +1959,10 @@ div.findings { max-height: none; overflow: visible; }
 .dash-page .panel-head .ico { width: 36px; height: 36px; border-radius: 11px; color: var(--on-yellow); background: linear-gradient(135deg, var(--hue), color-mix(in oklab, var(--hue) 55%, #fff)); box-shadow: 0 6px 16px -7px var(--hue); }
 .dash-page .panel-head .ico svg { width: 19px; height: 19px; animation: pop 640ms var(--ease) both; animation-delay: calc(200ms + var(--i, 0) * 45ms); }
 .dash-page .panel:hover .panel-head .ico svg { animation: wiggle 620ms var(--ease); }
+
+/* Hands-on USB check: one row per port proven by a newly plugged device. */
+.chk-usb { display: grid; gap: 6px; margin: 10px 0 4px; }
+.chk-usb-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: color-mix(in oklab, var(--pass) 12%, transparent); }
+.chk-usb-row.bad { background: color-mix(in oklab, var(--fail) 14%, transparent); }
+.chk-usb-row svg { width: 18px; height: 18px; flex: none; stroke: var(--pass); }
+.chk-usb-row.bad svg { stroke: var(--fail); }

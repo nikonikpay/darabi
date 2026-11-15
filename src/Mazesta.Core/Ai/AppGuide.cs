@@ -72,6 +72,7 @@ public static class AppGuide
         T("checkup", "run", "Checkup_Run", "start the diagnosis", null),
         P("checks", "Nav_Checks", "hands-on checks a person judges: screen, keyboard, mouse, speakers, microphone, and the laptop battery's health"),
         T("checks", "send", "Checks_Send_Title", "sends the hands-on checks, with a note each, into the site's service form as before or after the service", null),
+        T("checks", "usb", "Checks_Usb", "USB ports of the case or laptop: each port where a newly plugged flash drive, disk or other device is recognised gets a tick", null),
         T("checks", "display", "Checks_Display", "full-screen colours for dead or stuck pixels", null),
         T("checks", "touch", "Checks_Touch", "touch screen of a laptop or tablet: every square of the screen turns green where a finger passes, and the most fingers at once are counted", null),
         T("checks", "keys", "Checks_Keys", "every key of the keyboard lights up when pressed", null),
