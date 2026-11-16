@@ -143,9 +143,9 @@ internal sealed unsafe class ShamsehScene : IDisposable
         return ([.. v], [.. ix], disc);
     }
 
-    /// <summary>The garden's gilt logo (baked from it into Scene/logo.mzlogo by LogoBakeTests: x y z and normal a vertex, width 1, facing +z) standing in the gate's passage, its foot in the grass's tips, facing the camera:
+    /// <summary>The garden's gilt logo (baked from it into Scene/logo.mzlogo by LogoBakeTests: x y z and normal a vertex, width 1, facing +z) standing in the gate's passage, its foot sunk in the grass (the blades are 0.07 high), facing the camera:
     /// material 2, <see cref="LogoWidth"/> wide, centred on x = 0, z = <see cref="LogoZ"/> in the gate's own space (it sways with the gate).</summary>
-    private const float LogoWidth = 0.4f, LogoZ = 0.1f, LogoFoot = 0.035f;
+    private const float LogoWidth = 0.4f, LogoZ = 0.1f, LogoFoot = 0.01f;
     private static (float[] Vertices, uint[] Indices) LogoMesh()
     {
         using var raw = typeof(ShamsehScene).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.logo.mzlogo") ?? throw new InvalidDataException("The logo is not in this build.");
@@ -156,7 +156,7 @@ internal sealed unsafe class ShamsehScene : IDisposable
             float[] w = [x * LogoWidth, y * LogoWidth, LogoZ + z * LogoWidth, nx, ny, nz, 0, 0, 2];
             Array.Copy(w, 0, v, i * 9, 9);
         }
-        for (int i = 0; i < n; i++) v[i * 9 + 1] += LogoFoot - low * LogoWidth;   // its foot at the grass's tips
+        for (int i = 0; i < n; i++) v[i * 9 + 1] += LogoFoot - low * LogoWidth;   // its foot in the grass
         var ix = new uint[ni]; for (int i = 0; i < ni; i++) ix[i] = r.ReadUInt32();
         return (v, ix);
     }
