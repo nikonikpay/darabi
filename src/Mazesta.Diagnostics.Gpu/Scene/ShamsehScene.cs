@@ -139,7 +139,26 @@ internal sealed unsafe class ShamsehScene : IDisposable
         int disc = Round * 3; uint rim = first + 1 + Round;
         for (int j = 0; j < Round; j++) { float a = j * MathF.Tau / Round, c = MathF.Cos(a), s = MathF.Sin(a); Add(c * TurfRadius, 0, s * TurfRadius, c, 0, s); Add(c * TurfRadius, -SkirtDepth, s * TurfRadius, c, 0, s); }
         for (int j = 0; j < Round; j++) { uint a = rim + (uint)(2 * j), b = rim + (uint)(2 * ((j + 1) % Round)); ix.AddRange([a, b, a + 1, b, b + 1, a + 1]); }
+        var (lv, li) = LogoMesh(); uint at = (uint)(v.Count / 9); v.AddRange(lv); ix.AddRange(li.Select(i => i + at));   // the gilt logo, drawn solid with the lawn's soil
         return ([.. v], [.. ix], disc);
+    }
+
+    /// <summary>The garden's gilt logo (baked from it into Scene/logo.mzlogo by LogoBakeTests: x y z and normal a vertex, width 1, facing +z) standing in the gate's passage, its foot in the grass's tips, facing the camera:
+    /// material 2, <see cref="LogoWidth"/> wide, centred on x = 0, z = <see cref="LogoZ"/> in the gate's own space (it sways with the gate).</summary>
+    private const float LogoWidth = 0.4f, LogoZ = 0.1f, LogoFoot = 0.035f;
+    private static (float[] Vertices, uint[] Indices) LogoMesh()
+    {
+        using var raw = typeof(ShamsehScene).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.logo.mzlogo") ?? throw new InvalidDataException("The logo is not in this build.");
+        using var r = new BinaryReader(raw); int n = r.ReadInt32(), ni = r.ReadInt32(); var v = new float[n * 9]; float low = 0;
+        for (int i = 0; i < n; i++)
+        {
+            float x = r.ReadSingle(), y = r.ReadSingle(), z = r.ReadSingle(), nx = r.ReadSingle(), ny = r.ReadSingle(), nz = r.ReadSingle(); low = Math.Min(low, y);
+            float[] w = [x * LogoWidth, y * LogoWidth, LogoZ + z * LogoWidth, nx, ny, nz, 0, 0, 2];
+            Array.Copy(w, 0, v, i * 9, 9);
+        }
+        for (int i = 0; i < n; i++) v[i * 9 + 1] += LogoFoot - low * LogoWidth;   // its foot at the grass's tips
+        var ix = new uint[ni]; for (int i = 0; i < ni; i++) ix[i] = r.ReadUInt32();
+        return (v, ix);
     }
 
     /// <summary>A picture's mip chain (BC3, <paramref name="size"/> down to 4, largest first) as a texture: staged at 512-byte boundaries, rows 256-byte aligned, as buffer-to-texture copies require.</summary>

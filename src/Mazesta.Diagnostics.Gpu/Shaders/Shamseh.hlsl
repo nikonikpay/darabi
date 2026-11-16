@@ -51,6 +51,12 @@ float4 SolidPS(Lit i) : SV_Target
 {
     float3 n = Nrm(i.Normal), v = Nrm(Eye - i.World);
     float2 du1 = ddx(i.Uv), du2 = ddy(i.Uv);   // taken before the branch: the derivatives are of the whole quad
+    if (i.Material == 2)   // Mazesta's gilt letters (the garden's logo): gold, lit by the sun, with a sheen
+    {
+        float3 gold = float3(1.0, 0.66, 0.12), amb = lerp(float3(0.12, 0.09, 0.05), float3(0.32, 0.36, 0.42), n.y * 0.5 + 0.5);
+        float dif = saturate(dot(n, L)), spec = pow(saturate(dot(n, Nrm(L + v))), 36), fres = pow(1 - saturate(dot(n, v)), 3);
+        return float4(Fog(gold * (amb * 0.8 + Moon * dif * 0.85) + float3(1, 0.85, 0.5) * spec * Moon * 0.7 + gold * fres * 0.25, i.World), 1);
+    }
     if (i.Material != 0) return float4(Fog((i.Object.y < -0.001 || abs(n.y) < 0.5 ? float3(0.07, 0.045, 0.03) : float3(0.012, 0.04, 0.012)) * (0.3 + 0.7 * saturate(dot(n, L))) * Moon, i.World), 1);   // the soil under the grass, and the earth round the turf's edge
     float3 nn = n;   // the scan's own geometry carries the detail: no map
     float3 a = Albedo.SampleGrad(Aniso, i.Uv, du1, du2).rgb;
