@@ -2,6 +2,7 @@
 // and marks it. It searches the names the page itself shows (the string table), so it follows the language; nothing is typed in twice.
 import { t } from "./i18n.js";
 import { h, icon } from "./ui.js";
+import { boot } from "./app.js";
 
 // [page, box mark, name key] - a box on a page; the pages themselves are added from the page list.
 const BOXES = [
@@ -28,7 +29,7 @@ export function searchBox(pages, go) {
   const list = h("ul", { class: "search-list", role: "listbox", hidden: true });
   let found = [], at = 0;
   const entries = () => [...pages.map((p) => ({ page: p.id, target: null, name: t(p.key) })),
-    ...BOXES.filter(([page]) => pages.some((p) => p.id === page)).map(([page, target, key]) => ({ page, target, name: t(key), where: t(pages.find((p) => p.id === page).key) }))];
+    ...BOXES.filter(([page, target]) => pages.some((p) => p.id === page) && (target !== "send" || boot.staff)).map(([page, target, key]) => ({ page, target, name: t(key), where: t(pages.find((p) => p.id === page).key) }))];
   function render() {
     const q = norm(input.value); list.replaceChildren();
     found = q ? entries().filter((e) => norm(e.name).includes(q)).slice(0, 9) : [];
