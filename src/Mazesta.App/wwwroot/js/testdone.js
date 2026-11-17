@@ -34,7 +34,8 @@ function card(p) {
     h("header", { class: "done-head" }, h("span", { class: "ico" }, icon(pt.icon)),
       h("div", { class: "grow" }, h("h3", {}, t(pt.key)), p.name ? h("small", { class: "lat" }, p.name) : null),
       h("span", { class: `pill ${lvl}` }, t(p.partial ? "Done_Level_Partial" : `Done_Level_${p.level}`))),
-    h("p", { class: "done-say" }, t(p.say)),
+    // A part that is only short of time says it once, in the lines naming each test; the general sentence would repeat it.
+    p.timeNotes?.length ? null : h("p", { class: "done-say" }, t(p.say)),
     p.timeNotes?.length ? h("ul", { class: "done-list" }, p.timeNotes.map((x) => h("li", { class: LEVEL.Attention }, icon("alert"), h("span", {}, x)))) : null,
     h("div", { class: "done-figs" }, figs.map(([n, v]) => h("div", {}, h("b", { class: "num" }, v), h("span", {}, n)))),
     // What needs a look, in words; what was checked and found right, as short ticks.
@@ -65,7 +66,7 @@ export function show(s) {
   dialog = h("dialog", { class: "upd-dialog done-dialog", "aria-labelledby": "done-title" },
     h("div", { class: "upd-box" },
       h("header", { class: "upd-head" }, h("span", { class: `upd-mark done-mark ${lvl}` }, icon(s.level === "Good" ? "check" : "alert")),
-        h("div", {}, h("h2", { class: "upd-title", id: "done-title" }, t("Done_Title")), h("p", { class: "sup-sub" }, t(`Done_Overall_${s.level}`)))),
+        h("div", {}, h("h2", { class: "upd-title", id: "done-title" }, t("Done_Title")), h("p", { class: "sup-sub" }, t(s.onlyPartial ? "Done_Overall_Partial" : `Done_Overall_${s.level}`)))),
       trip,
       h("div", { class: "done-body" }, s.parts.map(card)),
       h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: close }, icon("check"), t("Done_Close")), summary)));

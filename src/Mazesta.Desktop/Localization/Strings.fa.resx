@@ -3965,7 +3965,8 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Done_Overall_Problem" xml:space="preserve"><value>مشکلی پیدا شد؛ قطعه‌ای که علامت قرمز دارد نیاز به رسیدگی دارد.</value></data>
   <data name="Done_Level_Good" xml:space="preserve"><value>سالم</value></data>
   <data name="Done_Level_Partial" xml:space="preserve"><value>نتیجه ناقص</value></data>
-  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: ایرادی دیده نشد، ولی برای نتیجهٔ کامل حدود {1} دقیقه لازم است؛ این اجرا {2} دقیقه بود.</value></data>
+  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: ایرادی دیده نشد و مشکلی وجود ندارد، ولی این اجرای {2} دقیقه‌ای برای کامل‌شدن همهٔ بخش‌ها کوتاه بود. برای نتیجهٔ کامل حدود {1} دقیقه زمان بدهید.</value></data>
+  <data name="Done_Overall_Partial" xml:space="preserve"><value>قطعه‌ها کار می‌کنند و مشکلی دیده نشد؛ فقط بعضی آزمون‌ها زمانشان کم بود و کامل نشدند.</value></data>
   <data name="Done_Level_Attention" xml:space="preserve"><value>نیاز به بررسی</value></data>
   <data name="Done_Level_Problem" xml:space="preserve"><value>مشکل دارد</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>آزمون موفق</value></data>
@@ -3981,7 +3982,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Done_Cpu_Attention" xml:space="preserve"><value>پردازنده درست محاسبه کرد، ولی چیزی در نحوهٔ کارش (دما، فرکانس یا توان) ارزش بررسی دارد؛ موارد زیر را ببینید.</value></data>
   <data name="Done_Cpu_Problem" xml:space="preserve"><value>پردازنده خطا داشت یا آزمونی را تمام نکرد. علت می‌تواند داغ شدن، اورکلاک یا اندرولت ناپایدار، یا خرابی باشد؛ موارد زیر را ببینید.</value></data>
   <data name="Done_Memory_Good" xml:space="preserve"><value>حافظهٔ رم همهٔ الگوهایی که روی آن نوشته شد را بدون حتی یک خطا نگه داشت.</value></data>
-  <data name="Done_Memory_Attention" xml:space="preserve"><value>خطایی در رم دیده نشد و مشکلی وجود ندارد. فقط با زمانی که تنظیم کرده‌اید همهٔ بخش‌های آزمون کامل اجرا نشد، برای همین نتیجه ناقص است. برای نتیجهٔ کامل، زمان بیشتری بدهید و دوباره اجرا کنید.</value></data>
+  <data name="Done_Memory_Attention" xml:space="preserve"><value>خطایی در رم دیده نشد، ولی همهٔ آزمون‌های رم تا آخر اجرا نشدند و نتیجه کامل نیست.</value></data>
   <data name="Done_Memory_Problem" xml:space="preserve"><value>رم داده‌ای را اشتباه برگرداند. معمولاً علت ماژول معیوب، ماژولی که درست جا نیفتاده، یا تنظیمات سرعت رم (XMP/EXPO) بیش از حد سریع است.</value></data>
   <data name="Done_Gpu_Good" xml:space="preserve"><value>کارت گرافیک زیر بار درست محاسبه و رندر کرد و دمای هسته، هات‌اسپات و حافظه و فرکانس‌هایش عادی بود.</value></data>
   <data name="Done_Gpu_Attention" xml:space="preserve"><value>کارت گرافیک درست کار کرد، ولی دما یا فرکانس‌های آن ارزش بررسی دارد؛ موارد زیر را ببینید.</value></data>

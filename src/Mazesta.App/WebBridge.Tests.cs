@@ -155,6 +155,7 @@ public sealed partial class WebBridge
             sensor = "Thermal_" + t.Sensor, value = Math.Round(t.ValueC), limit = Math.Round(t.LimitC), sustained = t.Sustained, minutes = Math.Max(1, _config.TrayHoldMinutes),
             tests = (j.TripTests ?? []).Select(Name),
         } : null;
-        return new { trip, parts, level = trip is not null || parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good" };
+        string overall = trip is not null || parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good";
+        return new { trip, parts, level = overall, onlyPartial = overall == "Attention" && parts.Where(p => p.level == "Attention").All(p => p.partial) };
     }
 }
