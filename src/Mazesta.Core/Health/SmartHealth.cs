@@ -39,6 +39,15 @@ public static class SmartHealth
         return any ? (int)Math.Round(health, MidpointRounding.AwayFromZero) : null;
     }
 
+    /// <summary>Sectors the drive has replaced (5), cannot read and is waiting to replace (197) or has given up on (198), added up; null when it
+    /// reports none of the three. On a hard disk any of them is a surface that has started to fail, long before the health figure falls far.</summary>
+    public static long? BadSectors(IReadOnlyDictionary<int, ulong> raw)
+    {
+        long? sum = null;
+        foreach (int id in (int[])[5, 197, 198]) if (raw.TryGetValue(id, out var v)) sum = (sum ?? 0) + (long)(v & 0xFFFF);
+        return sum;
+    }
+
     /// <summary>Life used, in percent, that makes the drive's health: its own wear counter and the bad-sector health together; null when neither is known.</summary>
     public static int? Wear(int? usedPercent, int? sectorHealth)
     {

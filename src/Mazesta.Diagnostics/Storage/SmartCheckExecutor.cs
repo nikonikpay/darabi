@@ -68,6 +68,7 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives, INvmeHealthS
         if (d.TemperatureC is { } t) parts.Add(string.Create(CultureInfo.InvariantCulture, $"{t:0} °C") + (d.TemperatureMaxC is { } max ? string.Create(CultureInfo.InvariantCulture, $" (max {max:0} °C)") : ""));
         if (d.PowerOnHours is { } h) parts.Add($"power-on {h} h");
         if (d.ReadErrorsUncorrected is not null || d.WriteErrorsUncorrected is not null) parts.Add($"uncorrected read/write errors {d.ReadErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"}/{d.WriteErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"}");
+        if (d.BadSectors is { } bad) parts.Add($"replaced, pending or unreadable sectors {bad}");
         return string.Join(", ", parts);
     }
 }
