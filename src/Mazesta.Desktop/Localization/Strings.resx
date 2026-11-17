@@ -3964,9 +3964,9 @@ Cancel: stop.</value></data>
   <data name="Done_Overall_Attention" xml:space="preserve"><value>The parts work, but a few things are worth a look.</value></data>
   <data name="Done_Overall_Problem" xml:space="preserve"><value>A problem was found. The part with a red mark needs attention.</value></data>
   <data name="Done_Level_Good" xml:space="preserve"><value>Healthy</value></data>
-  <data name="Done_Level_Partial" xml:space="preserve"><value>Partial result</value></data>
-  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: no error was seen and nothing is wrong, but this {2}-minute run was too short to finish every part. Allow about {1} minutes for a complete result.</value></data>
-  <data name="Done_Overall_Partial" xml:space="preserve"><value>The parts work and nothing wrong was seen; some tests ran too short to be complete.</value></data>
+  <data name="Done_Level_Partial" xml:space="preserve"><value>Test passed</value></data>
+  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: no error was seen. Warning: this {2}-minute run was too short for every part of the test; allow about {1} minutes for a complete result.</value></data>
+  <data name="Done_Overall_Partial" xml:space="preserve"><value>The parts work and nothing wrong was seen; some tests need more time for a complete result.</value></data>
   <data name="Done_Level_Attention" xml:space="preserve"><value>Worth a look</value></data>
   <data name="Done_Level_Problem" xml:space="preserve"><value>Problem</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>tests passed</value></data>

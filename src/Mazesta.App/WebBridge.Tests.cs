@@ -144,7 +144,7 @@ public sealed partial class WebBridge
             {
                 partial, timeNotes,
                 // The sentence about heat and clocks only when the monitor's record of them was judged (a run too short, or no sensors: only the tests' word).
-                part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed, failed, total = g.Count(), errors = g.Sum(r => r.ErrorCount),
+                part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed = partial ? passed + g.Count(r => r.Outcome == TestOutcome.Inconclusive) : passed, failed, total = g.Count(),   // (the window calls a clean run too short to finish a pass, with the warning; the saved report keeps "Inconclusive") errors = g.Sum(r => r.ErrorCount),
                 tempMax = judged?.TempMaxC, load = judged?.LoadPercent, fps = g.Key == "Gpu" ? FramesPerSecond(g.Select(r => r.Detail)) : null, temps = judged?.Temps?.Select(x => new { key = x.Key, value = x.C }),
                 tests = g.Select(r => new { name = Name(r.Id), outcome = r.Outcome.ToString(), outcomeText = Loc.Get("Test_Outcome_" + r.Outcome) }),
                 findings = findings.Select(FindingJson),

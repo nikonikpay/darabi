@@ -3964,9 +3964,9 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Done_Overall_Attention" xml:space="preserve"><value>قطعه‌ها کار می‌کنند، ولی چند مورد ارزش بررسی دارد.</value></data>
   <data name="Done_Overall_Problem" xml:space="preserve"><value>مشکلی پیدا شد؛ قطعه‌ای که علامت قرمز دارد نیاز به رسیدگی دارد.</value></data>
   <data name="Done_Level_Good" xml:space="preserve"><value>سالم</value></data>
-  <data name="Done_Level_Partial" xml:space="preserve"><value>نتیجه ناقص</value></data>
-  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: ایرادی دیده نشد و مشکلی وجود ندارد، ولی این اجرای {2} دقیقه‌ای برای کامل‌شدن همهٔ بخش‌ها کوتاه بود. برای نتیجهٔ کامل حدود {1} دقیقه زمان بدهید.</value></data>
-  <data name="Done_Overall_Partial" xml:space="preserve"><value>قطعه‌ها کار می‌کنند و مشکلی دیده نشد؛ فقط بعضی آزمون‌ها زمانشان کم بود و کامل نشدند.</value></data>
+  <data name="Done_Level_Partial" xml:space="preserve"><value>آزمون موفق</value></data>
+  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: ایرادی دیده نشد. هشدار: این اجرای {2} دقیقه‌ای برای کامل‌شدن همهٔ بخش‌های آزمون کوتاه بود؛ برای نتیجهٔ کامل حدود {1} دقیقه زمان بدهید.</value></data>
+  <data name="Done_Overall_Partial" xml:space="preserve"><value>قطعه‌ها کار می‌کنند و مشکلی دیده نشد؛ برای نتیجهٔ کامل بعضی آزمون‌ها زمان بیشتری لازم است.</value></data>
   <data name="Done_Level_Attention" xml:space="preserve"><value>نیاز به بررسی</value></data>
   <data name="Done_Level_Problem" xml:space="preserve"><value>مشکل دارد</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>آزمون موفق</value></data>

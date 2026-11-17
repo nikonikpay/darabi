@@ -33,7 +33,7 @@ function card(p) {
   return h("section", { class: `done-part ${pt.cls} ${lvl}` },
     h("header", { class: "done-head" }, h("span", { class: "ico" }, icon(pt.icon)),
       h("div", { class: "grow" }, h("h3", {}, t(pt.key)), p.name ? h("small", { class: "lat" }, p.name) : null),
-      h("span", { class: `pill ${lvl}` }, t(p.partial ? "Done_Level_Partial" : `Done_Level_${p.level}`))),
+      h("span", { class: `pill ${p.partial ? "pass" : lvl}` }, t(p.partial ? "Done_Level_Partial" : `Done_Level_${p.level}`))),
     // A part that is only short of time says it once, in the lines naming each test; the general sentence would repeat it.
     p.timeNotes?.length ? null : h("p", { class: "done-say" }, t(p.say)),
     p.timeNotes?.length ? h("ul", { class: "done-list" }, p.timeNotes.map((x) => h("li", { class: LEVEL.Attention }, icon("alert"), h("span", {}, x)))) : null,
