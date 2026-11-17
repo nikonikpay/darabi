@@ -2921,6 +2921,10 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_GpuThermalSlowdown_Text" xml:space="preserve"><value>The driver lowered the card's clock because it reached its temperature target. Clean the card's fans and heatsink and check the case airflow; on an older card the paste and pads may need replacing.</value></data>
   <data name="Check_GpuPowerLimited" xml:space="preserve"><value>The graphics card runs at its power limit</value></data>
   <data name="Check_GpuPowerLimited_Text" xml:space="preserve"><value>Under full load the card ran at its power limit. That is how graphics cards are built to run, not a fault.</value></data>
+  <data name="Check_GpuRunsHot" xml:space="preserve"><value>The graphics card runs very hot</value></data>
+  <data name="Check_GpuRunsHot_Text" xml:space="preserve"><value>This card's driver does not report when it slows the card, so it is judged by its temperature alone: under load it reached a temperature at which cards of this kind slow themselves, or came close to it. Clean the card's fans and heatsink and check the case airflow; on an older card the paste and pads may need replacing.</value></data>
+  <data name="Detail_Word_BadSectors" xml:space="preserve"><value>replaced, pending or unreadable sectors</value></data>
+  <data name="Detail_Gpu_Twice" xml:space="preserve"><value>Each of {0} batches was computed twice and all {1} results compared on the card itself: {2} differed</value></data>
   <data name="Check_GpuHeatOk" xml:space="preserve"><value>The graphics card was not held back by heat</value></data>
   <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>The card stayed below the temperature at which it slows itself.</value></data>
   <data name="Check_GpuHotspotGap" xml:space="preserve"><value>Hot spot far above the core</value></data>
@@ -3215,6 +3219,8 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Cpu_Compressed" xml:space="preserve"><value>Compressed to {0}% of its size</value></data>
   <data name="Detail_Cpu_Coverage" xml:space="preserve"><value>Ran on {0} of {1} logical processors</value></data>
   <data name="Detail_Cpu_CoverageSplit" xml:space="preserve"><value>Ran on {0} of {1} logical processors ({2})</value></data>
+  <data name="Detail_Cpu_CycleWork" xml:space="preserve"><value>Each visit runs three kinds of work, a third each: matrix products, vector multiply-adds ({0}), integer arithmetic</value></data>
+  <data name="Detail_Cpu_WrongByWork" xml:space="preserve"><value>Wrong results by kind of work: matrix {0}, vector {1}, integer {2}</value></data>
   <data name="Detail_Cpu_Cycle" xml:space="preserve"><value>One core at a time over {0} physical cores, {1} s each, {2} load, matrix {3}×{3}</value></data>
   <data name="Detail_Cpu_ECores" xml:space="preserve"><value>E-cores {0} of {1} threads</value></data>
   <data name="Detail_Cpu_EveryCore" xml:space="preserve"><value>Every core was tested</value></data>
@@ -3271,6 +3277,11 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Mem_Faded" xml:space="preserve"><value>First faded bytes in buffer block {0} (at {1} MiB) after holding “{2}”</value></data>
   <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}</value></data>
   <data name="Detail_Mem_HeldShort" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}: shorter than the {2} s a leaking cell needs to show</value></data>
+  <data name="Detail_Mem_Share" xml:space="preserve"><value>{0}% of the {1} MiB of installed RAM was tested</value></data>
+  <data name="Detail_Mem_ShareLow" xml:space="preserve"><value>{0}% of the {1} MiB of installed RAM was tested: less than the half a result needs. Close other programs and run it again, or test the whole RAM from boot</value></data>
+  <data name="Detail_Mem_ReadAgainRight" xml:space="preserve"><value>Read again, the same block was right: the fault was in reading the RAM or on the way, not a cell holding a wrong value</value></data>
+  <data name="Detail_Mem_ReadAgainWrong" xml:space="preserve"><value>Read again, the word at +0x{0} is still wrong: expected 0x{1}, read 0x{2}; {3} bit(s) differ (bit {4})</value></data>
+  <data name="Detail_L_RamTemp" xml:space="preserve"><value>RAM temperature</value></data>
   <data name="Detail_Mem_Locked" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM</value></data>
   <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM; Windows would not lock the rest, so they may have gone to disk while waiting and their result says nothing about the RAM</value></data>
   <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>First mismatch in buffer block {0} (at {1} MiB) with the pattern “{2}”</value></data>

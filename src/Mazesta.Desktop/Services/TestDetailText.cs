@@ -15,7 +15,7 @@ public static partial class TestDetailText
     {
         ["GPU load"] = "Detail_L_GpuLoad", ["CPU load"] = "Detail_L_CpuLoad", ["GPU core"] = "Detail_L_GpuCore", ["GPU temperature"] = "Detail_L_GpuCore", ["GPU hot spot"] = "Detail_L_GpuHotSpot",
         ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["average effective clock"] = "Detail_L_CpuEffClock", ["CPU core clock"] = "Detail_L_CpuCoreClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
-        ["VRAM temperature"] = "Detail_L_VramTemp", ["memory controller load"] = "Detail_L_MemCtrlLoad",
+        ["VRAM temperature"] = "Detail_L_VramTemp", ["RAM temperature"] = "Detail_L_RamTemp", ["memory controller load"] = "Detail_L_MemCtrlLoad",
     };
     private static readonly Dictionary<string, string> Counts = new(StringComparer.Ordinal)
     {
@@ -84,6 +84,8 @@ public static partial class TestDetailText
         R(@"ran on (\d+) of (\d+) logical processors", "Detail_Cpu_Coverage"),
         R(@"ran on (\d+) of (\d+) logical processors \((.+)\)", "Detail_Cpu_CoverageSplit", m => [G(m, 1), G(m, 2), Coverage(G(m, 3))]),
         R(@"every core tested", "Detail_Cpu_EveryCore"),
+        R(@"work per visit: matrix, (.+), integer", "Detail_Cpu_CycleWork"),
+        R(@"wrong results by work: matrix (\d+), vector (\d+), integer (\d+)", "Detail_Cpu_WrongByWork"),
         R(@"not tested: core\(s\) (.+) - the result covers only the others", "Detail_Cpu_NotTested"),
         R(@"wrong results on (.+)", "Detail_Cpu_WrongOn", m => [G(m, 1).Replace("core ", Loc.Get("Detail_Word_Core") + " ", StringComparison.Ordinal)]),
         R(@"Windows refused pinning to core\(s\) (.+)", "Detail_Cpu_Unpinned"),
@@ -117,6 +119,10 @@ public static partial class TestDetailText
         R(@"held (\d+) MiB as all ones, then all zeros, each untouched for half the run", "Detail_Mem_HeldHalf"),
         R(@"(\d+) of (\d+) blocks locked in RAM", "Detail_Mem_Locked"),
         R(@"(\d+) of (\d+) blocks locked in RAM - Windows would not lock the rest, so they may have been paged out while waiting and their result says nothing about the RAM", "Detail_Mem_LockedSome"),
+        R(@"(\d+)% of the (\d+) MiB installed RAM tested", "Detail_Mem_Share"),
+        R(@"(\d+)% of the (\d+) MiB installed RAM tested - under the half a result needs: close other programs and run it again, or test the whole RAM from boot", "Detail_Mem_ShareLow"),
+        R(@"read again, the same block was right: a fault in reading or on the way, not a cell that holds a wrong value", "Detail_Mem_ReadAgainRight"),
+        R(@"read again, the word at \+0x([0-9A-F]+) is still wrong: expected 0x([0-9A-F]+), read 0x([0-9A-F]+), (\d+) bit\(s\) differ \((.+)\)", "Detail_Mem_ReadAgainWrong"),
         R(@"first mismatch in buffer block (\d+) \(offset (\d+) MiB\) (?:during|while verifying) '(.+)'", "Detail_Mem_Mismatch"),
         R(@"first faded bytes in buffer block (\d+) \(offset (\d+) MiB\) after holding '(.+)'", "Detail_Mem_Faded"),
         // ——— storage ———
@@ -157,6 +163,7 @@ public static partial class TestDetailText
         // ——— graphics card ———
         R(@"ray-traced scene (\d+)x(\d+), (\d+) spheres, (\d+) bounces, on (.+)", "Detail_Gpu_Render"),
         R(@"([\d,.]+) MPixel/s \(Mazesta's own scene, not a commercial score\)", "Detail_Gpu_MPixel"),
+        R(@"each of (\d+) batches computed twice and all ([\d,]+) results compared on the card: (\d+) differed", "Detail_Gpu_Twice"),
         R(@"VRAM pattern test on (.+)", "Detail_Gpu_Vram"),
         R(@"tested=(\d+) MiB in (\d+) buffers", "Detail_Gpu_VramTested"),
         R(@"the driver refused more VRAM after (\d+) buffers \(the part it granted was tested\)", "Detail_Gpu_VramRefused"),
@@ -306,7 +313,8 @@ public static partial class TestDetailText
     /// <summary>", wear 3%, 35 °C (max 50 °C), power-on 1200 h, uncorrected read/write errors 0/0" after a drive's name and status.</summary>
     private static string DriveFacts(string tail) => tail.Replace(", ", Loc.Get("Detail_ListComma"), StringComparison.Ordinal).Replace("wear ", Loc.Get("Detail_Word_Wear") + " ", StringComparison.Ordinal)
         .Replace("(max ", "(" + Loc.Get("Detail_Word_Max") + " ", StringComparison.Ordinal).Replace("power-on ", Loc.Get("Detail_Word_PowerOn") + " ", StringComparison.Ordinal)
-        .Replace("uncorrected read/write errors ", Loc.Get("Detail_Word_Uncorrected") + " ", StringComparison.Ordinal);
+        .Replace("uncorrected read/write errors ", Loc.Get("Detail_Word_Uncorrected") + " ", StringComparison.Ordinal)
+        .Replace("replaced, pending or unreadable sectors ", Loc.Get("Detail_Word_BadSectors") + " ", StringComparison.Ordinal);
 
     /// <summary>An internet-speed number's name as the benchmark shows it ("score_gaming" is the metric Bench_Net_Score_Gaming), or null when there is none.</summary>
     private static string? NetName(string lower)

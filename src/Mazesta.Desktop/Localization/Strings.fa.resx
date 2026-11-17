@@ -2921,6 +2921,10 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Check_GpuThermalSlowdown_Text" xml:space="preserve"><value>درایور به‌خاطر رسیدن کارت به دمای هدفش فرکانس را پایین آورد. فن‌ها و هیت‌سینک کارت را تمیز کنید و جریان هوای کیس را بررسی کنید؛ در کارت قدیمی‌تر ممکن است خمیر و پدها نیاز به تعویض داشته باشند.</value></data>
   <data name="Check_GpuPowerLimited" xml:space="preserve"><value>کارت گرافیک روی سقف توانش کار می‌کند</value></data>
   <data name="Check_GpuPowerLimited_Text" xml:space="preserve"><value>زیر بار کامل، کارت روی سقف توان خودش کار کرد. کارت‌های گرافیک همین‌طور ساخته شده‌اند و این خرابی نیست.</value></data>
+  <data name="Check_GpuRunsHot" xml:space="preserve"><value>کارت گرافیک خیلی داغ می‌شود</value></data>
+  <data name="Check_GpuRunsHot_Text" xml:space="preserve"><value>درایور این کارت نمی‌گوید چه وقت کارت را کند می‌کند، پس فقط از روی دما قضاوت شد: زیر بار به دمایی رسید که کارت‌های این نوع در آن خودشان را کند می‌کنند، یا نزدیک آن شد. فن‌ها و هیت‌سینک کارت را تمیز کنید و جریان هوای کیس را بررسی کنید؛ در کارت قدیمی‌تر ممکن است خمیر و پدها نیاز به تعویض داشته باشند.</value></data>
+  <data name="Detail_Word_BadSectors" xml:space="preserve"><value>سکتورهای جایگزین‌شده، در انتظار یا ناخوانا</value></data>
+  <data name="Detail_Gpu_Twice" xml:space="preserve"><value>هر یک از {0} دسته دو بار محاسبه شد و هر {1} نتیجه روی خود کارت مقایسه شد: {2} مورد فرق داشت</value></data>
   <data name="Check_GpuHeatOk" xml:space="preserve"><value>گرما مانع کار کارت گرافیک نشد</value></data>
   <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>کارت پایین‌تر از دمایی ماند که در آن خودش را کند می‌کند.</value></data>
   <data name="Check_GpuHotspotGap" xml:space="preserve"><value>فاصلهٔ زیاد دمای هات‌اسپات با هسته</value></data>
@@ -3215,6 +3219,8 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_Cpu_Compressed" xml:space="preserve"><value>فشرده شد به {0}٪ اندازهٔ اصلی</value></data>
   <data name="Detail_Cpu_Coverage" xml:space="preserve"><value>روی {0} پردازندهٔ منطقی از {1} اجرا شد</value></data>
   <data name="Detail_Cpu_CoverageSplit" xml:space="preserve"><value>روی {0} پردازندهٔ منطقی از {1} اجرا شد ({2})</value></data>
+  <data name="Detail_Cpu_CycleWork" xml:space="preserve"><value>در هر نوبت سه نوع کار، هر کدام یک‌سوم زمان: ضرب ماتریس، ضرب‌وجمع برداری ({0})، محاسبات عدد صحیح</value></data>
+  <data name="Detail_Cpu_WrongByWork" xml:space="preserve"><value>نتیجهٔ غلط به تفکیک نوع کار: ماتریس {0}، برداری {1}، عدد صحیح {2}</value></data>
   <data name="Detail_Cpu_Cycle" xml:space="preserve"><value>چرخش تک‌هسته‌ای روی {0} هستهٔ فیزیکی، هر هسته {1} ثانیه، بار {2}، ماتریس {3}x{3}</value></data>
   <data name="Detail_Cpu_ECores" xml:space="preserve"><value>هسته‌های E: {0} از {1} رشته</value></data>
   <data name="Detail_Cpu_EveryCore" xml:space="preserve"><value>همهٔ هسته‌ها آزمایش شدند</value></data>
@@ -3271,6 +3277,11 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_Mem_Faded" xml:space="preserve"><value>اولین بایت‌های تغییرکرده در بلوک {0} بافر (موقعیت {1} MiB) پس از نگه‌داشتن «{2}»</value></data>
   <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر، هر بار {1} دست‌نخورده نگه داشته شد</value></data>
   <data name="Detail_Mem_HeldShort" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر، هر بار {1} دست‌نخورده نگه داشته شد: کوتاه‌تر از {2} ثانیه‌ای که یک سلول نشت‌کننده برای خودنمایی لازم دارد</value></data>
+  <data name="Detail_Mem_Share" xml:space="preserve"><value>{0}٪ از {1} MiB رم نصب‌شده آزمایش شد</value></data>
+  <data name="Detail_Mem_ShareLow" xml:space="preserve"><value>{0}٪ از {1} MiB رم نصب‌شده آزمایش شد: کمتر از نیمی که برای نتیجه لازم است. برنامه‌های دیگر را ببندید و دوباره اجرا کنید، یا کل رم را از بوت آزمایش کنید</value></data>
+  <data name="Detail_Mem_ReadAgainRight" xml:space="preserve"><value>در خواندن دوباره همان بلوک درست بود: ایراد در خواندن رم یا در مسیر بوده، نه خانه‌ای که مقدار غلط نگه داشته باشد</value></data>
+  <data name="Detail_Mem_ReadAgainWrong" xml:space="preserve"><value>در خواندن دوباره، کلمهٔ موقعیت ‎+0x{0} هنوز غلط است: باید 0x{1} باشد، 0x{2} خوانده شد؛ {3} بیت فرق دارد (بیت {4})</value></data>
+  <data name="Detail_L_RamTemp" xml:space="preserve"><value>دمای رم</value></data>
   <data name="Detail_Mem_Locked" xml:space="preserve"><value>{0} بلوک از {1} بلوک در رم قفل شد</value></data>
   <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} بلوک از {1} بلوک در رم قفل شد؛ ویندوز بقیه را قفل نکرد، پس شاید حین انتظار به دیسک رفته باشند و نتیجهٔ آن‌ها چیزی دربارهٔ رم نمی‌گوید</value></data>
   <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>اولین ناهمخوانی در بلوک {0} بافر (موقعیت {1} MiB) با الگوی «{2}»</value></data>
