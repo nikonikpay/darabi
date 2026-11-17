@@ -23,6 +23,7 @@ public enum FindingCode
     DriveHealthy, DriveUnhealthy, DriveWorn, BenchAsBefore, BenchSlowerThanBefore,
     ScreenOnIntegrated,
     DriveEncrypted, GpuTuneInterrupted, GpuTunedNow,
+    GpuRunsHot,
 }
 
 /// <summary>A second sentence a finding may carry: what the measurements beside it point to.</summary>
