@@ -135,8 +135,14 @@ public sealed partial class WebBridge
             bool stopped = j.Trip is { } tr && PartOf(tr.Sensor switch { Mazesta.Core.Health.ThermalSensor.Drive => "storage.", Mazesta.Core.Health.ThermalSensor.CpuPackage or Mazesta.Core.Health.ThermalSensor.CpuHottestCore => "cpu.", _ => "gpu." }) == g.Key;
             string level = failed > 0 || stopped || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Problem) ? "Problem"
                 : unsure || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Attention) ? "Attention" : "Good";
+            // Only too little time (nothing failed, no finding to look at): say so in plain words and how long a full run takes, instead of "needs review".
+            bool partial = level == "Attention" && failed == 0 && !findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Attention)
+                && g.All(r => r.Outcome is TestOutcome.Passed or TestOutcome.Inconclusive);
+            var timeNotes = partial ? g.Where(r => r.Outcome == TestOutcome.Inconclusive && j.Queue.Any(q => q.Definition.Id == r.Id)).Select(r =>
+                Loc.Format("Done_NeedTime", Name(r.Id), Math.Ceiling(j.Queue.First(q => q.Definition.Id == r.Id).Definition.DefaultDurationSeconds / 60.0), Math.Max(1, Math.Round(((r.FinishedAt - r.StartedAt)?.TotalMinutes ?? 0))))).ToList() : null;
             return new
             {
+                partial, timeNotes,
                 // The sentence about heat and clocks only when the monitor's record of them was judged (a run too short, or no sensors: only the tests' word).
                 part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed, failed, total = g.Count(), errors = g.Sum(r => r.ErrorCount),
                 tempMax = judged?.TempMaxC, load = judged?.LoadPercent, fps = g.Key == "Gpu" ? FramesPerSecond(g.Select(r => r.Detail)) : null, temps = judged?.Temps?.Select(x => new { key = x.Key, value = x.C }),

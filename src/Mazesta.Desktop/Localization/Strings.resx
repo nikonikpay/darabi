@@ -3964,6 +3964,8 @@ Cancel: stop.</value></data>
   <data name="Done_Overall_Attention" xml:space="preserve"><value>The parts work, but a few things are worth a look.</value></data>
   <data name="Done_Overall_Problem" xml:space="preserve"><value>A problem was found. The part with a red mark needs attention.</value></data>
   <data name="Done_Level_Good" xml:space="preserve"><value>Healthy</value></data>
+  <data name="Done_Level_Partial" xml:space="preserve"><value>Partial result</value></data>
+  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: no error seen, but a full result needs about {1} min; it ran {2} min.</value></data>
   <data name="Done_Level_Attention" xml:space="preserve"><value>Worth a look</value></data>
   <data name="Done_Level_Problem" xml:space="preserve"><value>Problem</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>tests passed</value></data>
@@ -3979,7 +3981,7 @@ Cancel: stop.</value></data>
   <data name="Done_Cpu_Attention" xml:space="preserve"><value>The processor computed correctly, but something in how it ran (heat, clock or power) is worth a look; see the points below.</value></data>
   <data name="Done_Cpu_Problem" xml:space="preserve"><value>The processor made errors or did not finish a test. This can come from overheating, an unstable overclock or undervolt, or a fault; see the points below.</value></data>
   <data name="Done_Memory_Good" xml:space="preserve"><value>The memory held every pattern written to it without a single error.</value></data>
-  <data name="Done_Memory_Attention" xml:space="preserve"><value>No memory errors were seen, but not every memory test ran to the end, so the result is not complete.</value></data>
+  <data name="Done_Memory_Attention" xml:space="preserve"><value>No memory errors were seen. This is not a fault: with the time you set, not every part of the memory tests could run in full, so the result is partial. Run it again with more time for a complete result.</value></data>
   <data name="Done_Memory_Problem" xml:space="preserve"><value>The memory gave back wrong data. A faulty module, a loose module, or memory settings (XMP/EXPO) set too fast are the usual causes.</value></data>
   <data name="Done_Gpu_Good" xml:space="preserve"><value>The graphics card computed and drew correctly under load, and its core, hot spot and memory temperatures and its clocks were normal.</value></data>
   <data name="Done_Gpu_Attention" xml:space="preserve"><value>The graphics card worked correctly, but its heat or clocks are worth a look; see the points below.</value></data>

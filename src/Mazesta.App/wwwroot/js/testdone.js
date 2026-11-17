@@ -33,8 +33,9 @@ function card(p) {
   return h("section", { class: `done-part ${pt.cls} ${lvl}` },
     h("header", { class: "done-head" }, h("span", { class: "ico" }, icon(pt.icon)),
       h("div", { class: "grow" }, h("h3", {}, t(pt.key)), p.name ? h("small", { class: "lat" }, p.name) : null),
-      h("span", { class: `pill ${lvl}` }, t(`Done_Level_${p.level}`))),
+      h("span", { class: `pill ${lvl}` }, t(p.partial ? "Done_Level_Partial" : `Done_Level_${p.level}`))),
     h("p", { class: "done-say" }, t(p.say)),
+    p.timeNotes?.length ? h("ul", { class: "done-list" }, p.timeNotes.map((x) => h("li", { class: LEVEL.Attention }, icon("alert"), h("span", {}, x)))) : null,
     h("div", { class: "done-figs" }, figs.map(([n, v]) => h("div", {}, h("b", { class: "num" }, v), h("span", {}, n)))),
     // What needs a look, in words; what was checked and found right, as short ticks.
     notGood.length ? h("ul", { class: "done-list" }, bySeverity(notGood).map((f) => h("li", { class: LEVEL[f.level] }, icon("alert"), h("span", {}, f.title)))) : null,
