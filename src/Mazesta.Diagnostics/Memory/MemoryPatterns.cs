@@ -52,6 +52,29 @@ internal static class MemoryPatterns
         return bad;
     }
 
+    /// <summary>The first 64-bit word of <paramref name="block"/> that differs from the pass's pattern when it is read again: where it is, what it
+    /// must hold and what it holds. Null when the second read is right - then the fault was in reading the RAM, not in what a cell holds.</summary>
+    public static (long Offset, ulong Expected, ulong Actual)? FirstMismatch(ReadOnlySpan<byte> block, int pass, int blockIndex)
+    {
+        var words = MemoryMarshal.Cast<byte, ulong>(block);
+        bool constant = IsConstant(pass, out byte b), address = IsAddress(pass, out ulong flip); ulong s = Seed(pass, blockIndex), baseAddress = (ulong)blockIndex * (ulong)block.Length;
+        for (int i = 0; i < words.Length; i++)
+        {
+            ulong e = constant ? b * 0x0101010101010101UL : address ? (baseAddress + (ulong)i * 8) ^ AddressMask ^ flip : Next(ref s);
+            if (words[i] != e) return (i * 8L, e, words[i]);
+        }
+        return null;
+    }
+
+    /// <summary>A wrong word in words a technician can act on: one bit that is always wrong points at a cell or a data line, many bits or a
+    /// word that reads right the second time at timings, voltage or heat.</summary>
+    public static string DescribeWord((long Offset, ulong Expected, ulong Actual)? word)
+    {
+        if (word is not { } w) return "read again, the same block was right: a fault in reading or on the way, not a cell that holds a wrong value";
+        ulong d = w.Expected ^ w.Actual; var bits = Enumerable.Range(0, 64).Where(i => (d >> i & 1) != 0).ToList();
+        return $"read again, the word at +0x{w.Offset:X} is still wrong: expected 0x{w.Expected:X16}, read 0x{w.Actual:X16}, {bits.Count} bit(s) differ ({string.Join(",", bits.Take(8))}{(bits.Count > 8 ? ",..." : "")})";
+    }
+
     private static long WordDiff(ulong actual, ulong expected)
         => actual == expected ? 0 : System.Numerics.BitOperations.PopCount(ByteMask(actual ^ expected));
 

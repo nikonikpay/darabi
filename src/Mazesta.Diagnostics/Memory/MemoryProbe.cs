@@ -50,6 +50,31 @@ public sealed class Win32MemoryProbe : IMemoryProbe
     [DllImport("kernel32.dll", EntryPoint = "K32EmptyWorkingSet")] private static extern bool EmptyWorkingSet(nint process);
 }
 
+/// <summary>Keeps a RAM test's blocks in RAM while it lives: the process's working-set minimum is raised to hold them (what is locked plus what
+/// the process already uses), every block is locked (VirtualLock), and the limits are put back on disposal. Without it Windows may page a block
+/// out, and the test then checks the page file, not the RAM. <see cref="Locked"/> says how many blocks Windows agreed to lock.</summary>
+internal sealed class RamLock : IDisposable
+{
+    private readonly bool _had; private readonly nint _min, _max; private readonly uint _flags;
+    public int Locked { get; }
+    public RamLock(IReadOnlyList<NativeBlock> blocks)
+    {
+        _had = GetProcessWorkingSetSizeEx(GetCurrentProcess(), out _min, out _max, out _flags);
+        long bytes = blocks.Sum(b => (long)b.Length);
+        // The blocks are written already, so the working set holds them: asking for them on top of it again was twice the test's size, more than
+        // the machine has on a large run, and Windows then refused the limit and every lock after it (0 of 625 blocks on a 64 GB machine).
+        long min = Math.Max(bytes, Environment.WorkingSet) + (256L << 20);
+        SetProcessWorkingSetSizeEx(GetCurrentProcess(), (nint)min, (nint)(min + (512L << 20)), 0);
+        foreach (var b in blocks) if (b.Lock()) Locked++;
+    }
+    /// <summary>After the blocks themselves are freed.</summary>
+    public void Dispose() { if (_had) SetProcessWorkingSetSizeEx(GetCurrentProcess(), _min, _max, _flags); }
+
+    [DllImport("kernel32.dll")] private static extern nint GetCurrentProcess();
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetProcessWorkingSetSizeEx(nint process, nint min, nint max, uint flags);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetProcessWorkingSetSizeEx(nint process, out nint min, out nint max, out uint flags);
+}
+
 /// <summary>One block of native memory. Native rather than a managed array so a multi-gigabyte test does not
 /// feed the garbage collector, and is released deterministically the moment the test ends.</summary>
 internal sealed unsafe class NativeBlock : IDisposable

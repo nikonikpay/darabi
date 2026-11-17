@@ -200,6 +200,13 @@ public static class MemorySequence
 
     public static ulong Read(ReadOnlySpan<ulong> w) { ulong x = 0; foreach (ulong v in w) x ^= v; return x; }
 
+    /// <summary>The first word of a block that differs from what <paramref name="e"/> says it must hold, read again (see <see cref="MemoryPatterns.FirstMismatch"/>).</summary>
+    public static (long Offset, ulong Expected, ulong Actual)? FirstWrong(ReadOnlySpan<ulong> w, Expected e, long blockIndex)
+    {
+        for (int i = 0; i < w.Length; i++) if (e.At(blockIndex, i, w.Length) is var x && w[i] != x) return (i * 8L, x, w[i]);
+        return null;
+    }
+
     /// <summary>The words of a block that differ from what <paramref name="e"/> says they must hold, and the bits that differ in them.</summary>
     public static (long Words, long Bits) Check(ReadOnlySpan<ulong> w, Expected e, long blockIndex)
     {
