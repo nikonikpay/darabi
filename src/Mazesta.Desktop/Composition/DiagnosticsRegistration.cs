@@ -61,7 +61,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
         s.AddSingleton<ITestExecutor, StorageDailyExecutor>();
         s.AddSingleton<ITestExecutor, StorageSurfaceExecutor>();
-        s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(priority: ThreadPriority.BelowNormal), new GpuStressExecutor(GpuStressProfile.Steady)));
+        s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuVectorStressExecutor(ThreadPriority.BelowNormal), new GpuStressExecutor(GpuStressProfile.Steady)));
         s.AddSingleton<ITestExecutor>(_ => new DailyUseExecutor());   // the whole machine through a working day's changes of state, after the full-load tests
         s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
         s.AddSingleton<Mazesta.Core.Gaming.IServiceControl, Mazesta.Diagnostics.Windows.WindowsServiceControl>();
