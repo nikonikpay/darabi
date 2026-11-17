@@ -311,10 +311,10 @@ public static partial class TestDetailText
             .Replace("max ", Loc.Get("Detail_Word_Max") + " ", StringComparison.Ordinal), m => Loc.Format("Detail_Samples", m.Groups[1].Value));
 
     /// <summary>", wear 3%, 35 °C (max 50 °C), power-on 1200 h, uncorrected read/write errors 0/0" after a drive's name and status.</summary>
-    private static string DriveFacts(string tail) => tail.Replace(", ", Loc.Get("Detail_ListComma"), StringComparison.Ordinal).Replace("wear ", Loc.Get("Detail_Word_Wear") + " ", StringComparison.Ordinal)
+    private static string DriveFacts(string tail) => tail.Replace("replaced, pending or unreadable sectors ", Loc.Get("Detail_Word_BadSectors") + " ", StringComparison.Ordinal)
+        .Replace(", ", Loc.Get("Detail_ListComma"), StringComparison.Ordinal).Replace("wear ", Loc.Get("Detail_Word_Wear") + " ", StringComparison.Ordinal)
         .Replace("(max ", "(" + Loc.Get("Detail_Word_Max") + " ", StringComparison.Ordinal).Replace("power-on ", Loc.Get("Detail_Word_PowerOn") + " ", StringComparison.Ordinal)
-        .Replace("uncorrected read/write errors ", Loc.Get("Detail_Word_Uncorrected") + " ", StringComparison.Ordinal)
-        .Replace("replaced, pending or unreadable sectors ", Loc.Get("Detail_Word_BadSectors") + " ", StringComparison.Ordinal);
+        .Replace("uncorrected read/write errors ", Loc.Get("Detail_Word_Uncorrected") + " ", StringComparison.Ordinal);
 
     /// <summary>An internet-speed number's name as the benchmark shows it ("score_gaming" is the metric Bench_Net_Score_Gaming), or null when there is none.</summary>
     private static string? NetName(string lower)
