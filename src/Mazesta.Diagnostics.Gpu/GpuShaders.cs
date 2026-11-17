@@ -53,6 +53,21 @@ internal readonly partial struct ThermalShader(ReadWriteBuffer<uint> output, Rea
     }
 }
 
+/// <summary>
+/// Compares two buffers that must hold the same values (one batch computed twice) and counts, atomically, every cell where they differ. The
+/// processor can recompute only a sample of a batch's results; this checks all of them on the card: a result that came out wrong once, in any
+/// dispatch of either chain, leaves the two apart. A fault that gives the same wrong answer both times is what the processor's sample is for.
+/// </summary>
+[ThreadGroupSize(DefaultThreadGroupSizes.X)]
+[GeneratedComputeShaderDescriptor]
+internal readonly partial struct CompareShader(ReadWriteBuffer<uint> first, ReadWriteBuffer<uint> second, ReadWriteBuffer<int> errors) : IComputeShader
+{
+    public void Execute()
+    {
+        if (first[ThreadIds.X] != second[ThreadIds.X]) Hlsl.InterlockedAdd(ref errors[0], 1);
+    }
+}
+
 internal static class GpuHash
 {
     public const uint TableCells = 1u << 26;   // 256 MB of 32-bit cells
