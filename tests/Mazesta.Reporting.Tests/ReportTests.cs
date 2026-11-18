@@ -52,7 +52,7 @@ public class ReportTests
         string html = ReportHtml.Write(r);
         Assert.Contains("class=\"tcard Passed\"", html); Assert.Contains("52.5 FPS", html); Assert.Contains("70.2 FPS", html); Assert.Contains("61.0 FPS", html);
         Assert.Contains("80.0 °C", html); Assert.Contains("CPU · Core (Tctl/Tdie)", html);
-        Assert.Contains("بیشینه در آزمون", html); Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(html, "class=\"tcard ").Count);
+        Assert.Contains("اوج مقدار در", html); Assert.Contains("data-dur=", html); Assert.Contains("<script>", html); Assert.Contains("زمان از شروع", html); Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(html, "class=\"tcard ").Count);
         Assert.Equal(ReportJson.Write(r), ReportJson.Write(ReportJson.Read(ReportJson.Write(r))!));   // the per-test figures survive the file    }
     }
 
@@ -60,8 +60,8 @@ public class ReportTests
     {
         var t = Test("gpu.steady", ReportOutcome.Passed, 0, 30, 0, "GPU Steady compute stress; 9797 Gop/s integer; each of 1430 batches");
         var s = new SensorSummary("g#v", "NVIDIA", "GPU Memory Used", "Data", "MB", 1000, 2000, 3000, 5, [new(0, 1000), new(5, 3000)], "GpuVramUsed");
-        var bm = new BenchmarkEntry("bench.cpu.render", "Render", T0.AddSeconds(100), [new("Mrays/s", 12.3456, "Mrays/s")], null, T0.AddSeconds(40));
-        var r = SessionReport.Create("x", "1", T0, [t], [], HardwareInventory.Empty, benchmarks: [bm]) with { TestSensors = [new("bench.cpu.render|" + T0.AddSeconds(100).UtcTicks, [s])] };
+        var bm = new BenchmarkEntry("bench.gpu.rt", "Render", T0.AddSeconds(100), [new("Mrays/s", 12.3456, "Mrays/s")], null, T0.AddSeconds(40));
+        var r = SessionReport.Create("x", "1", T0, [t], [], HardwareInventory.Empty, benchmarks: [bm]) with { TestSensors = [new("bench.gpu.rt|" + T0.AddSeconds(100).UtcTicks, [s])] };
         string html = ReportHtml.Write(r);
         Assert.Contains("9797 Gop/s", html); Assert.Contains("حافظه و حجم", html); Assert.Contains("12.35 Mrays/s", html); Assert.Contains("class=\"tcard Bench\"", html); Assert.Contains("3000", html);
     }

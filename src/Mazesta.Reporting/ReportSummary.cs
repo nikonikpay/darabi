@@ -349,29 +349,29 @@ html{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 body{{margin:0;background:#d9dad5;color:#1b1f21;font:12px/1.5 {family}}}
 main{{width:210mm;min-height:296mm;margin:0 auto;background:#fcfcfa;display:flex;flex-direction:column;box-shadow:0 2px 14px rgba(0,0,0,.18)}}
 .lt{{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate}}
-header{{background:#23282b;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 32px}}
-.brand{{display:flex;align-items:center;gap:16px}} .mark{{flex:none;width:64px;height:64px;border-radius:50%;background:#FDD400;display:flex;align-items:center;justify-content:center}} .logo{{height:28px;width:auto}}
-.kick{{color:#FDD400;font-size:10px;letter-spacing:.18em;direction:ltr;text-align:start;font-weight:700}}
-h1{{margin:2px 0 0;font-size:28px;line-height:1.3}} .sub{{color:#c4cac8;font-size:12.5px}}
-.meta{{text-align:start;line-height:1.5;flex:none}} .meta small{{display:block;color:#a9b0ad;font-size:10.5px;margin-top:4px}} .meta b{{display:block;font-size:12.5px}}
-.verdict{{display:flex;align-items:center;gap:26px;padding:14px 32px;border-top:4px solid #FDD400}}
-.vt{{flex:1}} .vt b{{display:block;font-size:22px;line-height:1.4}} .vt span{{font-size:12.5px}}
-.vn{{flex:none;text-align:center;padding-inline-start:26px;border-inline-start:1px solid rgba(0,0,0,.28)}} .vn b{{display:block;font-size:36px;line-height:1.1}} .vn small{{font-size:12px}}
+header{{background:#23282b;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 24px}}
+.brand{{display:flex;align-items:center;gap:10px}} .mark{{flex:none;width:34px;height:34px;border-radius:50%;background:#FDD400;display:flex;align-items:center;justify-content:center}} .logo{{height:15px;width:auto}}
+.kick{{display:none}}
+h1{{margin:0;font-size:16px;line-height:1.3}} .sub{{color:#c4cac8;font-size:11px}}
+.meta{{text-align:start;line-height:1.4;flex:none}} .meta small{{display:inline;color:#a9b0ad;font-size:10px;margin-inline-end:6px}} .meta b{{display:inline;font-size:11.5px}}
+.verdict{{display:flex;align-items:center;gap:14px;padding:6px 24px;border-top:3px solid #FDD400}}
+.vt{{flex:1}} .vt b{{display:inline;font-size:14.5px;line-height:1.4}} .vt span{{font-size:11.5px;margin-inline-start:10px}}
+.vn{{flex:none;display:flex;align-items:baseline;gap:6px;padding-inline-start:14px;border-inline-start:1px solid rgba(0,0,0,.28)}} .vn b{{display:inline;font-size:20px;line-height:1.1}} .vn small{{font-size:10.5px}}
 .verdict.Incomplete{{background:#FFE04A;color:#2a2400}} .verdict.Passed{{background:#bfe8d0;color:#0b4d2b}} .verdict.Failed{{background:#f6c0bb;color:#7a110a}} .verdict.Benchmark{{background:#dfe5ee;color:#243350}}
-.machine{{background:#ecefeb;border-bottom:1px solid #d3d6d1;padding:12px 32px;display:grid;grid-template-columns:1fr 1fr;gap:5px 30px}}
+.machine{{background:#ecefeb;border-bottom:1px solid #d3d6d1;padding:5px 24px;display:grid;grid-template-columns:1fr 1fr;gap:1px 24px;font-size:11px}}
 .machine div{{display:flex;gap:8px;min-width:0}} dt{{color:#5c6360;flex:none}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-.body{{flex:1;display:flex;flex-direction:column;padding:14px 32px 16px}}
+.body{{flex:1;display:flex;flex-direction:column;padding:10px 24px 12px}}
 section.notes{{border:1px solid #cfd2cc;border-radius:6px;padding:8px 12px;margin-bottom:12px;background:#fff}} h2{{margin:0 0 4px;font-size:13px}}
-.cards{{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-content:stretch}}
-.card{{background:#fff;border:1px solid #cfd2cc;border-top:3px solid #23282b;padding:12px 16px;display:flex;flex-direction:column;min-width:0;page-break-inside:avoid}}
-.ch{{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #dfe1dc}} .ch .badge{{margin-inline-start:auto}}
-h3{{margin:0;font-size:17px;line-height:1.3}} .no{{font-style:normal;color:#a3a8a4;font-size:11px;padding-inline-start:10px;border-inline-start:1px solid #d3d6d1}}
+.cards{{flex:0 0 auto;display:grid;grid-template-columns:repeat(12,1fr);gap:9px;align-content:start}}
+.card{{background:#fff;border:1px solid #cfd2cc;border-top:2px solid #23282b;padding:8px 12px;display:flex;flex-direction:column;min-width:0;page-break-inside:avoid}}
+.ch{{display:flex;align-items:center;gap:8px;padding-bottom:5px;margin-bottom:6px;border-bottom:1px solid #dfe1dc}} .ch .badge{{margin-inline-start:auto}}
+h3{{margin:0;font-size:14px;line-height:1.3}} .no{{font-style:normal;color:#a3a8a4;font-size:10px;padding-inline-start:8px;border-inline-start:1px solid #d3d6d1}}
 .cn{{font-weight:700;font-size:14px;line-height:1.4}} .cf{{color:#5c6360;font-size:11px;margin-bottom:2px}}
-.tiles{{display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap}}
-.tile{{flex:1 1 0;min-width:90px;padding:8px;border:1px solid #dfe1dc;background:#f1f2ee;text-align:center}}
-.tile .tl{{font-size:11px;color:#4a514e;font-weight:700}} .tile .tv{{font-size:28px;font-weight:700;line-height:1.25}} .tile .td{{font-size:10px;color:#5c6360;line-height:1.35}}
+.tiles{{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap}}
+.tile{{flex:1 1 0;min-width:84px;padding:5px 6px;border:1px solid #dfe1dc;background:#f1f2ee;text-align:center}}
+.tile .tl{{font-size:10.5px;color:#4a514e;font-weight:700}} .tile .tv{{font-size:20px;font-weight:700;line-height:1.25}} .tile .td{{font-size:9.5px;color:#5c6360;line-height:1.3}}
 .tile.ok{{background:#e9f7ef;border-color:#9bd5b4}} .tile.ok .tv{{color:#0f6b3c}} .tile.warn{{background:#fff5da;border-color:#ecd08c}} .tile.warn .tv{{color:#8a5a00}} .tile.bad{{background:#fde8e7;border-color:#f0a39e}} .tile.bad .tv{{color:#a0180f}}
-.tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:32px}}
+.tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:24px}}
 table{{width:100%;border-collapse:collapse;margin-top:auto}} td{{padding:6px 2px;border-top:1px solid #e3e5e0;vertical-align:middle}}
 .res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:12px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
 .fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#5c6360;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
@@ -382,11 +382,11 @@ table{{width:100%;border-collapse:collapse;margin-top:auto}} td{{padding:6px 2px
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
 .note{{margin:8px 0 0;color:#7b807d;font-size:10px}} .na{{color:#7b807d;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
-.installed{{margin-top:12px;background:#23282b;color:#e8ebe9;border-inline-start:5px solid #FDD400;padding:12px 18px;display:flex;align-items:center;gap:14px;font-size:12px}} .installed b{{color:#FDD400;flex:none}}
+.installed{{margin-top:10px;background:#23282b;color:#e8ebe9;border-inline-start:4px solid #FDD400;padding:7px 14px;display:flex;align-items:center;gap:12px;font-size:11px}} .installed b{{color:#FDD400;flex:none}}
 .sign{{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:6px}} .sign div{{border-top:1px solid #8d928f;padding-top:6px;font-size:11px;color:#4a514e;text-align:center;margin-top:24px}}
 footer{{display:flex;justify-content:space-between;gap:18px;margin-top:14px;border-top:1px solid #d3d6d1;padding-top:6px;color:#7b807d;font-size:9.5px;line-height:1.45}} footer span:first-child{{flex:none}}
-main.tight{{font-size:11px}} .tight header{{padding:18px 32px}} .tight .mark{{width:60px;height:60px}} .tight h1{{font-size:25px}} .tight .verdict{{padding:12px 32px}} .tight .vn b{{font-size:32px}} .tight .card{{padding:10px 12px}} .tight .tile .tv{{font-size:24px}} .tight td{{padding:4px 2px}} .tight .drive{{padding:4px 0}} .tight .sign div{{margin-top:20px}} .tight .cards{{gap:10px}}
-main.tightest{{font-size:10px}} .tightest header{{padding:10px 28px}} .tightest .mark{{width:48px;height:48px}} .tightest h1{{font-size:21px}} .tightest .sub{{display:none}} .tightest .verdict{{padding:6px 28px}} .tightest .vn b{{font-size:26px}} .tightest .machine{{padding:6px 28px}} .tightest .body{{padding:10px 28px 8px}} .tightest .card{{padding:7px 10px}} .tightest .ch{{margin-bottom:6px;padding-bottom:4px}} .tightest .tile{{padding:4px 8px}} .tightest .tile .tv{{font-size:19px}} .tightest footer{{margin-top:8px}} .tightest .tile .td,.tightest .note{{display:none}} .tightest td{{padding:2px}} .tightest .drive{{padding:2px 0}} .tightest .sign div{{margin-top:10px}} .tightest .installed{{margin-top:8px;padding:7px 14px}} .tightest .cards{{gap:7px}}
+main.tight{{font-size:11px}} .tight .card{{padding:7px 10px}} .tight .tile .tv{{font-size:18px}} .tight td{{padding:3px 2px}} .tight .drive{{padding:3px 0}} .tight .sign div{{margin-top:16px}} .tight .cards{{gap:8px}}
+main.tightest{{font-size:10px}} .tightest .sub{{display:none}} .tightest .card{{padding:5px 8px}} .tightest .ch{{margin-bottom:4px;padding-bottom:3px}} .tightest .tile{{padding:3px 6px}} .tightest .tile .tv{{font-size:16px}} .tightest footer{{margin-top:6px}} .tightest .tile .td,.tightest .note{{display:none}} .tightest td{{padding:2px}} .tightest .drive{{padding:2px 0}} .tightest .sign div{{margin-top:8px}} .tightest .installed{{margin-top:6px;padding:5px 12px}} .tightest .cards{{gap:6px}}
 @media print{{body{{background:#fff}} main{{box-shadow:none;width:auto}}}}";
     }
 }

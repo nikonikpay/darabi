@@ -17,13 +17,13 @@ public static class ReportHtml
         var w = wording ?? ReportText.Persian;
         var b = new StringBuilder(32 * 1024);
         b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
-         .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
+         .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; img-src data:\">")
          .Append("<title>").Append(E(w.TitleOf(r.Kind))).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
         Header(b, r, w); Summary(b, r, w); WorkDone(b, r, w); Findings(b, r, w);
         Tests(b, r, w);
         if (r.Kind == ReportKind.Benchmark) { Benchmarks(b, r, w); Sensors(b, r, w); } else { Sensors(b, r, w); Benchmarks(b, r, w); }   // the report's subject first
         Machine(b, r.Machine, w);
-        b.Append("<footer>").Append(E(w.Footer)).Append("<br>").Append(Lt($"Mazesta Test {r.AppVersion} · {r.Id}")).Append("</footer></main></body></html>");
+        b.Append("<footer>").Append(E(w.Footer)).Append("<br>").Append(Lt($"Mazesta Test {r.AppVersion} · {r.Id}")).Append("</footer></main>").Append(b.ToString().Contains("data-dur=") ? "<script>" + ChartJs + "</script>" : "").Append("</body></html>");
         return b.ToString();
     }
 
@@ -120,15 +120,20 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 .tn{{flex:1 1 220px;min-width:0}} .tn b{{display:block;font-size:15.5px}} .tn small{{color:#5b6675;font-size:12px}}
 .tm{{display:flex;gap:6px;align-items:center;flex-wrap:wrap}}
 .chip{{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid #dfe4ec;border-radius:99px;padding:1px 10px;font-size:12.5px}} .chip.bad{{background:#fdecec;border-color:#f0a8a8;color:#a11a1a}}
-.groups{{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 12px;padding:12px 14px 4px;align-items:start}}
+.tcard>.tiles{{padding:10px 14px 4px}}
+.chips{{display:flex;flex-wrap:wrap;gap:4px 6px;margin:4px 14px 8px;align-items:center}} .chips .cl{{font-size:11.5px;color:#6b7686}} .chips span{{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;background:#f5f7fa;border:1px solid #e3e7ee;border-radius:99px;padding:1px 9px;color:#4a5566}} .chips span .ico{{color:var(--c);width:1em;height:1em}} .chips span b{{color:var(--c);font-weight:700;margin-inline-start:3px}}
+.idle{{margin:2px 14px 10px;font-size:11.5px;color:#7a8594}} .idle b{{color:#5b6675}}
+.tile.Score{{background:#fffdf3}} .tile.Score .trio .mid b{{font-size:24px}}
+.lg span{{cursor:pointer;user-select:none;padding:1px 4px;border-radius:4px}} .lg span:hover{{background:#f0f3f7}} .lg span.off{{opacity:.4;text-decoration:line-through}} .hint{{font-size:11px;color:#8a94a3;margin:0 0 2px}} @media print{{.hint{{display:none}}}}
+
 .grp h4,h3.cat,.chart h4{{display:flex;align-items:center;gap:7px;color:var(--c);margin:0 0 8px;font-size:13.5px}} h3.cat{{margin:20px 0 6px;font-size:15px}}
-.tiles{{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}}
-.tile{{border:1px solid #e3e7ee;border-top:3px solid var(--c);border-radius:8px;padding:7px 10px 9px;background:#fff;break-inside:avoid}}
+.tiles{{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:8px}}
+.tile{{display:flex;flex-direction:column;border:1px solid #e3e7ee;border-top:3px solid var(--c);border-radius:8px;padding:6px 9px 8px;background:#fff;break-inside:avoid}}
 .tl{{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;line-height:1.5}} .tl .ico{{color:var(--c)}}
 .ts,.sens .ts{{color:#7a8594;font-size:11px;margin:0 0 4px;min-height:1.4em}}
 .trio{{display:flex;justify-content:space-between;gap:6px;margin-top:4px}} .trio div{{display:flex;flex-direction:column;align-items:flex-start}}
-.trio span{{font-size:11px;color:#6b7686}} .trio b{{font-size:13px;font-weight:600}} .trio .mid b{{font-size:17px;font-weight:700;color:var(--c)}}
-.rng{{position:relative;height:5px;border-radius:3px;margin-top:9px;background:linear-gradient(90deg,#e9ecef,var(--c))}} [dir=rtl] .rng{{background:linear-gradient(270deg,#e9ecef,var(--c))}}
+.trio span{{font-size:11px;color:#6b7686;white-space:nowrap}} .trio b{{font-size:13px;font-weight:600;white-space:nowrap}} .trio .mid b{{font-size:15px;font-weight:700;color:var(--c)}}
+.rng{{position:relative;height:5px;border-radius:3px;margin-top:auto;background:linear-gradient(90deg,#e9ecef,var(--c))}} [dir=rtl] .rng{{background:linear-gradient(270deg,#e9ecef,var(--c))}}
 .rng i{{position:absolute;top:-3px;width:11px;height:11px;margin-inline-start:-5px;border-radius:50%;background:#fff;border:2.5px solid var(--c)}}
 .tcard .charts{{padding:0 14px 12px}} .chart h4 small{{font-weight:400;color:#6b7686}}
 .lg{{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:11.5px;color:#4a5566}} .lg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}}
@@ -204,8 +209,8 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
     private static void Tile(StringBuilder b, Cat c, string label, string? sub, double? min, double? avg, double? max, string unit, ReportText w, bool exact = false)
     {
         string V(double v) => Lt(exact ? Units.FormatMeasured(v, unit) : Units.FormatMeasured(v, unit, 1));
-        b.Append("<div class=\"tile\" style=\"--c:").Append(CatColor(c)).Append("\"><div class=\"tl\">").Append(CatIco(c)).Append("<span>").Append(E(label)).Append("</span></div>")
-         .Append("<div class=\"ts\">").Append(string.IsNullOrWhiteSpace(sub) ? "&nbsp;" : Lt(sub)).Append("</div><div class=\"trio\">");
+        b.Append("<div class=\"tile\" style=\"--c:").Append(CatColor(c)).Append("\"><div class=\"tl\">").Append(CatIco(c)).Append("<span>").Append(Lt(label)).Append("</span></div>")
+         .Append(string.IsNullOrWhiteSpace(sub) ? "" : "<div class=\"ts\">" + Lt(sub) + "</div>").Append("<div class=\"trio\">");
         if (min is { } lo) b.Append("<div><span>").Append(E(w.Min)).Append("</span><b>").Append(V(lo)).Append("</b></div>");
         if (avg is { } a) b.Append("<div class=\"mid\"><span>").Append(min is null && max is null ? "&nbsp;" : E(w.Avg)).Append("</span><b>").Append(V(a)).Append("</b></div>");
         if (max is { } hi) b.Append("<div><span>").Append(E(w.Max)).Append("</span><b>").Append(V(hi)).Append("</b></div>");
@@ -256,39 +261,67 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             string badges = $"<span class=\"badge {t.Outcome}\">{E(w.OutcomeName(t.Outcome))}</span><span class=\"chip\">{Ico("time")}{Lt(ReportFormat.Duration(t.DurationSeconds))}</span><span class=\"chip{(t.ErrorCount > 0 ? " bad" : "")}\">{Ico("bug")}{E(w.Errors)} {Lt(t.ErrorCount.ToString(Inv))}</span>";
             string? options = t.Options.Count > 0 ? E(w.Options) + ": " + string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}"))) : null;
             Card(b, t.Outcome.ToString(), TestIcon(t.Id), t.Name, options, badges, ScoresOf(t.Detail), (Fps("lowest"), Fps("average"), Fps("highest")),
-                r.TestSensors?.FirstOrDefault(x => x.TestId == t.Id)?.Sensors ?? [], t.DurationSeconds, t.Advice, t.Detail, w);
+                r.TestSensors?.FirstOrDefault(x => x.TestId == t.Id)?.Sensors ?? [], t.DurationSeconds, t.Advice, t.Detail, w, t.Id);
         }
     }
 
+    /// <summary>Legend toggles for the test charts: click hides/shows a line (the vertical scale refits the visible ones), double-click isolates it. Numbers match SeriesChart.</summary>
+    private const string ChartJs = "(function(){var W=520,H=170,L=48,R=8,T=8,B=36;document.querySelectorAll('.chart[data-dur]').forEach(function(c){var dur=+c.getAttribute('data-dur'),fixed=c.getAttribute('data-fixed')==='1',pl=[].slice.call(c.querySelectorAll('polyline')),lg=[].slice.call(c.querySelectorAll('.lg span')),yt=[].slice.call(c.querySelectorAll('.yt'));"
+        + "var data=pl.map(function(p){return p.getAttribute('data-p').split(' ').map(function(s){var a=s.split(',');return[+a[0],+a[1]]})});"
+        + "function draw(){var lo=Infinity,hi=-Infinity;data.forEach(function(d,i){var off=lg[i].classList.contains('off');pl[i].style.display=off?'none':'';if(off)return;d.forEach(function(q){lo=Math.min(lo,q[1]);hi=Math.max(hi,q[1])})});if(lo===Infinity)return;"
+        + "if(fixed){lo=0;hi=100}else{if(hi-lo<1e-9)hi=lo+1;var pad=(hi-lo)*.08;lo-=pad;hi+=pad}"
+        + "data.forEach(function(d,i){pl[i].setAttribute('points',d.map(function(q){return(L+q[0]/dur*(W-L-R)).toFixed(1)+','+(T+(hi-q[1])/(hi-lo)*(H-T-B)).toFixed(1)}).join(' '))});"
+        + "yt.forEach(function(t){var v=hi-(+t.getAttribute('data-f'))*(hi-lo);t.textContent=v.toFixed(hi-lo<10?1:0)})}"
+        + "lg.forEach(function(s,i){function tg(){s.classList.toggle('off');draw()}s.onclick=tg;s.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tg()}};s.ondblclick=function(){var only=lg.every(function(o,j){return j===i||o.classList.contains('off')});lg.forEach(function(o,j){o.classList.toggle('off',only?false:j!==i)});draw()}})})})();";
+
+    private static bool IsZero(SensorSummary s) => Math.Abs(s.Min) < 1e-9 && Math.Abs(s.Max) < 1e-9;
+    private static bool IsFlat(SensorSummary s) => s.Max - s.Min <= Math.Max(1e-9, Math.Abs(s.Average) * 0.005);
+    /// <summary>The parts of the machine a test works, from its id ("cpu.stress", "bench.gpu.rt"); null (unknown id) keeps every sensor.</summary>
+    private static string? DomainOf(string? id)
+    {
+        if (id is null) return null;
+        var p = id.Split('.', '|'); string k = p[0] == "bench" && p.Length > 1 ? p[1] : p[0];
+        return k switch { "cpu" => "Cpu", "memory" => "Ram", "gpu" => "Gpu", "storage" => "Storage", "network" => "Net", "ai" => "Gpu+Cpu", _ => null };
+    }
+    private static string RoleDomain(string? role) => role switch { null => "Board", _ when role.StartsWith("Cpu") => "Cpu", _ when role.StartsWith("Gpu") => "Gpu", _ when role.StartsWith("Ram") || role.StartsWith("Dimm") => "Ram", _ when role.StartsWith("Storage") => "Storage", _ when role.StartsWith("Net") => "Net", _ => "Board" };
+
     /// <summary>One card for a test or a benchmark run: its result figures first, then every reading taken during that run by kind (min, average, max), then that run's own charts.</summary>
     private static void Card(StringBuilder b, string cls, string icon, string name, string? note, string badges, IReadOnlyList<Score> scores, (double? Low, double? Avg, double? High) fps,
-        IReadOnlyList<SensorSummary> sensors, double seconds, string? advice, string? detail, ReportText w)
+        IReadOnlyList<SensorSummary> allSensors, double seconds, string? advice, string? detail, ReportText w, string? testId = null)
     {
+        // Only the parts the test works: a CPU test shows no drives or network, a graphics test no storage; unknown tests keep everything.
+        var domain = DomainOf(testId);
+        var sensors = domain is null ? allSensors : allSensors.Where(s => domain.Contains(RoleDomain(s.Role))).ToList();
+        var idle = sensors.Where(IsZero).ToList(); sensors = [.. sensors.Where(s => !IsZero(s))];
         bool figures = sensors.Count > 0 || fps.Avg is not null || scores.Count > 0;
         b.Append("<section class=\"tcard ").Append(cls).Append("\"><header class=\"th\"><span class=\"tico\">").Append(Ico(icon)).Append("</span><div class=\"tn\"><b>").Append(E(name)).Append("</b>");
         if (note is not null) b.Append("<small>").Append(note).Append("</small>");
         b.Append("</div><div class=\"tm\">").Append(badges).Append("</div></header>");
 
-        if (figures) b.Append("<div class=\"groups\">");
-        foreach (var cat in Enum.GetValues<Cat>())
+        if (figures)
         {
-            var rows = sensors.Where(s => CatOf(s) == cat).ToList();
-            if (cat == Cat.Score ? scores.Count == 0 : cat == Cat.Fps ? fps.Avg is null : rows.Count == 0) continue;
-            b.Append("<div class=\"grp\" style=\"--c:").Append(CatColor(cat)).Append("\"><h4>").Append(CatIco(cat)).Append(E(CatName(cat, w))).Append("</h4><div class=\"tiles\">");
-            if (cat == Cat.Score) foreach (var s in scores) Tile(b, cat, s.Label, null, null, s.Value, null, s.Unit, w, exact: true);
-            if (cat == Cat.Fps) Tile(b, cat, "FPS", null, fps.Low, fps.Avg, fps.High, "FPS", w);
-            foreach (var s in rows) Tile(b, cat, Short(s), s.Hardware, s.Min, s.Average, s.Max, s.Unit, w);
-            b.Append("</div></div>");
+            // One dense grid: each tile carries its kind's colour and icon, so no row is spent on a heading; the hardware line shows only when the card spans more than one device.
+            bool multi = sensors.Select(s => s.Hardware).Distinct().Count() > 1;
+            b.Append("<div class=\"tiles\">");
+            foreach (var cat in Enum.GetValues<Cat>())
+            {
+                if (cat == Cat.Score) foreach (var sc in scores) Tile(b, cat, sc.Label, null, null, sc.Value, null, sc.Unit, w, exact: true);
+                if (cat == Cat.Fps && fps.Avg is not null) Tile(b, cat, "FPS", null, fps.Low, fps.Avg, fps.High, "FPS", w);
+                foreach (var sn in sensors.Where(x => CatOf(x) == cat && !IsFlat(x))) Tile(b, cat, Short(sn), multi ? sn.Hardware : null, sn.Min, sn.Average, sn.Max, sn.Unit, w);
+            }
+            b.Append("</div>");
+            var flat = sensors.Where(IsFlat).OrderBy(x => CatOf(x)).ToList();   // no range to show: one small chip each instead of a tile
+            if (flat.Count > 0) b.Append("<div class=\"chips\"><b class=\"cl\">").Append(E(w.Steady)).Append(":</b>").Append(string.Join("", flat.Select(x => "<span style=\"--c:" + CatColor(CatOf(x)) + "\">" + CatIco(CatOf(x)) + Lt(Short(x)) + "<b>" + Lt(ReportFormat.Value(x.Average, x)) + "</b></span>"))).Append("</div>");
         }
-        if (figures) b.Append("</div>");
 
-        var charts = Enum.GetValues<Cat>().Where(c => c is not (Cat.Score or Cat.Fps or Cat.Volt or Cat.Other)).Select(c => (c, list: sensors.Where(s => CatOf(s) == c && s.Trace.Count > 1).ToList())).Where(x => x.list.Count > 0).ToList();
+        var charts = Enum.GetValues<Cat>().Where(c => c is not (Cat.Score or Cat.Fps or Cat.Volt or Cat.Other)).Select(c => (c, list: sensors.Where(s => CatOf(s) == c && s.Trace.Count > 1 && !IsFlat(s)).ToList())).Where(x => x.list.Count > 0).ToList();
         if (charts.Count > 0)
         {
             b.Append("<div class=\"charts\">");
             foreach (var (c, list) in charts) SeriesChart(b, c, [.. list.Take(Palette.Length)], seconds, w);   // the first six (the main parts); every sensor's figures are in its tile
             b.Append("</div>");
         }
+        if (idle.Count > 0) b.Append("<div class=\"idle\"><b>").Append(E(w.IdleZero)).Append(":</b> ").Append(string.Join(" · ", idle.Select(s => Lt(Short(s))))).Append("</div>");
         if (!string.IsNullOrWhiteSpace(advice)) b.Append("<div class=\"advice\">").Append(E(advice).Replace("\n", "<br>")).Append("</div>");
         // Nothing is dropped: whatever the evidence says that no tile above shows (times, counts, set-up, every other unit) follows in one plain line.
         var rest = Leftover(detail, sensors.Count > 0);
@@ -299,7 +332,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
     /// <summary>One kind of reading (every temperature, every load…) of one test over that test's own time, one line per sensor with its legend.</summary>
     private static void SeriesChart(StringBuilder b, Cat cat, List<SensorSummary> list, double seconds, ReportText w)
     {
-        const double W = 520, H = 150, L = 40, R = 8, T = 8, B = 20;
+        const double W = 520, H = 170, L = 48, R = 8, T = 8, B = 36;   // the page script (ChartJs) redraws with the same numbers
         bool pct = cat == Cat.Load;
         double lo = pct ? 0 : list.Min(s => s.Trace.Min(p => p.Value)), hi = pct ? 100 : list.Max(s => s.Trace.Max(p => p.Value));
         if (hi - lo < 1e-9) hi = lo + 1;
@@ -308,18 +341,22 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         double X(double s) => L + s / dur * (W - L - R);
         double Y(double v) => T + (hi - v) / (hi - lo) * (H - T - B);
         string F(double d) => d.ToString("F1", Inv);
-        b.Append("<div class=\"chart\" style=\"--c:").Append(CatColor(cat)).Append("\"><h4>").Append(CatIco(cat)).Append(E(CatName(cat, w))).Append(" <small>").Append(Lt(list[0].Unit)).Append("</small></h4>")
+        string unit = list[0].Unit;
+        b.Append("<div class=\"chart\" data-dur=\"").Append(F(dur)).Append("\" data-fixed=\"").Append(pct ? 1 : 0).Append("\" style=\"--c:").Append(CatColor(cat)).Append("\"><h4>").Append(CatIco(cat)).Append(E(CatName(cat, w))).Append(" <small>").Append(Lt(unit)).Append("</small></h4><div class=\"hint\">").Append(E(w.ChartHint)).Append("</div>")
          .Append($"<svg viewBox=\"0 0 {W} {H}\" role=\"img\" aria-label=\"{E(CatName(cat, w))}\">");
-        foreach (double f in new[] { 0, .5, 1 })
+        foreach (double f in new[] { 0, 1 / 3.0, 2 / 3.0, 1 })
         {
-            double y = T + f * (H - T - B);
-            b.Append($"<line x1=\"{L}\" x2=\"{W - R}\" y1=\"{F(y)}\" y2=\"{F(y)}\" stroke=\"#e3e7ee\" stroke-width=\"1\"/><text x=\"{L - 5}\" y=\"{F(y + 3.5)}\" text-anchor=\"end\" font-size=\"11\" fill=\"#5b6675\">{(hi - f * (hi - lo)).ToString("F0", Inv)}</text>");
+            double y = T + f * (H - T - B); double v = hi - f * (hi - lo);
+            b.Append($"<line x1=\"{L}\" x2=\"{W - R}\" y1=\"{F(y)}\" y2=\"{F(y)}\" stroke=\"#e3e7ee\" stroke-width=\"1\"/><text class=\"yt\" data-f=\"{F(f)}\" x=\"{L - 5}\" y=\"{F(y + 3.5)}\" text-anchor=\"end\" font-size=\"13\" fill=\"#5b6675\">{v.ToString(hi - lo < 10 ? "F1" : "F0", Inv)}</text>");
         }
-        b.Append($"<text x=\"{L}\" y=\"{H - 5}\" font-size=\"11\" fill=\"#5b6675\">0</text><text x=\"{W - R}\" y=\"{H - 5}\" text-anchor=\"end\" font-size=\"11\" fill=\"#5b6675\">{E(ReportFormat.Duration(dur))}</text>");
+        b.Append($"<text x=\"10\" y=\"{F((T + H - B) / 2)}\" transform=\"rotate(-90 10 {F((T + H - B) / 2)})\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#3a4352\">{E(unit)}</text>");
+        foreach (double f in new[] { 0, .5, 1 })
+            b.Append($"<text x=\"{F(L + f * (W - L - R))}\" y=\"{H - 18}\" text-anchor=\"{(f == 0 ? "start" : f == 1 ? "end" : "middle")}\" font-size=\"13\" fill=\"#5b6675\">{E(ReportFormat.Duration(dur * f))}</text>");
+        b.Append($"<text x=\"{F((L + W - R) / 2)}\" y=\"{H - 4}\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"700\" fill=\"#3a4352\">{E(w.AxisTime)}</text>");
         for (int i = 0; i < list.Count; i++)
-            b.Append($"<polyline fill=\"none\" stroke=\"{Palette[i % Palette.Length]}\" stroke-width=\"1.7\" stroke-linejoin=\"round\" stroke-linecap=\"round\" points=\"").Append(string.Join(' ', list[i].Trace.Select(p => $"{F(X(p.Seconds))},{F(Y(p.Value))}"))).Append("\"/>");
+            b.Append($"<polyline fill=\"none\" stroke=\"{Palette[i % Palette.Length]}\" stroke-width=\"1.7\" stroke-linejoin=\"round\" stroke-linecap=\"round\" data-p=\"").Append(string.Join(' ', list[i].Trace.Select(p => $"{F(p.Seconds)},{p.Value.ToString("R", Inv)}"))).Append("\" points=\"").Append(string.Join(' ', list[i].Trace.Select(p => $"{F(X(p.Seconds))},{F(Y(p.Value))}"))).Append("\"/>");
         b.Append("</svg><div class=\"lg\">");
-        for (int i = 0; i < list.Count; i++) b.Append("<span><i style=\"background:").Append(Palette[i % Palette.Length]).Append("\"></i>").Append(Lt(Short(list[i]))).Append("</span>");
+        for (int i = 0; i < list.Count; i++) b.Append("<span role=\"button\" tabindex=\"0\"><i style=\"background:").Append(Palette[i % Palette.Length]).Append("\"></i>").Append(Lt(Short(list[i]))).Append("</span>");
         b.Append("</div></div>");
     }
 
@@ -341,7 +378,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
                 if (perTest)
                 {
                     var peak = r.TestSensors!.SelectMany(x => x.Sensors.Where(q => q.Id == s.Id).Select(q => (x.TestId, q.Max))).DefaultIfEmpty().MaxBy(p => p.Max);
-                    b.Append("<td>").Append(peak.TestId is null ? "" : E(r.Tests.FirstOrDefault(t => t.Id == peak.TestId)?.Name ?? peak.TestId)).Append("</td>");
+                    b.Append("<td>").Append(peak.TestId is null ? "" : E(r.Tests.FirstOrDefault(t => t.Id == peak.TestId)?.Name ?? r.Benchmarks?.FirstOrDefault(x => BenchKey(x) == peak.TestId)?.Name ?? peak.TestId.Split('|')[0])).Append("</td>");
                 }
                 b.Append("<td>").Append(Lt(s.Samples.ToString(Inv))).Append("</td></tr>");
             }
@@ -387,7 +424,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             string badges = $"<span class=\"chip\">{Ico("time")}{Lt(ReportFormat.Duration(seconds))}</span><span class=\"chip\">{E(w.MeasuredAt)} {Lt(ReportFormat.Stamp(bm.FinishedAt))}</span>";
             var scores = bm.Metrics.Select(m => new Score(m.Name, m.Value, m.Unit)).ToList();
             Card(b, "Bench", TestIcon(bm.Id), bm.Name, null, badges, scores, (null, null, null),
-                r.TestSensors?.FirstOrDefault(x => x.TestId == BenchKey(bm))?.Sensors ?? [], seconds, null, bm.Detail, w);
+                r.TestSensors?.FirstOrDefault(x => x.TestId == BenchKey(bm))?.Sensors ?? [], seconds, null, bm.Detail, w, bm.Id);
         }
     }
 
