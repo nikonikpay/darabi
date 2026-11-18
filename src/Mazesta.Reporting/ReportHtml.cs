@@ -132,6 +132,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 .rng i{{position:absolute;top:-3px;width:11px;height:11px;margin-inline-start:-5px;border-radius:50%;background:#fff;border:2.5px solid var(--c)}}
 .tcard .charts{{padding:0 14px 12px}} .chart h4 small{{font-weight:400;color:#6b7686}}
 .lg{{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:11.5px;color:#4a5566}} .lg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}}
+.rest{{margin:0 14px 12px;font-size:12px;line-height:1.9;color:#4a5566}} .rest span::after{{content:' · ';color:#9aa4b2}} .rest span:last-child::after{{content:''}}
 .tcard .advice{{margin:0 14px 10px}} .raw{{margin:0 14px 12px}} .raw summary{{cursor:pointer;color:#5b6675;font-size:12px}}
 @media print{{body{{background:#fff}} main{{padding:0;max-width:none}}}}
 @media(max-width:640px){{main{{padding:18px}} .charts{{grid-template-columns:1fr}}}}";
@@ -232,6 +233,19 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         return list;
     }
 
+    /// <summary>The evidence clauses no tile shows: the FPS clauses, the sensor averages (when the card has the sensors) and the result figures are left out, the rest is kept as written.</summary>
+    private static List<string> Leftover(string? detail, bool hasSensors)
+    {
+        var list = new List<string>(); if (string.IsNullOrWhiteSpace(detail)) return list;
+        foreach (var raw in detail.Split([';', '\n']))
+        {
+            string clause = raw.Trim(); if (clause.Length == 0) continue;
+            if (FpsRx.IsMatch(clause) || (hasSensors && clause.Contains(" avg ")) || (!clause.Contains("FPS") && !clause.Contains(" avg ") && RateRx.IsMatch(clause))) continue;
+            list.Add(clause);
+        }
+        return list;
+    }
+
     private static void Tests(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Tests.Count == 0) return;
@@ -276,9 +290,9 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             b.Append("</div>");
         }
         if (!string.IsNullOrWhiteSpace(advice)) b.Append("<div class=\"advice\">").Append(E(advice).Replace("\n", "<br>")).Append("</div>");
-        // The figures above are the same evidence in order; the raw sentence stays for the technician, folded when the cards already show it.
-        if (!string.IsNullOrWhiteSpace(detail))
-            b.Append(figures ? "<details class=\"raw\"><summary>" : "<div class=\"raw\"><small>").Append(E(w.Detail)).Append(figures ? "</summary><pre>" : ":</small><pre>").Append(E(detail)).Append(figures ? "</pre></details>" : "</pre></div>");
+        // Nothing is dropped: whatever the evidence says that no tile above shows (times, counts, set-up, every other unit) follows in one plain line.
+        var rest = Leftover(detail, sensors.Count > 0);
+        if (rest.Count > 0) b.Append("<div class=\"rest\"><b>").Append(E(w.Detail)).Append(":</b> ").Append(string.Join("", rest.Select(x => "<span>" + Lt(x) + "</span>"))).Append("</div>");
         b.Append("</section>");
     }
 
