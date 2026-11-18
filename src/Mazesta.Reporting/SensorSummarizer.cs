@@ -56,12 +56,26 @@ public static class SensorSummarizer
                 foreach (var node in engine.Hardware)
                     foreach (var def in node.Sensors.Where(s => s.Role == role))
                         if (Summarize(def, node.Name, engine.History.GetRaw(def.Id), a, b, TestTracePoints) is { } s) list.Add(s);
-            AddVramPercent(engine, a, b, list);
+            AddVramPercent(engine, a, b, list); AddFastCores(engine, a, b, list);
             if (list.Count > 0) result.Add(new(id, list));
         }
         return result;
     }
     private const int TestTracePoints = 60;
+
+    /// <summary>The fastest core's clock over the window (the real series of the core that peaked): a hybrid CPU's performance and efficiency cores each apart, else all cores together.
+    /// The averaged clock the key roles carry hides the highest a core reached.</summary>
+    private static void AddFastCores(PollingEngine engine, int a, int b, List<SensorSummary> list)
+    {
+        foreach (var node in engine.Hardware)
+        {
+            var cores = node.Sensors.Where(s => s.Role == SensorRole.CpuCoreClock).Select(def => Summarize(def, node.Name, engine.History.GetRaw(def.Id), a, b, TestTracePoints)).OfType<SensorSummary>().ToList();
+            if (cores.Count == 0) continue;
+            var p = cores.Where(c => c.Name.StartsWith("P-Core", StringComparison.Ordinal)).ToList(); var e = cores.Where(c => c.Name.StartsWith("E-Core", StringComparison.Ordinal)).ToList();
+            (string Role, string Name, List<SensorSummary> Group)[] groups = p.Count > 0 && e.Count > 0 ? [("CpuPCoreClock", "CPU P-core clock", p), ("CpuECoreClock", "CPU E-core clock", e)] : [("CpuFastCoreClock", "CPU core clock", cores)];
+            foreach (var (role, name, g) in groups) if (g.MaxBy(c => c.Max) is { } top) list.Add(top with { Id = top.Id + "#" + role, Name = name, Role = role });
+        }
+    }
 
     /// <summary>The share of the graphics memory in use: the used amount over the total, both read from the card itself (no total, no figure).</summary>
     private static void AddVramPercent(PollingEngine engine, int a, int b, List<SensorSummary> list)

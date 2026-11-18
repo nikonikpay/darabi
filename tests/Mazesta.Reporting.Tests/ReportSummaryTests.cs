@@ -210,3 +210,20 @@ public class CleanButShortTests
         Assert.Contains("badge Inconclusive", ReportHtml.Write(Report(0, null)));
     }
 }
+
+public class SummaryClockTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 11, 18, 10, 0, 0, TimeSpan.Zero);
+    private static SensorSummary Clk(string role, double max) => new(role + "#1", "CPU", role, "Clock", "MHz", max - 100, max - 50, max, 5, [], role);
+
+    [Fact] public void Clocks_name_the_test_they_were_reached_in_and_the_board_model_has_its_card()
+    {
+        var tests = new[] { new TestEntry("cpu.stress", "CPU stress", ReportOutcome.Passed, T0, T0.AddSeconds(30), 30, 0, null, new Dictionary<string, string>()), new TestEntry("gpu.thermal", "GPU thermal", ReportOutcome.Passed, T0.AddMinutes(1), T0.AddMinutes(2), 60, 0, null, new Dictionary<string, string>()) };
+        var machine = HardwareInventory.Empty with { Motherboard = new MotherboardInfo("ASUSTeK", "PRIME B550M-A", null, null) };
+        var r = SessionReport.Create("x", "1", T0, tests, [], machine) with { TestSensors = [new("cpu.stress", [Clk("CpuPCoreClock", 5200), Clk("CpuECoreClock", 4100)]), new("gpu.thermal", [Clk("GpuCoreClock", 2800)])] };
+        var s = ReportSummary.Of(r);
+        Assert.Equal(5200, s.Clocks.Single(c => c.Role == "CpuPCoreClock").MaxMhz); Assert.Equal("CPU stress", s.Clocks.Single(c => c.Role == "CpuECoreClock").During); Assert.Equal("GPU thermal", s.Clocks.Single(c => c.Role == "GpuCoreClock").During);
+        string html = SummaryHtml.Write(s, wording: SummaryText.English);
+        Assert.Contains("P-core clock", html); Assert.Contains("E-core clock", html); Assert.Contains("5200 MHz", html); Assert.Contains("<div class=\"cn\"><bdi class=\"lt\">ASUSTeK PRIME B550M-A", html);
+    }
+}

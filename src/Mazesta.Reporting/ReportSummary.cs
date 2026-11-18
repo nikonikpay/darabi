@@ -18,6 +18,9 @@ public sealed record SummaryRow(string Name, ReportOutcome? Outcome, double Dura
     public string Id { get; init; } = "";
 }
 
+/// <summary>A clock's highest reading over the report (Role: CpuPCoreClock, CpuECoreClock, CpuFastCoreClock, CpuCoreClockAverage, GpuCoreClock, GpuMemoryClock) and the test it was reached in.</summary>
+public sealed record PartClock(string Role, double MaxMhz, string? During);
+
 /// <summary>What the power test drew: the CPU package and the GPU, each its highest reading while the test ran (null when the machine did not report it). The total is their sum, so
 /// it is the draw of those two parts only - the board, drives and fans are not counted.</summary>
 public sealed record PowerDraw(double? CpuW, double? GpuW)
@@ -37,6 +40,9 @@ public sealed record SummaryFigure(string Name, double Value, string Unit);
 public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak> Peaks, IReadOnlyList<SummaryRow> Rows, IReadOnlyList<HeatPart> Columns, bool FromTrace)
 {
     public PowerDraw? Power { get; init; }
+    /// <summary>The highest clocks (CPU performance/efficiency/fastest core, GPU core and memory) with the test each was reached in; a clock with no reading is absent.</summary>
+    public IReadOnlyList<PartClock> Clocks { get; init; } = [];
+    private static readonly string[] ClockRoles = ["CpuPCoreClock", "CpuECoreClock", "CpuFastCoreClock", "CpuCoreClockAverage", "GpuCoreClock", "GpuMemoryClock"];
     private static readonly Dictionary<string, HeatPart> Roles = new()
     {
         ["CpuPackageTemp"] = HeatPart.Cpu, ["CpuTctlTdie"] = HeatPart.Cpu, ["GpuCoreTemp"] = HeatPart.Gpu, ["GpuHotSpotTemp"] = HeatPart.GpuHotSpot,
@@ -109,7 +115,17 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             power = new PowerDraw(Side("CpuPackagePower"), Side("GpuPower"));
             if (power.Total is null) power = null;
         }
-        return new(r, peaks, rows, [.. shown.Where(byPart.ContainsKey)], fromTrace) { Power = power };
+        string? NameOf(string key) => r.Tests.FirstOrDefault(t => t.Id == key)?.Name ?? (r.Benchmarks ?? []).FirstOrDefault(x => ReportHtml.BenchKey(x) == key)?.Name;
+        var clocks = new List<PartClock>();
+        foreach (var role in ClockRoles)
+        {
+            double max = double.NaN; string? key = null;
+            foreach (var ts in r.TestSensors ?? []) foreach (var x in ts.Sensors) if (x.Role == role && !(x.Max <= max)) { max = x.Max; key = ts.TestId; }
+            if (key is null) foreach (var x in r.Sensors) if (x.Role == role && !(x.Max <= max)) max = x.Max;   // a report without per-test sensors: the session's peak, no test to name
+            if (!double.IsNaN(max) && max > 0) clocks.Add(new(role, max, key is null ? null : NameOf(key)));
+        }
+        if (clocks.Any(c => c.Role is "CpuPCoreClock" or "CpuFastCoreClock")) clocks.RemoveAll(c => c.Role == "CpuCoreClockAverage");   // the fastest core is the figure; the average only stands in for old reports
+        return new(r, peaks, rows, [.. shown.Where(byPart.ContainsKey)], fromTrace) { Power = power, Clocks = clocks };
     }
 }
 
@@ -133,6 +149,12 @@ public sealed class SummaryText
     public string PassedLabel => IsRtl ? "آزمون موفق" : "tests passed";
     public string AllPassed => IsRtl ? "همه‌ی آزمون‌های اجراشده موفق بودند." : "Every test that ran passed.";
     public string NeedsMoreTime => IsRtl ? "برای نتیجهٔ کامل بعضی آزمون‌ها زمان بیشتری لازم است" : "Some tests need more time for a full result";
+    public string ClockName(string role) => role switch
+    {
+        "CpuPCoreClock" => IsRtl ? "فرکانس هسته‌های P" : "P-core clock", "CpuECoreClock" => IsRtl ? "فرکانس هسته‌های E" : "E-core clock",
+        "GpuCoreClock" => IsRtl ? "فرکانس گرافیک" : "GPU clock", "GpuMemoryClock" => IsRtl ? "فرکانس حافظهٔ گرافیک" : "GPU memory clock",
+        _ => IsRtl ? "فرکانس پردازنده" : "CPU clock",
+    };
     public string NeedsAttention => IsRtl ? "نیازمند بررسی یا تکمیل" : "Needs attention";
     public string InstalledTitle => IsRtl ? "گزارش کامل در نرم‌افزار" : "Full report in the app";
     public string NotTested => IsRtl ? "تست نشده" : "Not tested";
@@ -253,6 +275,10 @@ public static class SummaryHtml
         string Tile(string label, PartPeak? p)
             => p is null ? $"<div class=\"tile\"><div class=\"tl\">{ReportHtml.Ico("temp")}{E(label)}</div><div class=\"tv\">{na}</div></div>"
              : $"<div class=\"tile {Level(p.Part, p.MaxC)}\"><div class=\"tl\">{ReportHtml.Ico("temp")}{E(label)}</div><div class=\"tv\">{Lt($"{p.MaxC.ToString("F0", Inv)} °C")}</div>" + (p.During is { } d ? $"<div class=\"td\">{E(w.During)} {E(Short(d))}</div>" : "") + "</div>";
+        // The highest clocks of one part, a tile each with the test it was reached in (the same small line the temperatures carry).
+        string Clocks(string prefix) => string.Concat(s.Clocks.Where(c => c.Role.StartsWith(prefix, StringComparison.Ordinal)).Select(c
+            => $"<div class=\"tile clk\"><div class=\"tl\">{ReportHtml.Ico("clock")}{E(w.ClockName(c.Role))}</div><div class=\"tv\">{Lt($"{c.MaxMhz.ToString("F0", Inv)} MHz")}</div>"
+             + (c.During is { } d ? $"<div class=\"td\">{E(w.During)} {E(Short(d))}</div>" : "") + "</div>"));
         string Status(IReadOnlyList<SummaryRow> rows)
         {
             var tested = rows.Where(x => x.Outcome is not null).ToList();
@@ -266,11 +292,16 @@ public static class SummaryHtml
             b.Append("<table class=\"res\"><tbody>");
             foreach (var row in rows)
             {
-                b.Append("<tr><td class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"figs\">");
-                foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
-                b.Append("</td><td class=\"end\">");
+                // The title (and result) on top, its figures in one wrapping line beneath: a long list of benchmarks stays short.
+                b.Append("<tr><td colspan=\"2\" class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"end\">");
                 if (row.Outcome is { } o) b.Append("<span class=\"badge ").Append(Cls(o)).Append("\">").Append(E(rw.OutcomeName(o))).Append("</span>");
                 b.Append("</td></tr>");
+                if (row.Figures.Count > 0)
+                {
+                    b.Append("<tr><td colspan=\"3\" class=\"figs\">");
+                    foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
+                    b.Append("</td></tr>");
+                }
                 if (r.Tests.FirstOrDefault(t => t.Id == row.Id && t.CleanButShort) is { } sh) b.Append("<tr><td colspan=\"3\" class=\"srr\"><span class=\"sr\">").Append(E(rw.ShortRun(ReportFormat.Duration(sh.DurationSeconds), ReportFormat.Duration(sh.FullSeconds!.Value)))).Append("</span></td></tr>");
             }
             b.Append("</tbody></table>");
@@ -289,10 +320,10 @@ public static class SummaryHtml
         b.Append("<div class=\"cards\">");
         var cpu = m.Cpu; var cpuRows = RowsOf("cpu");
         Card(rw.Cpu, Status(cpuRows), cpu?.Name?.Trim(), cpu is null ? null : string.Join(" · ", new[] { cpu.PhysicalCores is { } c ? $"{c} cores" : null, cpu.LogicalProcessors is { } t ? $"{t} threads" : null, cpu.Socket }.Where(x => !string.IsNullOrWhiteSpace(x))),
-            Peak(HeatPart.Cpu) is null ? "" : Tile(w.PartName(HeatPart.Cpu), Peak(HeatPart.Cpu)), cpuRows);
+            (Peak(HeatPart.Cpu) is null ? "" : Tile(w.PartName(HeatPart.Cpu), Peak(HeatPart.Cpu))) + Clocks("Cpu"), cpuRows);
         var gpuRows = RowsOf("gpu");
         string gpus = string.Concat(m.Gpus.Select(g => $"<div class=\"cn\">{Lt(g.Name)}</div><div class=\"cf\">{Lt(string.Join(" · ", new[] { g.AdapterRamBytes is > 0 and var v ? $"{v / 1073741824.0:F0} GB" : null, g.DriverVersion is { } d ? $"driver {d}" : null }.Where(x => x is not null)))}</div>"));
-        string gpuTiles = string.Concat(new[] { HeatPart.Gpu, HeatPart.GpuHotSpot, HeatPart.GpuMemory }.Where(p => Peak(p) is not null).Select(p => Tile(w.PartName(p), Peak(p))));
+        string gpuTiles = string.Concat(new[] { HeatPart.Gpu, HeatPart.GpuHotSpot, HeatPart.GpuMemory }.Where(p => Peak(p) is not null).Select(p => Tile(w.PartName(p), Peak(p)))) + Clocks("Gpu");
         Card(w.Gpu, Status(gpuRows), null, null, gpuTiles, gpuRows, gpus);
         var ramRows = RowsOf("ram"); bool haveRam = m.TotalPhysicalMemoryBytes is not null || ramRows.Count > 0;
         if (m.TotalPhysicalMemoryBytes is { } ramBytes || ramRows.Count > 0)
@@ -316,11 +347,12 @@ public static class SummaryHtml
         if (m.Storage.Count == 0) drives.Append("<p class=\"na\">").Append(E(w.NoDrives)).Append("</p>");
         Card(w.Drives, Status(stoRows), null, null, Peak(HeatPart.Drive) is null ? "" : Tile(w.PartName(HeatPart.Drive), Peak(HeatPart.Drive)), stoRows, drives.ToString(), haveRam ? 6 : 12);
         var psuRows = RowsOf("psu"); var boardPeak = Peak(HeatPart.Board); bool havePsu = s.Power is not null || psuRows.Count > 0;
+        string? boardName = m.Motherboard is { } board ? $"{board.Manufacturer} {board.Product}".Trim() : null; bool haveBoard = boardPeak is not null || !string.IsNullOrWhiteSpace(boardName);
         if (s.Power is { } pw)
             Card(w.PsuTitle, Status(psuRows), null, null,
-                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", boardPeak is null ? 12 : 7);
-        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, boardPeak is null ? 12 : 7);
-        if (boardPeak is { } bp) Card(w.PartName(HeatPart.Board), "", null, null, Tile(w.PartName(HeatPart.Board), bp), [], null, havePsu ? 5 : 12);
+                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", haveBoard ? 7 : 12);
+        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, haveBoard ? 7 : 12);
+        if (haveBoard) Card(w.PartName(HeatPart.Board), "", boardName, m.Bios is { } bios ? $"BIOS {bios.Version}".Trim() : null, boardPeak is null ? "" : Tile(w.PartName(HeatPart.Board), boardPeak), [], null, havePsu ? 5 : 12);
         if (other.Count > 0) Card(w.Tests, Status(other), null, null, "", other, null, 12);
         b.Append("</div>");
         if (s.Peaks.Count == 0) b.Append("<p class=\"note\">").Append(E(w.NoTemps)).Append("</p>");
@@ -336,7 +368,7 @@ public static class SummaryHtml
     internal static string Fit(ReportSummary s)
     {
         var m = s.Report.Machine;
-        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + m.MemoryModules.Count + (s.Power is null ? 0 : 2) + (s.Peaks.Count > 0 ? 1 : 0);
+        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + m.MemoryModules.Count + (s.Power is null ? 0 : 2) + (s.Peaks.Count > 0 ? 1 : 0) + (s.Clocks.Count > 0 ? 1 : 0);
         return lines > 15 ? "tightest" : lines > 10 ? "tight" : "";
     }
 
@@ -378,8 +410,9 @@ h3{{margin:0;font-size:14px;line-height:1.3}} .no{{font-style:normal;color:#a3a8
 .tile.ok{{background:#e9f7ef;border-color:#9bd5b4}} .tile.ok .tv{{color:#0f6b3c}} .tile.warn{{background:#fff5da;border-color:#ecd08c}} .tile.warn .tv{{color:#8a5a00}} .tile.bad{{background:#fde8e7;border-color:#f0a39e}} .tile.bad .tv{{color:#a0180f}}
 .tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:24px}}
 table{{width:100%;border-collapse:collapse;margin-top:auto}} td{{padding:6px 2px;border-top:1px solid #e3e5e0;vertical-align:middle}}
-.res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:12px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
-.srr{{border-top:0;padding-top:0}} .sr{{display:block;font-size:10px;color:#8a5a00;line-height:1.4;white-space:normal}} .fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#5c6360;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
+.res td.rn b{{font-size:12px}} .res td.figs{{border-top:0;padding:0 2px 5px;line-height:1.55}} td.end{{text-align:end;white-space:nowrap}}
+.srr{{border-top:0;padding-top:0}} .sr{{display:block;font-size:10px;color:#8a5a00;line-height:1.4;white-space:normal}} .fig{{display:inline-block;margin-inline-end:11px}} .fig small{{color:#5c6360;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px;white-space:nowrap}}
+.tile.clk{{background:#edf3fc;border-color:#b3cdee}} .tile.clk .tv{{color:#1c5fb8}} .tile.clk .tl .ico{{color:#1c5fb8}}
 .drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #e3e5e0}} .drive small{{display:block;color:#6a706d;font-size:10.5px}} .drive b{{font-size:12px}}
 .dr{{display:flex;align-items:center;gap:8px}} .dt{{font-weight:700;font-size:12.5px;border-radius:5px;padding:0 7px;border:1px solid;white-space:nowrap}} .dt small{{display:inline;font-size:9.5px;font-weight:400}}
 .dt.ok{{color:#0f6b3c;background:#e9f7ef;border-color:#9bd5b4}} .dt.warn{{color:#8a5a00;background:#fff5da;border-color:#ecd08c}} .dt.bad{{color:#a0180f;background:#fde8e7;border-color:#f0a39e}}
