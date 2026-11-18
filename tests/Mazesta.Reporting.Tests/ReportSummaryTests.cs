@@ -226,4 +226,16 @@ public class SummaryClockTests
         string html = SummaryHtml.Write(s, wording: SummaryText.English);
         Assert.Contains("P-core clock", html); Assert.Contains("E-core clock", html); Assert.Contains("5200 MHz", html); Assert.Contains("<div class=\"cn\"><bdi class=\"lt\">ASUSTeK PRIME B550M-A", html);
     }
+
+    [Fact] public void The_graphics_clocks_are_one_plain_line_not_boxes()
+    {
+        var tests = new[] { new TestEntry("gpu.thermal", "GPU thermal", ReportOutcome.Passed, T0, T0.AddSeconds(60), 60, 0, null, new Dictionary<string, string>()) };
+        var r = SessionReport.Create("x", "1", T0, tests, [], HardwareInventory.Empty) with { TestSensors = [new("gpu.thermal", [Clk("GpuCoreClock", 1935), Clk("GpuMemoryClock", 9752), Clk("CpuPCoreClock", 4200)])] };
+        string html = SummaryHtml.Write(ReportSummary.Of(r), wording: SummaryText.English);
+        int line = html.IndexOf("class=\"clkline\"", StringComparison.Ordinal); Assert.True(line > 0);
+        string text = html[line..html.IndexOf("</div>", line, StringComparison.Ordinal)];
+        Assert.Contains("GPU clock", text); Assert.Contains("1935 MHz", text); Assert.Contains("GPU memory clock", text); Assert.Contains("9752 MHz", text); Assert.DoesNotContain("CPU clock", text);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "tile clk"));   // only the CPU's clock keeps a box
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) File.WriteAllText(Path.Combine(dir, "summary-gpuclk.html"), html);
+    }
 }
