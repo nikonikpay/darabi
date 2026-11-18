@@ -115,6 +115,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 .tcard{{border:1px solid #dfe4ec;border-radius:12px;margin:14px 0;overflow:hidden;background:#fff}}
 .th{{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 14px;background:#f5f7fa;border-bottom:1px solid #e3e7ee;border-inline-start:5px solid #c9d1dc;break-after:avoid}}
 .tcard.Passed .th{{border-inline-start-color:#2e9e5b}} .tcard.Failed .th{{border-inline-start-color:#d23a3a}} .tcard.Inconclusive .th,.tcard.Error .th,.tcard.Unsupported .th{{border-inline-start-color:#e0a020}}
+.tcard.Bench .th{{border-inline-start-color:#1d4fb8}}
 .tico{{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:#201E1E;color:#FDD400}} .tico .ico{{width:22px;height:22px}}
 .tn{{flex:1 1 220px;min-width:0}} .tn b{{display:block;font-size:15.5px}} .tn small{{color:#5b6675;font-size:12px}}
 .tm{{display:flex;gap:6px;align-items:center;flex-wrap:wrap}}
@@ -124,7 +125,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 .tiles{{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}}
 .tile{{border:1px solid #e3e7ee;border-top:3px solid var(--c);border-radius:8px;padding:7px 10px 9px;background:#fff;break-inside:avoid}}
 .tl{{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;line-height:1.5}} .tl .ico{{color:var(--c)}}
-.ts,.sens .ts{{color:#7a8594;font-size:11px;margin:0 0 4px}}
+.ts,.sens .ts{{color:#7a8594;font-size:11px;margin:0 0 4px;min-height:1.4em}}
 .trio{{display:flex;justify-content:space-between;gap:6px;margin-top:4px}} .trio div{{display:flex;flex-direction:column;align-items:flex-start}}
 .trio span{{font-size:11px;color:#6b7686}} .trio b{{font-size:13px;font-weight:600}} .trio .mid b{{font-size:17px;font-weight:700;color:var(--c)}}
 .rng{{position:relative;height:5px;border-radius:3px;margin-top:9px;background:linear-gradient(90deg,#e9ecef,var(--c))}} [dir=rtl] .rng{{background:linear-gradient(270deg,#e9ecef,var(--c))}}
@@ -158,10 +159,10 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 
     // ---- test cards: one card per test, its figures grouped by kind with icons, its own charts ----
 
-    private enum Cat { Temp, Fps, Load, Clock, Power, Fan, Volt, Other }
-    private static Cat CatOf(SensorSummary s) => s.Kind switch { "Temperature" => Cat.Temp, "Load" => Cat.Load, "Clock" => Cat.Clock, "Power" => Cat.Power, "Fan" => Cat.Fan, "Voltage" => Cat.Volt, _ => Cat.Other };
-    private static string CatColor(Cat c) => c switch { Cat.Temp => "#d9480f", Cat.Fps => "#2f9e44", Cat.Load => "#1c7ed6", Cat.Clock => "#7048e8", Cat.Power => "#b58105", Cat.Fan => "#0c8599", Cat.Volt => "#c2255c", _ => "#5b6675" };
-    private static string CatName(Cat c, ReportText w) => c switch { Cat.Temp => w.KindTemp, Cat.Fps => w.KindFps, Cat.Load => w.KindLoad, Cat.Clock => w.KindClock, Cat.Power => w.KindPower, Cat.Fan => w.KindFan, Cat.Volt => w.KindVolt, _ => w.KindOther };
+    private enum Cat { Score, Temp, Fps, Load, Mem, Clock, Power, Fan, Volt, Other }
+    private static Cat CatOf(SensorSummary s) => s.Kind switch { "Temperature" => Cat.Temp, "Load" => Cat.Load, "Clock" => Cat.Clock, "Power" => Cat.Power, "Fan" => Cat.Fan, "Voltage" => Cat.Volt, "Data" or "SmallData" => Cat.Mem, _ => Cat.Other };
+    private static string CatColor(Cat c) => c switch { Cat.Temp => "#d9480f", Cat.Fps => "#2f9e44", Cat.Score => "#8a6d00", Cat.Mem => "#099268", Cat.Load => "#1c7ed6", Cat.Clock => "#7048e8", Cat.Power => "#b58105", Cat.Fan => "#0c8599", Cat.Volt => "#c2255c", _ => "#5b6675" };
+    private static string CatName(Cat c, ReportText w) => c switch { Cat.Temp => w.KindTemp, Cat.Fps => w.KindFps, Cat.Score => w.KindScore, Cat.Mem => w.KindMem, Cat.Load => w.KindLoad, Cat.Clock => w.KindClock, Cat.Power => w.KindPower, Cat.Fan => w.KindFan, Cat.Volt => w.KindVolt, _ => w.KindOther };
     private static readonly string[] Palette = ["#d9480f", "#1c7ed6", "#2f9e44", "#7048e8", "#b58105", "#0c8599"];
     private static readonly System.Text.RegularExpressions.Regex FpsRx = new(@"(?<v>\d+(?:\.\d+)?) FPS (?<k>average|lowest half-second|highest half-second)", System.Text.RegularExpressions.RegexOptions.Compiled);
 
@@ -182,11 +183,14 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         ["network"] = "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18\"/>",
         ["time"] = "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>",
         ["bug"] = "<path d=\"M12 8v5M12 16h.01\"/><path d=\"M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z\"/>",
+        ["mem"] = "<rect x=\"2\" y=\"7\" width=\"20\" height=\"10\" rx=\"1\"/><path d=\"M6 11v2M10 11v2M14 11v2M18 11v2\"/>",
+        ["score"] = "<path d=\"M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3\"/>",
         ["check"] = "<path d=\"M5 12l4 4 10-10\"/>",
     };
     private static string Ico(string name) => $"<svg class=\"ico\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">{Paths[name]}</svg>";
     private static string CatIco(Cat c) => Ico(c.ToString().ToLowerInvariant());
-    private static string TestIcon(string id) => id.Split('.')[0] switch { "cpu" => "cpu", "memory" or "ram" => "memory", "gpu" => "gpu", "storage" or "disk" or "drive" => "storage", "network" or "net" => "network", "power" => "power", _ => "check" };
+    private static string TestIcon(string id) => id.Split('.').Select(Icon1).FirstOrDefault(x => x != "check") ?? "check";
+    private static string Icon1(string part) => part switch { "cpu" => "cpu", "memory" or "ram" => "memory", "gpu" => "gpu", "storage" or "disk" or "drive" => "storage", "network" or "net" => "network", "power" => "power", _ => "check" };
 
     /// <summary>The part a sensor belongs to, so "Core" is never anonymous in a chart legend.</summary>
     private static string Short(SensorSummary s)
@@ -195,15 +199,14 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         return tag.Length == 0 || s.Name.StartsWith(tag, StringComparison.OrdinalIgnoreCase) ? s.Name : $"{tag} · {s.Name}";
     }
 
-    /// <summary>One figure: the kind's icon, its name, then min / average / max and where the average sits between the extremes.</summary>
-    private static void Tile(StringBuilder b, Cat c, string label, string? sub, double? min, double? avg, double? max, string unit, ReportText w)
+    /// <summary>One figure: the kind's icon, its name, then min / average / max and where the average sits between the extremes. Every tile has the same height so a row lines up.</summary>
+    private static void Tile(StringBuilder b, Cat c, string label, string? sub, double? min, double? avg, double? max, string unit, ReportText w, bool exact = false)
     {
-        string V(double v) => Lt(Units.FormatMeasured(v, unit, 1));
-        b.Append("<div class=\"tile\" style=\"--c:").Append(CatColor(c)).Append("\"><div class=\"tl\">").Append(CatIco(c)).Append("<span>").Append(E(label)).Append("</span></div>");
-        if (!string.IsNullOrWhiteSpace(sub)) b.Append("<div class=\"ts\">").Append(Lt(sub)).Append("</div>");
-        b.Append("<div class=\"trio\">");
+        string V(double v) => Lt(exact ? Units.FormatMeasured(v, unit) : Units.FormatMeasured(v, unit, 1));
+        b.Append("<div class=\"tile\" style=\"--c:").Append(CatColor(c)).Append("\"><div class=\"tl\">").Append(CatIco(c)).Append("<span>").Append(E(label)).Append("</span></div>")
+         .Append("<div class=\"ts\">").Append(string.IsNullOrWhiteSpace(sub) ? "&nbsp;" : Lt(sub)).Append("</div><div class=\"trio\">");
         if (min is { } lo) b.Append("<div><span>").Append(E(w.Min)).Append("</span><b>").Append(V(lo)).Append("</b></div>");
-        if (avg is { } a) b.Append("<div class=\"mid\"><span>").Append(E(w.Avg)).Append("</span><b>").Append(V(a)).Append("</b></div>");
+        if (avg is { } a) b.Append("<div class=\"mid\"><span>").Append(min is null && max is null ? "&nbsp;" : E(w.Avg)).Append("</span><b>").Append(V(a)).Append("</b></div>");
         if (max is { } hi) b.Append("<div><span>").Append(E(w.Max)).Append("</span><b>").Append(V(hi)).Append("</b></div>");
         b.Append("</div>");
         if (min is { } m0 && max is { } m1 && avg is { } m2 && m1 - m0 > 1e-9)
@@ -211,47 +214,71 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         b.Append("</div>");
     }
 
+    private sealed record Score(string Label, double Value, string Unit);
+    private static readonly System.Text.RegularExpressions.Regex RateRx = new(@"(?<v>\d[\d,]*(?:\.\d+)?) (?<u>Gop/s|GFLOPS|MB/s|GB/s|IOPS|Mbps)", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>The test's own result figures (speed, operations per second…) read out of its evidence text, each with the words said next to it.</summary>
+    private static List<Score> ScoresOf(string? detail)
+    {
+        var list = new List<Score>(); if (detail is null) return list;
+        foreach (var clause in detail.Split([';', '\n']))
+        {
+            if (clause.Contains("FPS") || clause.Contains(" avg ")) continue;
+            var m = RateRx.Match(clause); if (!m.Success) continue;
+            string label = clause.Remove(m.Index, m.Length).Trim(' ', ':', '=', ',', '-', '·');
+            if (label.Length > 60) label = label[..60].TrimEnd();
+            list.Add(new(label.Length == 0 ? m.Groups["u"].Value : label, double.Parse(m.Groups["v"].Value.Replace(",", ""), Inv), m.Groups["u"].Value));
+        }
+        return list;
+    }
+
     private static void Tests(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Tests.Count == 0) return;
         b.Append("<h2>").Append(w.Results).Append("</h2>");
-        foreach (var t in r.Tests) TestCard(b, r, t, w);
+        foreach (var t in r.Tests)
+        {
+            double? Fps(string kind) => t.Detail is null ? null : FpsRx.Matches(t.Detail).Where(m => m.Groups["k"].Value.StartsWith(kind)).Select(m => (double?)double.Parse(m.Groups["v"].Value, Inv)).FirstOrDefault();
+            string badges = $"<span class=\"badge {t.Outcome}\">{E(w.OutcomeName(t.Outcome))}</span><span class=\"chip\">{Ico("time")}{Lt(ReportFormat.Duration(t.DurationSeconds))}</span><span class=\"chip{(t.ErrorCount > 0 ? " bad" : "")}\">{Ico("bug")}{E(w.Errors)} {Lt(t.ErrorCount.ToString(Inv))}</span>";
+            string? options = t.Options.Count > 0 ? E(w.Options) + ": " + string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}"))) : null;
+            Card(b, t.Outcome.ToString(), TestIcon(t.Id), t.Name, options, badges, ScoresOf(t.Detail), (Fps("lowest"), Fps("average"), Fps("highest")),
+                r.TestSensors?.FirstOrDefault(x => x.TestId == t.Id)?.Sensors ?? [], t.DurationSeconds, t.Advice, t.Detail, w);
+        }
     }
 
-    private static void TestCard(StringBuilder b, SessionReport r, TestEntry t, ReportText w)
+    /// <summary>One card for a test or a benchmark run: its result figures first, then every reading taken during that run by kind (min, average, max), then that run's own charts.</summary>
+    private static void Card(StringBuilder b, string cls, string icon, string name, string? note, string badges, IReadOnlyList<Score> scores, (double? Low, double? Avg, double? High) fps,
+        IReadOnlyList<SensorSummary> sensors, double seconds, string? advice, string? detail, ReportText w)
     {
-        var sensors = r.TestSensors?.FirstOrDefault(x => x.TestId == t.Id)?.Sensors ?? [];
-        double? Fps(string kind) => t.Detail is null ? null : FpsRx.Matches(t.Detail).Where(m => m.Groups["k"].Value.StartsWith(kind)).Select(m => (double?)double.Parse(m.Groups["v"].Value, Inv)).FirstOrDefault();
-        double? fAvg = Fps("average"), fLow = Fps("lowest"), fHigh = Fps("highest");
-        bool figures = sensors.Count > 0 || fAvg is not null;
-        b.Append("<section class=\"tcard ").Append(t.Outcome).Append("\"><header class=\"th\"><span class=\"tico\">").Append(Ico(TestIcon(t.Id))).Append("</span><div class=\"tn\"><b>").Append(E(t.Name)).Append("</b>");
-        if (t.Options.Count > 0) b.Append("<small>").Append(E(w.Options)).Append(": ").Append(string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}")))).Append("</small>");
-        b.Append("</div><div class=\"tm\"><span class=\"badge ").Append(t.Outcome).Append("\">").Append(E(w.OutcomeName(t.Outcome))).Append("</span><span class=\"chip\">").Append(Ico("time")).Append(Lt(ReportFormat.Duration(t.DurationSeconds)))
-         .Append("</span><span class=\"chip").Append(t.ErrorCount > 0 ? " bad" : "").Append("\">").Append(Ico("bug")).Append(E(w.Errors)).Append(" ").Append(Lt(t.ErrorCount.ToString(Inv))).Append("</span></div></header>");
+        bool figures = sensors.Count > 0 || fps.Avg is not null || scores.Count > 0;
+        b.Append("<section class=\"tcard ").Append(cls).Append("\"><header class=\"th\"><span class=\"tico\">").Append(Ico(icon)).Append("</span><div class=\"tn\"><b>").Append(E(name)).Append("</b>");
+        if (note is not null) b.Append("<small>").Append(note).Append("</small>");
+        b.Append("</div><div class=\"tm\">").Append(badges).Append("</div></header>");
 
         if (figures) b.Append("<div class=\"groups\">");
         foreach (var cat in Enum.GetValues<Cat>())
         {
             var rows = sensors.Where(s => CatOf(s) == cat).ToList();
-            if (cat == Cat.Fps ? fAvg is null : rows.Count == 0) continue;
+            if (cat == Cat.Score ? scores.Count == 0 : cat == Cat.Fps ? fps.Avg is null : rows.Count == 0) continue;
             b.Append("<div class=\"grp\" style=\"--c:").Append(CatColor(cat)).Append("\"><h4>").Append(CatIco(cat)).Append(E(CatName(cat, w))).Append("</h4><div class=\"tiles\">");
-            if (cat == Cat.Fps) Tile(b, cat, "FPS", null, fLow, fAvg, fHigh, "FPS", w);
+            if (cat == Cat.Score) foreach (var s in scores) Tile(b, cat, s.Label, null, null, s.Value, null, s.Unit, w, exact: true);
+            if (cat == Cat.Fps) Tile(b, cat, "FPS", null, fps.Low, fps.Avg, fps.High, "FPS", w);
             foreach (var s in rows) Tile(b, cat, Short(s), s.Hardware, s.Min, s.Average, s.Max, s.Unit, w);
             b.Append("</div></div>");
         }
         if (figures) b.Append("</div>");
 
-        var charts = Enum.GetValues<Cat>().Where(c => c != Cat.Fps && c != Cat.Volt && c != Cat.Other).Select(c => (c, list: sensors.Where(s => CatOf(s) == c && s.Trace.Count > 1).ToList())).Where(x => x.list.Count > 0).ToList();
+        var charts = Enum.GetValues<Cat>().Where(c => c is not (Cat.Score or Cat.Fps or Cat.Volt or Cat.Other)).Select(c => (c, list: sensors.Where(s => CatOf(s) == c && s.Trace.Count > 1).ToList())).Where(x => x.list.Count > 0).ToList();
         if (charts.Count > 0)
         {
             b.Append("<div class=\"charts\">");
-            foreach (var (c, list) in charts) SeriesChart(b, c, list, t.DurationSeconds, w);
+            foreach (var (c, list) in charts) SeriesChart(b, c, list, seconds, w);
             b.Append("</div>");
         }
-        if (!string.IsNullOrWhiteSpace(t.Advice)) b.Append("<div class=\"advice\">").Append(E(t.Advice).Replace("\n", "<br>")).Append("</div>");
+        if (!string.IsNullOrWhiteSpace(advice)) b.Append("<div class=\"advice\">").Append(E(advice).Replace("\n", "<br>")).Append("</div>");
         // The figures above are the same evidence in order; the raw sentence stays for the technician, folded when the cards already show it.
-        if (!string.IsNullOrWhiteSpace(t.Detail))
-            b.Append(figures ? "<details class=\"raw\"><summary>" : "<div class=\"raw\"><small>").Append(E(w.Detail)).Append(figures ? "</summary><pre>" : ":</small><pre>").Append(E(t.Detail)).Append(figures ? "</pre></details>" : "</pre></div>");
+        if (!string.IsNullOrWhiteSpace(detail))
+            b.Append(figures ? "<details class=\"raw\"><summary>" : "<div class=\"raw\"><small>").Append(E(w.Detail)).Append(figures ? "</summary><pre>" : ":</small><pre>").Append(E(detail)).Append(figures ? "</pre></details>" : "</pre></div>");
         b.Append("</section>");
     }
 
@@ -339,20 +366,19 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
     private static void Benchmarks(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Benchmarks is not { Count: > 0 }) return;
-        b.Append("<h2>").Append(w.Benchmarks).Append("</h2><table class=\"bm\"><colgroup><col style=\"width:38%\"><col style=\"width:38%\"><col style=\"width:24%\"></colgroup><thead><tr><th>").Append(w.Name).Append("</th><th>").Append(w.Metric).Append("</th><th>").Append(w.Value).Append("</th></tr></thead><tbody>");
+        b.Append("<h2>").Append(w.Benchmarks).Append("</h2>");
         foreach (var bm in r.Benchmarks)
         {
-            b.Append("<tr class=\"test\"><td rowspan=\"").Append(Math.Max(1, bm.Metrics.Count)).Append("\"><b>").Append(E(bm.Name)).Append("</b><br><small>").Append(w.MeasuredAt).Append(": ").Append(Lt(ReportFormat.Stamp(bm.FinishedAt))).Append("</small>");
-            if (!string.IsNullOrWhiteSpace(bm.Detail)) b.Append("<pre>").Append(E(bm.Detail)).Append("</pre>");
-            b.Append("</td>");
-            for (int i = 0; i < bm.Metrics.Count; i++)
-            {
-                var m = bm.Metrics[i]; if (i > 0) b.Append("<tr>");
-                b.Append("<td>").Append(E(m.Name)).Append("</td><td>").Append(Lt(Units.FormatMeasured(m.Value, m.Unit))).Append("</td></tr>");
-            }
+            double seconds = bm.StartedAt is { } s0 ? Math.Max(0, (bm.FinishedAt - s0).TotalSeconds) : 0;
+            string badges = $"<span class=\"chip\">{Ico("time")}{Lt(ReportFormat.Duration(seconds))}</span><span class=\"chip\">{E(w.MeasuredAt)} {Lt(ReportFormat.Stamp(bm.FinishedAt))}</span>";
+            var scores = bm.Metrics.Select(m => new Score(m.Name, m.Value, m.Unit)).ToList();
+            Card(b, "Bench", TestIcon(bm.Id), bm.Name, null, badges, scores, (null, null, null),
+                r.TestSensors?.FirstOrDefault(x => x.TestId == BenchKey(bm))?.Sensors ?? [], seconds, null, bm.Detail, w);
         }
-        b.Append("</tbody></table>");
     }
+
+    /// <summary>The key a benchmark run's own sensor figures are stored under (the same benchmark can run twice in one report).</summary>
+    public static string BenchKey(BenchmarkEntry bm) => $"{bm.Id}|{bm.FinishedAt.UtcTicks}";
 
     /// <summary>A small line chart of one sensor over the session, with the span of each test shaded behind it.</summary>
     private static void Chart(StringBuilder b, SessionReport r, SensorSummary s)

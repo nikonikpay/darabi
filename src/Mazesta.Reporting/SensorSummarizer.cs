@@ -10,7 +10,8 @@ public static class SensorSummarizer
     [
         SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuTotalLoad, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage, SensorRole.CpuPackagePower, SensorRole.CpuVcore,
         SensorRole.GpuCoreTemp, SensorRole.GpuHotSpotTemp, SensorRole.GpuVramTemp, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D, SensorRole.GpuCoreClock, SensorRole.GpuMemoryClock, SensorRole.GpuPower, SensorRole.GpuFanRpm,
-        SensorRole.RamLoad, SensorRole.BoardTemp, SensorRole.ChipsetTemp, SensorRole.StorageTemp, SensorRole.NetUtilization
+        SensorRole.GpuLoadCompute, SensorRole.GpuLoadMemoryController, SensorRole.GpuVoltage, SensorRole.GpuFanPercent, SensorRole.GpuPowerPercent, SensorRole.GpuVramUsed, SensorRole.CpuCcdTemp, SensorRole.CpuFan,
+        SensorRole.RamLoad, SensorRole.RamUsed, SensorRole.DimmTemp, SensorRole.BoardFan, SensorRole.StorageReadRate, SensorRole.StorageWriteRate, SensorRole.BoardTemp, SensorRole.ChipsetTemp, SensorRole.StorageTemp, SensorRole.NetUtilization
     ];
 
     public static IReadOnlyList<SensorSummary> Summarize(PollingEngine engine, DateTimeOffset from, DateTimeOffset to)
@@ -55,11 +56,25 @@ public static class SensorSummarizer
                 foreach (var node in engine.Hardware)
                     foreach (var def in node.Sensors.Where(s => s.Role == role))
                         if (Summarize(def, node.Name, engine.History.GetRaw(def.Id), a, b, TestTracePoints) is { } s) list.Add(s);
+            AddVramPercent(engine, a, b, list);
             if (list.Count > 0) result.Add(new(id, list));
         }
         return result;
     }
     private const int TestTracePoints = 60;
+
+    /// <summary>The share of the graphics memory in use: the used amount over the total, both read from the card itself (no total, no figure).</summary>
+    private static void AddVramPercent(PollingEngine engine, int a, int b, List<SensorSummary> list)
+    {
+        foreach (var node in engine.Hardware)
+        {
+            var used = node.Sensors.FirstOrDefault(s => s.Role == SensorRole.GpuVramUsed); var total = node.Sensors.FirstOrDefault(s => s.Role == SensorRole.GpuVramTotal);
+            if (used is null || total is null) continue;
+            var t = engine.History.GetRaw(total.Id); double size = 0; for (int i = t.Values.Length - 1; i >= 0; i--) if (!float.IsNaN(t.Values[i])) { size = t.Values[i]; break; }
+            if (size <= 0 || Summarize(used, node.Name, engine.History.GetRaw(used.Id), a, b, TestTracePoints) is not { } u) continue;
+            list.Add(new(u.Id + "#pct", u.Hardware, "GPU VRAM usage", "Load", "%", u.Min / size * 100, u.Average / size * 100, u.Max / size * 100, u.Samples, [.. u.Trace.Select(p => new TracePoint(p.Seconds, p.Value / size * 100))], "GpuVramUsage"));
+        }
+    }
 
     internal static SensorSummary? Summarize(SensorDefinition def, string hardwareName, RawSeries raw, int startSec, int endSec, int maxPoints = MaxTracePoints)
     {
