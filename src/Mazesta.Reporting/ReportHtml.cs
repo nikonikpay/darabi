@@ -228,7 +228,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             var m = RateRx.Match(clause); if (!m.Success) continue;
             string label = clause.Remove(m.Index, m.Length).Trim(' ', ':', '=', ',', '-', '·');
             if (label.Length > 60) label = label[..60].TrimEnd();
-            list.Add(new(label.Length == 0 ? m.Groups["u"].Value : label, double.Parse(m.Groups["v"].Value.Replace(",", ""), Inv), m.Groups["u"].Value));
+            list.Add(new(label.Length == 0 ? m.Groups["u"].Value : label.Length < 14 ? $"{m.Groups["u"].Value} · {label}" : label, double.Parse(m.Groups["v"].Value.Replace(",", ""), Inv), m.Groups["u"].Value));
         }
         return list;
     }
@@ -286,7 +286,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         if (charts.Count > 0)
         {
             b.Append("<div class=\"charts\">");
-            foreach (var (c, list) in charts) SeriesChart(b, c, list, seconds, w);
+            foreach (var (c, list) in charts) SeriesChart(b, c, [.. list.Take(Palette.Length)], seconds, w);   // the first six (the main parts); every sensor's figures are in its tile
             b.Append("</div>");
         }
         if (!string.IsNullOrWhiteSpace(advice)) b.Append("<div class=\"advice\">").Append(E(advice).Replace("\n", "<br>")).Append("</div>");
