@@ -59,6 +59,18 @@ public static class PawnIoDriver
         return result;
     }
 
+    /// <summary>The banner's "install by hand": opens the carried official setup with its own window (its Install button), after the same hash check; true when it was opened.
+    /// Works where the silent install fails, which is what running the file from the program's folder by hand showed.</summary>
+    public static bool LaunchSetup(ILogger log, string? setupPath = null)
+    {
+        setupPath ??= SetupPath;
+        if (!File.Exists(setupPath)) { log.LogWarning("{Setup} is missing", setupPath); return false; }
+        string hash; using (var fs = File.OpenRead(setupPath)) hash = Convert.ToHexString(SHA256.HashData(fs));
+        if (!hash.Equals(SetupSha256, StringComparison.OrdinalIgnoreCase)) { log.LogError("{Setup} has hash {Hash}, not the official one; not running it", setupPath, hash); return false; }
+        try { using var p = Process.Start(new ProcessStartInfo(setupPath) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(Path.GetFullPath(setupPath))! }); return p is not null; }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { log.LogError(e, "The PawnIO setup could not be opened"); return false; }
+    }
+
     /// <summary>Programs that read the same CPU registers or the Ryzen's SMU through a driver of their own and can leave them unreadable for a second reader (or crash holding them); named in the log when the CPU sensors come back empty.</summary>
     private static readonly string[] Competing = ["HWiNFO64", "HWiNFO32", "AMD Ryzen Master", "AMDRyzenMasterDriver", "ArmouryCrate.Service", "AsusCertService", "iCUE", "MSIAfterburner", "CPUZ_x64", "CPU-Z", "OCCT", "RTSS"];
 

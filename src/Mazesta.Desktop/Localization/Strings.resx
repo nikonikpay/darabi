@@ -109,7 +109,7 @@
     <value>Sensors: failed — {0}</value>
   </data>
   <data name="Provider.PawnIoMissing" xml:space="preserve">
-    <value>PawnIO driver is not installed and the automatic install did not succeed. CPU temperatures and clocks are unavailable. Install PawnIO from its official page, then restart.</value>
+    <value>PawnIO driver is not installed and the automatic install did not succeed. CPU temperatures and clocks are unavailable. Press "Install PawnIO by hand", then Install in the window that opens, and restart the program.</value>
   </data>
   <data name="Provider.NotElevated" xml:space="preserve">
     <value>Not running as administrator. CPU and motherboard sensors are unavailable.</value>
@@ -131,6 +131,9 @@
   </data>
   <data name="Banner_SensorsSlow" xml:space="preserve">
     <value>The sensors are not loading. If a flash drive or an external hard disk is plugged in, unplug it. The rest keeps loading while you use the app.</value>
+  </data>
+  <data name="Banner_InstallPawnIoManual" xml:space="preserve">
+    <value>Install PawnIO by hand</value>
   </data>
   <data name="Banner_InstallPawnIo" xml:space="preserve">
     <value>Open pawnio.eu</value>

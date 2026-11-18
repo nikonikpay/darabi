@@ -109,7 +109,7 @@
     <value>سنسورها: خطا — {0}</value>
   </data>
   <data name="Provider.PawnIoMissing" xml:space="preserve">
-    <value>درایور PawnIO نصب نیست و نصب خودکار آن موفق نشد. دما و فرکانس CPU در دسترس نیست. PawnIO را از صفحه رسمی آن نصب کنید و برنامه را دوباره اجرا کنید.</value>
+    <value>درایور PawnIO نصب نیست و نصب خودکار آن موفق نشد. دما و فرکانس CPU در دسترس نیست. دکمهٔ «نصب دستی PawnIO» را بزنید، در پنجره‌ای که باز می‌شود روی Install بزنید و برنامه را دوباره اجرا کنید.</value>
   </data>
   <data name="Provider.NotElevated" xml:space="preserve">
     <value>برنامه با دسترسی Administrator اجرا نشده است. سنسورهای CPU و مادربرد در دسترس نیستند.</value>
@@ -131,6 +131,9 @@
   </data>
   <data name="Banner_SensorsSlow" xml:space="preserve">
     <value>سنسورها بارگذاری نمی‌شوند. اگر فلش یا هارد اکسترنال به سیستم وصل است، آن را بکشید. بقیهٔ بارگذاری هم‌زمان با کار با برنامه ادامه دارد.</value>
+  </data>
+  <data name="Banner_InstallPawnIoManual" xml:space="preserve">
+    <value>نصب دستی PawnIO</value>
   </data>
   <data name="Banner_InstallPawnIo" xml:space="preserve">
     <value>باز کردن pawnio.eu</value>

@@ -169,7 +169,8 @@ function setPause(p) { const b = document.getElementById("pause"); if (b) b.text
 function banner(text, link, closed) {
   if (!text) return;
   const el = h("div", { class: "banner", role: "status" }, h("span", { class: "grow" }, text),
-    link ? h("button", { class: "btn", onclick: () => call("app.openLink", { key: link }) }, t("Banner_InstallPawnIo")) : null,
+    link ? h("button", { class: "btn", onclick: async () => { if (!(await call("app.installPawnIo"))) call("app.openLink", { key: link }); } }, t("Banner_InstallPawnIoManual")) : null,
+    link ? h("button", { class: "btn quiet", onclick: () => call("app.openLink", { key: link }) }, t("Banner_InstallPawnIo")) : null,
     h("button", { class: "btn quiet", onclick: () => { el.remove(); closed?.(); }, "aria-label": "close" }, icon("x")));
   stage.before(el); el.style.gridColumn = "2";
   app.style.gridTemplateRows = "auto 1fr auto"; index.style.gridRow = asst.style.gridRow = "1 / 4"; stage.style.gridRow = "2"; band.style.gridRow = "3";
