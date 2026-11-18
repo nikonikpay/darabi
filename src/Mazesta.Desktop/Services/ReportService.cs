@@ -85,7 +85,7 @@ public sealed class ReportService
             var peaks = SensorSummarizer.Peaks(_polling, sensors, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.StartedAt, t.FinishedAt)));
             var findings = await Setup().ConfigureAwait(false);
             findings.AddRange(_checkup.Runs().SelectMany(c => c.All).Select(CheckupText.Entry));
-            Save(SessionReport.Create(Brand, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
+            Save(SessionReport.Create(Brand, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null, TestSensors = SensorSummarizer.PerTest(_polling, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Id, t.StartedAt, t.FinishedAt))) });
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
