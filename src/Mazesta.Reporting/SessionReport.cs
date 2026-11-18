@@ -15,7 +15,11 @@ public enum ReportKind { TestSession, Benchmark }
 
 public sealed record TestEntry(string Id, string Name, ReportOutcome Outcome, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, double DurationSeconds,
     long ErrorCount, string? Detail, IReadOnlyDictionary<string, string> Options,
-    string? Advice = null);   // what to make of a failed or inconclusive result, in the report's language; absent in older reports
+    string? Advice = null, double? FullSeconds = null)   // Advice: what to make of a failed or inconclusive result, in the report's language; FullSeconds: how long the test takes in full (both absent in older reports)
+{
+    /// <summary>No error was seen but the run was shorter than the test needs to finish: shown as passed with a note to run longer (the saved outcome stays Inconclusive, the verdict stays Incomplete).</summary>
+    public bool CleanButShort => Outcome == ReportOutcome.Inconclusive && ErrorCount == 0 && FullSeconds is { } f && f > DurationSeconds + 1;
+}
 
 public sealed record TracePoint(double Seconds, double Value);
 

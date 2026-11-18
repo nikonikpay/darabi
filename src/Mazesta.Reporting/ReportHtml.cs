@@ -193,7 +193,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         ["score"] = "<path d=\"M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3\"/>",
         ["check"] = "<path d=\"M5 12l4 4 10-10\"/>",
     };
-    private static string Ico(string name) => $"<svg class=\"ico\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">{Paths[name]}</svg>";
+    internal static string Ico(string name) => $"<svg class=\"ico\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">{Paths[name]}</svg>";
     private static string CatIco(Cat c) => Ico(c.ToString().ToLowerInvariant());
     private static string TestIcon(string id) => id.Split('.').Select(Icon1).FirstOrDefault(x => x != "check") ?? "check";
     private static string Icon1(string part) => part switch { "cpu" => "cpu", "memory" or "ram" => "memory", "gpu" => "gpu", "storage" or "disk" or "drive" => "storage", "network" or "net" => "network", "power" => "power", _ => "check" };
@@ -258,10 +258,11 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         foreach (var t in r.Tests)
         {
             double? Fps(string kind) => t.Detail is null ? null : FpsRx.Matches(t.Detail).Where(m => m.Groups["k"].Value.StartsWith(kind)).Select(m => (double?)double.Parse(m.Groups["v"].Value, Inv)).FirstOrDefault();
-            string badges = $"<span class=\"badge {t.Outcome}\">{E(w.OutcomeName(t.Outcome))}</span><span class=\"chip\">{Ico("time")}{Lt(ReportFormat.Duration(t.DurationSeconds))}</span><span class=\"chip{(t.ErrorCount > 0 ? " bad" : "")}\">{Ico("bug")}{E(w.Errors)} {Lt(t.ErrorCount.ToString(Inv))}</span>";
+            var shown = t.CleanButShort ? ReportOutcome.Passed : t.Outcome;
+            string badges = $"<span class=\"badge {shown}\">{E(w.OutcomeName(shown))}</span><span class=\"chip\">{Ico("time")}{Lt(ReportFormat.Duration(t.DurationSeconds))}</span><span class=\"chip{(t.ErrorCount > 0 ? " bad" : "")}\">{Ico("bug")}{E(w.Errors)} {Lt(t.ErrorCount.ToString(Inv))}</span>";
             string? options = t.Options.Count > 0 ? E(w.Options) + ": " + string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}"))) : null;
-            Card(b, t.Outcome.ToString(), TestIcon(t.Id), t.Name, options, badges, ScoresOf(t.Detail), (Fps("lowest"), Fps("average"), Fps("highest")),
-                r.TestSensors?.FirstOrDefault(x => x.TestId == t.Id)?.Sensors ?? [], t.DurationSeconds, t.Advice, t.Detail, w, t.Id);
+            Card(b, shown.ToString(), TestIcon(t.Id), t.Name, options, badges, ScoresOf(t.Detail), (Fps("lowest"), Fps("average"), Fps("highest")),
+                r.TestSensors?.FirstOrDefault(x => x.TestId == t.Id)?.Sensors ?? [], t.DurationSeconds, t.CleanButShort ? w.ShortRun(ReportFormat.Duration(t.DurationSeconds), ReportFormat.Duration(t.FullSeconds!.Value)) : t.Advice, t.Detail, w, t.Id);
         }
     }
 

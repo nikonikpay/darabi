@@ -190,3 +190,23 @@ public class ReportSummaryTests
         Assert.True(f.Single(x => x.Key == "b:bench.gpu.fur:Bench_Fur_Fps").Higher); Assert.DoesNotContain(f, x => x.Key.EndsWith("TempMax"));   // a reading of the conditions is not a result
     }
 }
+
+public class CleanButShortTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 11, 18, 10, 0, 0, TimeSpan.Zero);
+    private static SessionReport Report(long errors, double? full) =>
+        SessionReport.Create("x", "1", T0, [new TestEntry("memory.bitfade", "Bit Fade", ReportOutcome.Inconclusive, T0, T0.AddSeconds(20), 20, errors, null, new Dictionary<string, string>(), null, full)], [], HardwareInventory.Empty);
+
+    [Fact] public void A_clean_run_shorter_than_the_test_shows_passed_with_the_time_a_full_result_needs()
+    {
+        string html = ReportHtml.Write(Report(0, 300));
+        Assert.Contains("badge Passed", html); Assert.DoesNotContain("badge Inconclusive", html); Assert.Contains("برای نتیجهٔ کامل حدود", html);
+        Assert.Contains("class=\"sr\"", SummaryHtml.Write(ReportSummary.Of(Report(0, 300))));
+    }
+
+    [Fact] public void A_run_with_errors_or_no_known_full_length_keeps_its_inconclusive_outcome()
+    {
+        Assert.Contains("badge Inconclusive", ReportHtml.Write(Report(2, 300)));
+        Assert.Contains("badge Inconclusive", ReportHtml.Write(Report(0, null)));
+    }
+}

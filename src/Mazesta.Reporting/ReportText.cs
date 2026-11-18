@@ -20,6 +20,7 @@ public sealed class ReportText
 
     public string TitleOf(ReportKind kind) => kind == ReportKind.Benchmark ? BenchmarkTitle : Title;
     public string VerdictName(ReportVerdict v) => v switch { ReportVerdict.Passed => VerdictPassed, ReportVerdict.Failed => VerdictFailed, _ => VerdictIncomplete };
+    public string ShortRun(string ran, string full) => IsRtl ? $"ایرادی دیده نشد، اما این اجرا ({ran}) برای کامل‌شدن آزمون کوتاه بود؛ برای نتیجهٔ کامل حدود {full} آزمون کنید." : $"No fault was seen, but this run ({ran}) was too short to finish the test; run about {full} for a full result.";
     public string OutcomeName(ReportOutcome o) => o switch
     {
         ReportOutcome.Passed => OutcomePassed, ReportOutcome.Failed => OutcomeFailed, ReportOutcome.Cancelled => OutcomeCancelled, ReportOutcome.Unsupported => OutcomeUnsupported,
