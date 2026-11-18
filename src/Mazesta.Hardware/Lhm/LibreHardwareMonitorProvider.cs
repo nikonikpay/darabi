@@ -228,7 +228,7 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
             foreach (var s in n.Mapped.Sensors)
             {
                 double? value = s.Source.Value * s.Scale;
-                var quality = failed || n.LastOk is null ? DataQuality.Stale : ReadingValidator.Validate(s.Definition.Kind, value);
+                var quality = failed || n.LastOk is null ? DataQuality.Stale : ReadingValidator.Validate(s.Definition.Kind, value, s.Definition.Role);
                 readings.Add(new SensorReading(s.Definition.Id, value, n.LastOk ?? request.Now, quality, Name));
             }
         }
