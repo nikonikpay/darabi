@@ -18,7 +18,7 @@ internal sealed class LockForm : Form
         Theme.Window(this); Text = TrayText.LockTitle; StartPosition = FormStartPosition.CenterScreen; MinimumSize = new Size(700, 420); Size = new Size(880, 500);
         var what = new Label { Dock = DockStyle.Top, Height = 40, Padding = new Padding(14, 8, 14, 0), RightToLeft = RightToLeft.Yes, ForeColor = Dim,
             Text = $"{TrayText.LockPick}: {(paths.Count == 1 ? paths[0] : TrayText.Many(paths.Count))}", AutoEllipsis = true };
-        _status = new Label { Dock = DockStyle.Top, Height = 32, Padding = new Padding(14, 0, 14, 0), Font = new Font("Segoe UI Semibold", 10.5f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };   // "left" is the reading start in a right-to-left label
+        _status = new Label { Dock = DockStyle.Top, Height = 32, Padding = new Padding(14, 0, 14, 0), Font = Theme.Semi(10.5f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };   // "left" is the reading start in a right-to-left label
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false, MultiSelect = false };
         _list.Columns.Add(TrayText.LockName, 180); _list.Columns.Add(TrayText.LockKind, 110); _list.Columns.Add("PID", 70); _list.Columns.Add(TrayText.LockState, 150); _list.Columns.Add(TrayText.LockPath, 330);
         Theme.List(_list); Theme.DarkScroll(_list); _list.SelectedIndexChanged += (_, _) => Sync();

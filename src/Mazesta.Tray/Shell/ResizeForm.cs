@@ -24,7 +24,7 @@ internal sealed class ResizeForm : Form
         opts.Controls.AddRange([Label(TrayText.ResizeSize), _size, _custom, Label(TrayText.ResizeQuality), _quality, _run]);
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false };
         _list.Columns.Add(TrayText.ResizeFile, 300); _list.Columns.Add(TrayText.ResizeResult, 560); Theme.List(_list); Theme.DarkScroll(_list);
-        _status = new Label { Dock = DockStyle.Bottom, Height = 36, Padding = new Padding(14, 0, 14, 0), Font = new Font("Segoe UI Semibold", 10.5f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft, BackColor = Theme.Ink2, ForeColor = Theme.Paper2, Text = TrayText.Many(paths.Count) };
+        _status = new Label { Dock = DockStyle.Bottom, Height = 36, Padding = new Padding(14, 0, 14, 0), Font = Theme.Semi(10.5f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft, BackColor = Theme.Ink2, ForeColor = Theme.Paper2, Text = TrayText.Many(paths.Count) };
         foreach (var p in paths) _list.Items.Add(new ListViewItem([Path.GetFileName(p), ""]) { ForeColor = Theme.Paper });
         Controls.Add(_list); Controls.Add(opts); Controls.Add(Theme.Banner(Theme.Picture, Theme.Ram, TrayText.ResizeTitle, TrayText.ResizeSub)); Controls.Add(_status);
     }

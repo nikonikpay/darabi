@@ -9,6 +9,26 @@ namespace Mazesta.Tray;
 /// </summary>
 internal static class Theme
 {
+    // The app's own typeface (Vazirmatn, which the page loads as a web font): the setup installs it for Windows, and when it is not installed the copy
+    // beside the exe is loaded for this process alone, so GDI and GDI+ both find it. Without either, Segoe UI.
+    public static readonly string Face = LoadFace();
+    private static string LoadFace()
+    {
+        try
+        {
+            if (FontFamily.Families.Any(f => f.Name == "Vazirmatn")) return "Vazirmatn";
+            string file = Path.Combine(AppContext.BaseDirectory, "wwwroot", "fonts", "Vazirmatn-Variable.ttf");
+            if (File.Exists(file) && AddFontResourceEx(file, 0x10 /* FR_PRIVATE */, 0) > 0) return "Vazirmatn";
+        }
+        catch (Exception e) when (e is IOException or ArgumentException or UnauthorizedAccessException) { }
+        return "Segoe UI";
+    }
+    [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, nint reserved);
+    public static Font Reg(float size, FontStyle style = FontStyle.Regular) => new(Face, size, style);
+    public static Font Reg(float size, GraphicsUnit unit) => new(Face, size, FontStyle.Regular, unit);
+    public static Font Semi(float size) => new(Face, size, FontStyle.Bold);
+    public static Font Semi(float size, GraphicsUnit unit) => new(Face, size, FontStyle.Bold, unit);
+
     // a mid grey (not the app's near-black): the windows are small tools beside other programs, and the near-black ones read as heavy
     public static readonly Color Ink = Color.FromArgb(0x2B, 0x2F, 0x36), Ink2 = Color.FromArgb(0x33, 0x38, 0x40), Ink3 = Color.FromArgb(0x3E, 0x44, 0x4D), Ink4 = Color.FromArgb(0x4B, 0x52, 0x5C),
         Well = Color.FromArgb(0x23, 0x27, 0x2D), Paper = Color.FromArgb(0xF2, 0xF1, 0xEC), Paper2 = Color.FromArgb(0xC3, 0xC7, 0xCC), Paper3 = Color.FromArgb(0x93, 0x9A, 0xA3), Rule = Color.FromArgb(0x5A, 0x61, 0x6B),
@@ -22,7 +42,7 @@ internal static class Theme
     /// <summary>The window's frame and colours: a dark title bar, the app's ink, the app's text size.</summary>
     public static void Window(Form f)
     {
-        f.AutoScaleMode = AutoScaleMode.Dpi; f.Font = new Font("Segoe UI", 10f); f.BackColor = Ink; f.ForeColor = Paper;
+        f.AutoScaleMode = AutoScaleMode.Dpi; f.Font = Theme.Reg(10f); f.BackColor = Ink; f.ForeColor = Paper;
         f.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         f.HandleCreated += (_, _) => { int on = 1; _ = DwmSetWindowAttribute(f.Handle, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, ref on, 4); };
     }
@@ -43,9 +63,9 @@ internal static class Theme
         protected override void OnPaint(PaintEventArgs e)
         {
             if (Width < 8 || Height < 8) return;
-            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit; g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            using (var back = new LinearGradientBrush(ClientRectangle, Color.FromArgb(0xF4, 0x9B, 0x1E), Color.FromArgb(0xDF, 0x6A, 0x12), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
-            using (var line = new SolidBrush(Color.FromArgb(0xB4, 0x4F, 0x00))) g.FillRectangle(line, 0, Height - 3, Width, 3);
+            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit; g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            using (var back = new LinearGradientBrush(ClientRectangle, Yellow, Color.FromArgb(0xF0, 0xC4, 0x00), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
+            using (var line = new SolidBrush(Color.FromArgb(0xB8, 0x92, 0x00))) g.FillRectangle(line, 0, Height - 3, Width, 3);
             // right: the Mazesta logo on a dark disc; beside it the tool's own symbol
             int d = Height - 24, x = Width - 16 - d, y = 10, d2 = d - 8, x2 = x - 10 - d2, y2 = y + 4;
             using (var disc = new SolidBrush(Ink)) { g.FillEllipse(disc, x, y, d, d); g.FillEllipse(disc, x2, y2, d2, d2); }
@@ -56,22 +76,22 @@ internal static class Theme
             }
             int room = x2 - 28; if (room < 20) return;
             using var rtl = new StringFormat(StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap) { Alignment = StringAlignment.Near, Trimming = StringTrimming.EllipsisCharacter };
-            using var tf = new Font("Segoe UI Semibold", 15f, GraphicsUnit.Point); using var sf = new Font("Segoe UI", 9.5f, GraphicsUnit.Point);
+            using var tf = Theme.Semi(15f, GraphicsUnit.Point); using var sf = Theme.Reg(9.5f, GraphicsUnit.Point);
             using (var p = new SolidBrush(OnYellow)) g.DrawString(_title, tf, p, new RectangleF(16, 10, room, 30), rtl);
-            using (var p2 = new SolidBrush(Color.FromArgb(0x4A, 0x27, 0x00))) g.DrawString(_sub, sf, p2, new RectangleF(16, 40, room, 24), rtl);
+            using (var p2 = new SolidBrush(Color.FromArgb(0x4A, 0x3C, 0x00))) g.DrawString(_sub, sf, p2, new RectangleF(16, 40, room, 24), rtl);
         }
     }
 
     public static Button Button(string text, bool primary = false)
     {
         var b = new Button { Text = text, AutoSize = true, MinimumSize = new Size(0, 34), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(4), Padding = new Padding(10, 0, 10, 0),
-            BackColor = primary ? Yellow : Ink4, ForeColor = primary ? OnYellow : Paper, Font = new Font("Segoe UI Semibold", 10f) };
+            BackColor = primary ? Yellow : Ink4, ForeColor = primary ? OnYellow : Paper, Font = Theme.Semi(10f) };
         b.FlatAppearance.BorderSize = 0; b.FlatAppearance.MouseOverBackColor = primary ? Color.FromArgb(0xFF, 0xE2, 0x4A) : Color.FromArgb(0x3C, 0x42, 0x4B);
         b.EnabledChanged += (_, _) => { b.BackColor = b.Enabled ? (primary ? Yellow : Ink4) : Ink3; b.ForeColor = b.Enabled ? (primary ? OnYellow : Paper) : Paper3; };
         return b;
     }
 
-    private static readonly Font ChipFont = new("Segoe UI", 10f);
+    private static readonly Font ChipFont = Theme.Reg(10f);
 
     /// <summary>An option as a chip: dim when off, yellow when on (a plain check box is a white square on the dark window).</summary>
     public static CheckBox Chip(string text)
@@ -117,7 +137,7 @@ internal static class Theme
         // the last column takes what is left, so no bare (white) stretch of the system's header shows after it
         void Fill() { if (lv.Columns.Count == 0) return; int others = 0; for (int i = 0; i < lv.Columns.Count - 1; i++) others += lv.Columns[i].Width; lv.Columns[^1].Width = Math.Max(80, lv.ClientSize.Width - others); }
         lv.SizeChanged += (_, _) => Fill(); lv.HandleCreated += (_, _) => Fill(); lv.ColumnWidthChanged += (_, e) => { if (e.ColumnIndex < lv.Columns.Count - 1) Fill(); };
-        var head = new Font("Segoe UI Semibold", 9.5f);
+        var head = Theme.Semi(9.5f);
         lv.DrawColumnHeader += (_, e) =>
         {
             var g = e.Graphics; using (var b = new SolidBrush(Ink3)) g.FillRectangle(b, e.Bounds);

@@ -16,8 +16,8 @@ internal sealed class SummaryForm : Form
         Fail = Color.FromArgb(0xEE, 0x4B, 0x3D), Pass = Color.FromArgb(0x2E, 0xC0, 0x8E), Cpu = Color.FromArgb(0x5B, 0xA8, 0xFF), Gpu = Color.FromArgb(0xB3, 0x8B, 0xFF),
         Storage = Color.FromArgb(0xFF, 0x9A, 0x4D);
     private readonly TrayContext _tray; private readonly Canvas _canvas; private readonly Button _check, _open;
-    private readonly Font _body = new("Segoe UI", 10f), _small = new("Segoe UI", 8.75f), _bold = new("Segoe UI Semibold", 10.5f), _title = new("Segoe UI Semibold", 13f),
-        _big = new("Segoe UI Semibold", 26f);
+    private readonly Font _body = Theme.Reg(10f), _small = Theme.Reg(8.75f), _bold = Theme.Semi(10.5f), _title = Theme.Semi(13f),
+        _big = Theme.Semi(26f);
 
     public SummaryForm(TrayContext tray)
     {

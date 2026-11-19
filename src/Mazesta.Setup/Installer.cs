@@ -102,10 +102,25 @@ internal static class Installer
             key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture));
         }
         if (earlier is not null && perUser) RemoveEarlier(earlier, folder);
+        InstallFont(folder);
         InstallDriver(exe, progress);
         bool web = WebViewReady() || InstallWebView(progress);
         progress.Report((100, web ? SetupText.Done : SetupText.DoneNoWebView));
         return web;
+    }
+
+    /// <summary>Puts the app's typeface (Vazirmatn, carried in wwwroot\fonts) into Windows' Fonts folder when it is not there yet, so the tray's windows and every other program can use it. A failure is not an install failure: the tray then loads the font from the app folder.</summary>
+    private static void InstallFont(string folder)
+    {
+        try
+        {
+            string src = Path.Combine(folder, "wwwroot", "fonts", "Vazirmatn-Variable.ttf"), dst = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "Vazirmatn-Variable.ttf");
+            if (!File.Exists(src)) return;
+            using var root = Hive(RegistryHive.LocalMachine); using var key = root.CreateSubKey(@"Software\Microsoft\Windows NT\CurrentVersion\Fonts");
+            if (key.GetValue("Vazirmatn (TrueType)") is not null && File.Exists(dst)) return;
+            File.Copy(src, dst, true); key.SetValue("Vazirmatn (TrueType)", "Vazirmatn-Variable.ttf");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
     }
 
     /// <summary>Has the app just installed check for the PawnIO sensor driver and put it in when it is missing or half removed (the app checks the signed setup it carries

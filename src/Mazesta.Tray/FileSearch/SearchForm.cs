@@ -42,7 +42,7 @@ internal sealed class SearchForm : Form
     {
         _drives = drives; _shortcut = shortcut;
         Theme.Window(this); Text = TrayText.SearchTitle; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; MinimumSize = new Size(700, 420);
-        _box = new TextBox { Dock = DockStyle.Top, Font = new Font("Segoe UI", 15f), PlaceholderText = TrayText.SearchHint }; Theme.Field(_box); _box.BackColor = Theme.Ink3;
+        _box = new TextBox { Dock = DockStyle.Top, Font = Theme.Reg(15f), PlaceholderText = TrayText.SearchHint }; Theme.Field(_box); _box.BackColor = Theme.Ink3;
         _icons.ImageSize = new Size(LogicalToDeviceUnits(16), LogicalToDeviceUnits(16));
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, HideSelection = false, MultiSelect = false, SmallImageList = _icons };
         Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), SortBy); Theme.DarkScroll(_list);

@@ -58,7 +58,7 @@ internal sealed class RenameForm : Form
     private void Section(string? title)
     {
         if (title is null) return;
-        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 20, 0, 4), Font = new Font("Segoe UI Semibold", 11f), ForeColor = Theme.Yellow, RightToLeft = RightToLeft.Yes });
+        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 20, 0, 4), Font = Theme.Semi(11f), ForeColor = Theme.Yellow, RightToLeft = RightToLeft.Yes });
     }
     private TextBox Txt(string? label)
     {

@@ -16,8 +16,8 @@ internal sealed class VolumeForm : Form
     public VolumeForm()
     {
         Text = TrayText.Mixer; FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual; KeyPreview = true;
-        AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 9.5f); BackColor = Back; ForeColor = Text1; Padding = new Padding(12, 10, 12, 10);
-        var title = new Label { Text = TrayText.Mixer, Dock = DockStyle.Top, Height = 26, Font = new Font("Segoe UI Semibold", 11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleRight };
+        AutoScaleMode = AutoScaleMode.Dpi; Font = Theme.Reg(9.5f); BackColor = Back; ForeColor = Text1; Padding = new Padding(12, 10, 12, 10);
+        var title = new Label { Text = TrayText.Mixer, Dock = DockStyle.Top, Height = 26, Font = Theme.Semi(11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleRight };
         _device = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Line, ForeColor = Text1 };
         _rows = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(0, 6, 0, 0) };
         Controls.Add(_rows); Controls.Add(_device); Controls.Add(title);
@@ -107,7 +107,7 @@ internal sealed class VolumeForm : Form
         {
             Height = 54; Margin = new Padding(0, 0, 0, 4); BackColor = device ? Line : Back;
             var pic = new PictureBox { Image = icon, SizeMode = PictureBoxSizeMode.Zoom, Bounds = new Rectangle(6, 6, 20, 20) };
-            _name = new Label { Text = name, AutoEllipsis = true, Bounds = new Rectangle(32, 6, 250, 20), Font = new Font("Segoe UI", 9.5f, device ? FontStyle.Bold : FontStyle.Regular) };
+            _name = new Label { Text = name, AutoEllipsis = true, Bounds = new Rectangle(32, 6, 250, 20), Font = Theme.Reg(9.5f, device ? FontStyle.Bold : FontStyle.Regular) };
             _value = new Label { Bounds = new Rectangle(0, 30, 44, 20), TextAlign = ContentAlignment.MiddleRight, ForeColor = Dim };
             _slider = new Slider { Bounds = new Rectangle(32, 30, 200, 20) };
             _mute = new Button { Bounds = new Rectangle(0, 4, 30, 24), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe MDL2 Assets", 10f), ForeColor = Text1, TabStop = false };
