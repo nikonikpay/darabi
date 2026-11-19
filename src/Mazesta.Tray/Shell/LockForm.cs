@@ -8,34 +8,30 @@ namespace Mazesta.Tray.Shell;
 /// </summary>
 internal sealed class LockForm : Form
 {
-    private static readonly Color Back = Color.FromArgb(24, 24, 27), Field = Color.FromArgb(36, 36, 40), Text1 = Color.FromArgb(235, 235, 240), Dim = Color.FromArgb(150, 150, 160), Bad = Color.FromArgb(240, 120, 110);
+    private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2, Bad = Theme.Fail;
     private readonly List<string> _paths; private readonly ListView _list; private readonly Label _status; private readonly Button _closeOne, _closeAll, _again;
     private List<FileLockHolder> _holders = [];
 
     public LockForm(List<string> paths)
     {
         _paths = paths;
-        Text = TrayText.LockTitle; StartPosition = FormStartPosition.CenterScreen; AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 10f);
-        BackColor = Back; ForeColor = Text1; MinimumSize = new Size(640, 360); Size = new Size(820, 460);
-        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
-        var what = new Label { Dock = DockStyle.Top, Height = 52, Padding = new Padding(10, 8, 10, 0), RightToLeft = RightToLeft.Yes, ForeColor = Dim,
+        Theme.Window(this); Text = TrayText.LockTitle; StartPosition = FormStartPosition.CenterScreen; MinimumSize = new Size(700, 420); Size = new Size(880, 500);
+        var what = new Label { Dock = DockStyle.Top, Height = 40, Padding = new Padding(14, 8, 14, 0), RightToLeft = RightToLeft.Yes, ForeColor = Dim,
             Text = $"{TrayText.LockPick}: {(paths.Count == 1 ? paths[0] : TrayText.Many(paths.Count))}", AutoEllipsis = true };
-        _status = new Label { Dock = DockStyle.Top, Height = 30, Padding = new Padding(10, 0, 10, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };   // "left" is the reading start in a right-to-left label
-        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, HideSelection = false, MultiSelect = false, BorderStyle = BorderStyle.None, BackColor = Field, ForeColor = Text1, HeaderStyle = ColumnHeaderStyle.Nonclickable };
+        _status = new Label { Dock = DockStyle.Top, Height = 32, Padding = new Padding(14, 0, 14, 0), Font = new Font("Segoe UI Semibold", 10.5f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };   // "left" is the reading start in a right-to-left label
+        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false, MultiSelect = false };
         _list.Columns.Add(TrayText.LockName, 180); _list.Columns.Add(TrayText.LockKind, 110); _list.Columns.Add("PID", 70); _list.Columns.Add(TrayText.LockState, 150); _list.Columns.Add(TrayText.LockPath, 330);
-        _list.SelectedIndexChanged += (_, _) => Sync();
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, Padding = new Padding(8, 8, 8, 6), RightToLeft = RightToLeft.Yes };
-        _closeOne = Btn(TrayText.LockCloseOne, CloseOne); _closeAll = Btn(TrayText.LockCloseAll, CloseAll); _again = Btn(TrayText.LockAgain, Find);
+        Theme.List(_list); Theme.DarkScroll(_list); _list.SelectedIndexChanged += (_, _) => Sync();
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
+        _closeOne = Btn(TrayText.LockCloseOne, CloseOne, true); _closeAll = Btn(TrayText.LockCloseAll, CloseAll, false); _again = Btn(TrayText.LockAgain, Find, false);
         bar.Controls.AddRange([_closeOne, _closeAll, _again]);
-        Controls.Add(_list); Controls.Add(_status); Controls.Add(what); Controls.Add(bar);
-        HandleCreated += (_, _) => { int dark = 1; _ = DwmSetWindowAttribute(Handle, 20, ref dark, 4); };
+        Controls.Add(_list); Controls.Add(_status); Controls.Add(what); Controls.Add(Theme.Banner(Theme.Lock, Theme.Warn, TrayText.LockTitle, TrayText.LockSub)); Controls.Add(bar);
         Shown += (_, _) => { Activate(); Find(); };
     }
 
-    private Button Btn(string text, Action click)
+    private static Button Btn(string text, Action click, bool primary)
     {
-        var b = new Button { Text = text, AutoSize = true, FlatStyle = FlatStyle.Flat, BackColor = Field, ForeColor = Text1, Padding = new Padding(8, 2, 8, 2), Enabled = false };
-        b.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 80); b.Click += (_, _) => click(); return b;
+        var b = Theme.Button(text, primary); b.Enabled = false; b.Click += (_, _) => click(); return b;
     }
 
     private async void Find()
@@ -47,7 +43,7 @@ internal sealed class LockForm : Form
         if (IsDisposed) return;
         _again.Enabled = true; _holders = [.. r.Holders];
         if (r.Error is not null) { _status.ForeColor = Bad; _status.Text = TrayText.LockFailed(r.Error); return; }
-        _status.ForeColor = _holders.Count == 0 ? Color.FromArgb(120, 210, 140) : Text1;
+        _status.ForeColor = _holders.Count == 0 ? Theme.Pass : Text1;
         _status.Text = (_holders.Count == 0 ? TrayText.LockNone : TrayText.LockFound(_holders.Count)) + (r.Truncated ? " " + TrayText.LockTruncated : "");
         foreach (var h in _holders)
             _list.Items.Add(new ListViewItem([h.Name, Kind(h.Kind), h.Pid.ToString(System.Globalization.CultureInfo.InvariantCulture), h.CanClose ? TrayText.LockCan : h.Kind == FileLockKind.Service ? TrayText.LockService : TrayText.LockSystem, h.Path ?? ""]));
@@ -78,5 +74,4 @@ internal sealed class LockForm : Form
         if (failed.Count > 0) MessageBox.Show(this, string.Join("\n", failed), Text, MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
     }
 
-    [System.Runtime.InteropServices.DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
 }

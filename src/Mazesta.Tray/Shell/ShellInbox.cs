@@ -53,7 +53,7 @@ internal sealed class ShellInbox : IDisposable
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; }
         // the tools with a window of the tray's own open it here, with no app and no UAC prompt; only the rest go to the app
-        foreach (var tool in new[] { ShellFiles.Lock, ShellFiles.Rename })
+        foreach (var tool in new[] { ShellFiles.Lock, ShellFiles.Rename, ShellFiles.Resize })
             if (byTool.Remove(tool, out var own)) _openTool(tool, [.. own.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.CurrentCultureIgnoreCase)]);
         if (byTool.Count == 0) return;
         var all = Read();

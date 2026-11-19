@@ -26,6 +26,23 @@ internal static class TrayText
 
     // Explorer's right-click tools, each in a window of its own (Shell/LockForm, Shell/RenameForm)
     public const string LockTitle = "چه برنامه‌ای این فایل را باز نگه داشته؟";
+    public const string SearchSub = "نام فایل یا پوشه را بنویسید؛ با هر حرف نتیجه تازه می‌شود";
+    public const string SpaceSub = "پوشه‌ها و فایل‌های بزرگ هر درایو، از بزرگ به کوچک";
+    public const string LockSub ="برنامه‌هایی که این فایل را در دست دارند و راه بستن آن‌ها";
+    public const string RenameSub = "پیش‌نمایش نام‌های تازه؛ تا چیزی تکراری یا نامعتبر نباشد تغییری داده نمی‌شود";
+    public const string ResizeTitle = "کوچک کردن عکس‌ها";
+    public const string ResizeSub = "برای پیام‌رسان یا ایمیل: یک نسخهٔ کوچک‌تر کنار هر عکس ساخته می‌شود و اصل دست نمی‌خورد";
+    public const string ResizeSize = "بلندترین ضلع";
+    public const string ResizeCustom = "اندازهٔ دیگر…";
+    public const string ResizeQuality = "کیفیت";
+    public static readonly string[] ResizeQualities = ["بالا (حجم بیشتر)", "معمولی", "کمترین حجم"];
+    public const string ResizeRun = "کوچک کن";
+    public const string ResizeFile = "عکس";
+    public const string ResizeResult = "نتیجه";
+    public const string ResizeBadSize = "اندازه‌ای بین ۱۶ تا ۲۰۰۰۰ پیکسل وارد کنید.";
+    public const string ResizeFormat = "این قالب اینجا خوانده نمی‌شود (مثلاً HEIC یا WebP).";
+    public static string ResizeProgress(int i, int n) => $"عکس {i} از {n}…";
+    public static string ResizeDone(int ok, int n) => $"{ok} عکس از {n} کوچک شد.";
     public const string LockPick = "بررسی‌شده";
     public const string LockNone = "هیچ برنامه‌ای این را باز نگه نداشته است.";
     public const string LockWorking = "در حال بررسی…";

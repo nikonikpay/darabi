@@ -8,7 +8,7 @@ namespace Mazesta.Tray.Volume;
 /// </summary>
 internal sealed class VolumeForm : Form
 {
-    private static readonly Color Back = Color.FromArgb(28, 28, 32), Line = Color.FromArgb(48, 48, 54), Text1 = Color.FromArgb(235, 235, 240), Dim = Color.FromArgb(150, 150, 160);
+    private static readonly Color Back = Theme.Ink2, Line = Theme.Ink4, Text1 = Theme.Paper, Dim = Theme.Paper2;
     private readonly ComboBox _device; private readonly FlowLayoutPanel _rows; private readonly System.Windows.Forms.Timer _poll = new() { Interval = 1000 };
     private readonly Dictionary<string, Row> _byKey = []; private IReadOnlyList<AudioDevice> _devices = []; private string? _deviceId;
     private Row? _master;

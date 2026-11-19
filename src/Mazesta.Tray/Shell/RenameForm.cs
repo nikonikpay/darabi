@@ -9,7 +9,7 @@ namespace Mazesta.Tray.Shell;
 /// </summary>
 internal sealed class RenameForm : Form
 {
-    private static readonly Color Back = Color.FromArgb(24, 24, 27), Field = Color.FromArgb(36, 36, 40), Text1 = Color.FromArgb(235, 235, 240), Dim = Color.FromArgb(150, 150, 160), Bad = Color.FromArgb(240, 120, 110), Good = Color.FromArgb(120, 210, 140);
+    private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2, Bad = Theme.Fail, Good = Theme.Pass;
     private const int ShowMax = 1000;
     private readonly string _log; private List<string> _paths; private IReadOnlyList<RenameItem> _items = []; private bool _ready;
     private readonly FlowLayoutPanel _opts = new() { Dock = DockStyle.Right, Width = 410, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8, 4, 8, 8) };
@@ -22,9 +22,7 @@ internal sealed class RenameForm : Form
     public RenameForm(List<string> paths, string undoLog)
     {
         _paths = paths; _log = undoLog;
-        Text = TrayText.RenameTitle; StartPosition = FormStartPosition.CenterScreen; AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 10f);
-        BackColor = Back; ForeColor = Text1; MinimumSize = new Size(900, 560); Size = new Size(1180, 720);
-        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
+        Theme.Window(this); Text = TrayText.RenameTitle; StartPosition = FormStartPosition.CenterScreen; MinimumSize = new Size(960, 600); Size = new Size(1240, 760);
 
         Section(TrayText.RenameSecText);
         _find = Txt(TrayText.RenameFind); _replace = Txt(TrayText.RenameReplace);
@@ -43,18 +41,16 @@ internal sealed class RenameForm : Form
         Section(null);
         _order = Combo(TrayText.RenameOrders);
 
-        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, HideSelection = false, BorderStyle = BorderStyle.None, BackColor = Field, ForeColor = Text1, HeaderStyle = ColumnHeaderStyle.Nonclickable };
+        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false }; Theme.List(_list); Theme.DarkScroll(_list); Theme.DarkScroll(_opts);
         _list.Columns.Add(TrayText.RenameOld, 260); _list.Columns.Add(TrayText.RenameNew, 260); _list.Columns.Add(TrayText.RenameStatus, 90);
-        _list.SizeChanged += (_, _) => { int w = Math.Max(120, (_list.ClientSize.Width - 100) / 2); _list.Columns[0].Width = w; _list.Columns[1].Width = w; _list.Columns[2].Width = 90; };
         _status = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };
         _result = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, Padding = new Padding(8, 8, 8, 6), RightToLeft = RightToLeft.Yes };
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
         _apply = Btn(TrayText.RenameApply, Apply, true); _undo = Btn(TrayText.RenameUndo, Undo, false); _undo.Visible = false;
         bar.Controls.AddRange([_apply, _undo, Btn(TrayText.RenameClose, Close, false)]);
         var left = new Panel { Dock = DockStyle.Fill };
         left.Controls.Add(_list); left.Controls.Add(_result); left.Controls.Add(_status);
-        Controls.Add(left); Controls.Add(_opts); Controls.Add(bar);
-        HandleCreated += (_, _) => { int dark = 1; _ = DwmSetWindowAttribute(Handle, 20, ref dark, 4); };
+        Controls.Add(left); Controls.Add(_opts); Controls.Add(Theme.Banner(Theme.Edit, Theme.Cpu, TrayText.RenameTitle, TrayText.RenameSub)); Controls.Add(bar);
         Shown += (_, _) => { Activate(); _ready = true; Sync(); Preview(); RefreshUndo(); };
     }
 
@@ -62,31 +58,30 @@ internal sealed class RenameForm : Form
     private void Section(string? title)
     {
         if (title is null) return;
-        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 12, 0, 2), Font = new Font("Segoe UI Semibold", 10.5f), ForeColor = Color.FromArgb(253, 212, 0), RightToLeft = RightToLeft.Yes });
+        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 20, 0, 4), Font = new Font("Segoe UI Semibold", 11f), ForeColor = Theme.Yellow, RightToLeft = RightToLeft.Yes });
     }
     private TextBox Txt(string? label)
     {
-        if (label is not null) _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 4, 0, 0) });
-        var t = new TextBox { Width = 370, BorderStyle = BorderStyle.FixedSingle, BackColor = Field, ForeColor = Text1 }; t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(t); return t;
+        if (label is not null) _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 2) });
+        var t = new TextBox { Width = 370 }; Theme.Field(t); t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(t); return t;
     }
     private NumericUpDown Num(string label, int min, int max, int value)
     {
-        _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 4, 0, 0) });
-        var n = new NumericUpDown { Width = 140, Minimum = min, Maximum = max, Value = value, BackColor = Field, ForeColor = Text1, BorderStyle = BorderStyle.FixedSingle }; n.ValueChanged += (_, _) => Changed(); _opts.Controls.Add(n); return n;
+        _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 2) });
+        var n = new NumericUpDown { Width = 140, Minimum = min, Maximum = max, Value = value, BackColor = Theme.Ink3, ForeColor = Text1, BorderStyle = BorderStyle.FixedSingle }; n.ValueChanged += (_, _) => Changed(); _opts.Controls.Add(n); return n;
     }
     private CheckBox Chk(string label)
     {
-        var c = new CheckBox { Text = label, AutoSize = true, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 4, 0, 0) }; c.CheckedChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
+        var c = Theme.Chip(label); c.CheckedChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
     }
     private ComboBox Combo(string[] items)
     {
-        var c = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Field, ForeColor = Text1, Width = 370, Margin = new Padding(0, 4, 0, 0) };
+        var c = new ComboBox { Width = 370, Margin = new Padding(0, 6, 0, 2) }; Theme.Combo(c);
         c.Items.AddRange(items); c.SelectedIndex = 0; c.SelectedIndexChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
     }
-    private Button Btn(string text, Action click, bool primary)
+    private static Button Btn(string text, Action click, bool primary)
     {
-        var b = new Button { Text = text, AutoSize = true, FlatStyle = FlatStyle.Flat, BackColor = primary ? Color.FromArgb(253, 212, 0) : Field, ForeColor = primary ? Color.Black : Text1, Padding = new Padding(10, 2, 10, 2) };
-        b.FlatAppearance.BorderColor = Color.FromArgb(70, 70, 80); b.Click += (_, _) => click(); return b;
+        var b = Theme.Button(text, primary); b.Click += (_, _) => click(); return b;
     }
 
     // ——— the rule from the controls, the plan from the rule ———
@@ -175,5 +170,4 @@ internal sealed class RenameForm : Form
 
     private void RefreshUndo() { int n = BatchRename.Read(_log).Count; _undo.Visible = n > 0; _undo.Enabled = n > 0; _undo.Text = $"{TrayText.RenameUndo} ({n})"; }
 
-    [System.Runtime.InteropServices.DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
 }

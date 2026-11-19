@@ -52,7 +52,7 @@ internal sealed class TrayContext : ApplicationContext
         _spaceWait = ThreadPool.RegisterWaitForSingleObject(_spaceSignal, (_, _) => { try { _ui.BeginInvoke(ShowSpace); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
         // Explorer's right-click entries for the file tools: a selection gathered here, then the app wakes (or starts) and opens that box with it
         _shell = new Shell.ShellInbox(Path.Combine(paths.DataRoot, "tray", ShellFiles.FileName), () => { if (EventWaitHandle.TryOpenExisting(ShellFiles.Event, out var e)) using (e) e.Set(); else StartApp(""); },
-            (tool, files) => { Form f = tool == ShellFiles.Lock ? new Shell.LockForm(files) : new Shell.RenameForm(files, Path.Combine(paths.DataRoot, "rename", "last.json")); f.FormClosed += (_, _) => f.Dispose(); f.Show(); });
+            (tool, files) => { Form f = tool == ShellFiles.Lock ? new Shell.LockForm(files) : tool == ShellFiles.Resize ? new Shell.ResizeForm(files) : new Shell.RenameForm(files, Path.Combine(paths.DataRoot, "rename", "last.json")); f.FormClosed += (_, _) => f.Dispose(); f.Show(); });
         _colors = new Colors.ColorHost(Path.Combine(Path.GetDirectoryName(logFile) ?? "", "colors.txt"));
         _color = new ToolStripMenuItem(TrayText.Color, null, (_, _) => _colors.Pick());
         _mixerWait = ThreadPool.RegisterWaitForSingleObject(_mixerSignal, (_, _) => { try { _ui.BeginInvoke(ShowMixer); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);

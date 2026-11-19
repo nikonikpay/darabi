@@ -10,7 +10,8 @@ namespace Mazesta.Tray.FileSearch;
 internal sealed class SearchForm : Form
 {
     private const int Max = 500;
-    private static readonly Color Back = Color.FromArgb(24, 24, 27), Field = Color.FromArgb(36, 36, 40), Text1 = Color.FromArgb(235, 235, 240), Dim = Color.FromArgb(150, 150, 160);
+    private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2;
+    private int _sortCol = -1; private bool _sortUp = true;
     private readonly DriveSet _drives; private readonly string _shortcut;
     private readonly TextBox _box; private readonly ListView _list; private readonly Label _status;
     private List<(FileIndex Index, int Entry)> _hits = []; private readonly Dictionary<int, ListViewItem> _rows = [];
@@ -19,14 +20,14 @@ internal sealed class SearchForm : Form
     public SearchForm(DriveSet drives, string shortcut)
     {
         _drives = drives; _shortcut = shortcut;
-        Text = TrayText.SearchTitle; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; TopMost = true;
-        AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 10f); BackColor = Back; ForeColor = Text1; MinimumSize = new Size(640, 360);
-        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
-        _box = new TextBox { Dock = DockStyle.Top, Font = new Font("Segoe UI", 14f), BorderStyle = BorderStyle.FixedSingle, BackColor = Field, ForeColor = Text1, PlaceholderText = TrayText.SearchHint };
-        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, FullRowSelect = true, HideSelection = false, MultiSelect = false, BorderStyle = BorderStyle.None, BackColor = Back, ForeColor = Text1, HeaderStyle = ColumnHeaderStyle.Nonclickable };
+        Theme.Window(this); Text = TrayText.SearchTitle; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; TopMost = true; MinimumSize = new Size(700, 420);
+        _box = new TextBox { Dock = DockStyle.Top, Font = new Font("Segoe UI", 15f), PlaceholderText = TrayText.SearchHint }; Theme.Field(_box); _box.BackColor = Theme.Ink3;
+        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, HideSelection = false, MultiSelect = false };
+        Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), SortBy); Theme.DarkScroll(_list);
         _list.Columns.Add(TrayText.SearchName, 300); _list.Columns.Add(TrayText.SearchFolder, 460); _list.Columns.Add(TrayText.SearchSize, 90, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchDate, 140);
-        _status = new Label { Dock = DockStyle.Bottom, Height = 26, ForeColor = Dim, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(8, 0, 8, 0) };
-        Controls.Add(_list); Controls.Add(_status); Controls.Add(_box);
+        _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(12, 0, 12, 0) };
+        var boxPad = new Panel { Dock = DockStyle.Top, Height = 54, Padding = new Padding(12, 10, 12, 8), BackColor = Theme.Ink2 }; boxPad.Controls.Add(_box);
+        Controls.Add(_list); Controls.Add(_status); Controls.Add(boxPad); Controls.Add(Theme.Banner(Theme.Search, Theme.Gpu, TrayText.SearchTitle, TrayText.SearchSub));
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
         menu.Items.Add(TrayText.SearchOpen, null, (_, _) => Open(false)); menu.Items.Add(TrayText.SearchOpenFolder, null, (_, _) => Open(true)); menu.Items.Add(TrayText.SearchCopyPath, null, (_, _) => CopyPath());
         _list.ContextMenuStrip = menu;
@@ -35,9 +36,6 @@ internal sealed class SearchForm : Form
         _list.RetrieveVirtualItem += (_, e) => e.Item = Row(e.ItemIndex);
         _list.DoubleClick += (_, _) => Open(false);
         Deactivate += (_, _) => Hide();
-        // dark like the app: the title bar, the list's scroll bars, and its header (a window of its own inside the list)
-        HandleCreated += (_, _) => { int on = 1; DwmSetWindowAttribute(Handle, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, ref on, 4); };
-        _list.HandleCreated += (_, _) => { SetWindowTheme(_list.Handle, "DarkMode_Explorer", null); SetWindowTheme(SendMessage(_list.Handle, 0x101F /* LVM_GETHEADER */, 0, 0), "DarkMode_ItemsView", null); };
         _drives.Changed += () => { try { BeginInvoke(() => { if (Visible) Find(); else ShowState(); }); } catch (InvalidOperationException) { } };
     }
 
@@ -62,6 +60,15 @@ internal sealed class SearchForm : Form
             catch (OperationCanceledException) { }
             catch (InvalidOperationException) { }   // the window closed meanwhile
         });
+    }
+
+    // a click on the name or folder header orders the matches found (the size and date are read only for the rows on screen, so they cannot order them)
+    private void SortBy(int col)
+    {
+        if (col > 1) return;
+        _sortUp = _sortCol == col ? !_sortUp : true; _sortCol = col;
+        var sorted = _hits.OrderBy(h => col == 0 ? h.Index.Name(h.Entry) : h.Index.PathOf(h.Entry), StringComparer.CurrentCultureIgnoreCase);
+        _hits = [.. _sortUp ? sorted : sorted.Reverse()]; _rows.Clear(); _list.Invalidate(); _list.Columns[0].Width = _list.Columns[0].Width;
     }
 
     private void ShowHits(List<(FileIndex Index, int Entry)> hits, int total, long ms)
@@ -90,7 +97,7 @@ internal sealed class SearchForm : Form
             else { var f = new FileInfo(path); if (f.Exists) { size = Bytes(f.Length); date = f.LastWriteTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture); } }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { }
-        var item = new ListViewItem([name, folder, size, date]) { Tag = path, ForeColor = x.IsDir(e) ? Color.FromArgb(240, 200, 90) : Text1 };
+        var item = new ListViewItem([name, folder, size, date]) { Tag = path, ForeColor = x.IsDir(e) ? Theme.Yellow : Text1 };
         if (_rows.Count > 2000) _rows.Clear();
         _rows[i] = item; return item;
     }
@@ -143,9 +150,6 @@ internal sealed class SearchForm : Form
         try { SetForegroundWindow(Handle); Activate(); } finally { if (joined) AttachThreadInput(me, front, false); }
     }
 
-    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] private static extern int SetWindowTheme(nint window, string app, string? id);
-    [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(nint window, int attribute, ref int value, int size);
-    [DllImport("user32.dll")] private static extern nint SendMessage(nint window, int message, nint w, nint l);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint window, out uint process);
     [DllImport("user32.dll")] private static extern bool AttachThreadInput(uint attach, uint to, bool on);

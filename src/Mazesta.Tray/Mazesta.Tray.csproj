@@ -15,6 +15,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
   <ItemGroup>
+    <!-- the app's picture resizer, shared as source: the tray's window needs this one class, not the whole app layer -->
+    <Compile Include="../Mazesta.Desktop/Services/ImageResizer.cs" Link="Shell/ImageResizer.cs" />
     <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
     <ProjectReference Include="../Mazesta.Diagnostics/Mazesta.Diagnostics.csproj" />
     <ProjectReference Include="../Mazesta.Hardware/Mazesta.Hardware.csproj" />
