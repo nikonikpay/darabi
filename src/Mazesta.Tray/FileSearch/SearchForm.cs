@@ -17,6 +17,26 @@ internal sealed class SearchForm : Form
     private readonly TextBox _box; private readonly ListView _list; private readonly Label _status;
     private List<(FileIndex Index, int Entry)> _hits = []; private readonly Dictionary<int, ListViewItem> _rows = [];
     private CancellationTokenSource? _cts; private int _total; private long _ms;
+    private bool? _dirs; private HashSet<string>? _exts;   // the chips: files or folders only, one kind of file only
+
+    private static HashSet<string> Ext(string list) => new(list.Split(' '), StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string>[] Kinds =
+    [
+        Ext("pdf doc docx xls xlsx ppt pptx txt rtf odt ods csv md epub"), Ext("jpg jpeg png gif bmp webp tif tiff svg psd ico heic raw cr2 nef arw exr hdr tga ai"),
+        Ext("mp4 mkv avi mov wmv webm flv m4v ts mpg mpeg"), Ext("mp3 wav flac aac ogg m4a wma opus"), Ext("zip rar 7z tar gz bz2 xz iso cab"),
+        Ext("exe msi bat cmd lnk appx"), Ext("cs js ts py cpp c h hpp java json xml html css php sql ps1 sh go rs lua")
+    ];
+
+    // chips that act as one choice: clicking one turns the others off (the one on stays on), and the search runs again
+    private void Group<T>(FlowLayoutPanel host, (string Text, T Value)[] options, Action<T> set)
+    {
+        var chips = new List<CheckBox>();
+        foreach (var (text, value) in options)
+        {
+            var c = Theme.Chip(text); c.Checked = chips.Count == 0; chips.Add(c); host.Controls.Add(c);
+            c.Click += (_, _) => { foreach (var o in chips) o.Checked = o == c; set(value); Find(); };
+        }
+    }
 
     public SearchForm(DriveSet drives, string shortcut)
     {
@@ -29,7 +49,11 @@ internal sealed class SearchForm : Form
         _list.Columns.Add(TrayText.SearchName, 300); _list.Columns.Add(TrayText.SearchFolder, 460); _list.Columns.Add(TrayText.SearchSize, 90, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchDate, 140);
         _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(12, 0, 12, 0) };
         var boxPad = new Panel { Dock = DockStyle.Top, Height = 54, Padding = new Padding(12, 10, 12, 8), BackColor = Theme.Ink2 }; boxPad.Controls.Add(_box);
-        Controls.Add(_list); Controls.Add(_status); Controls.Add(boxPad); Controls.Add(Theme.Banner(Theme.Search, Theme.Gpu, TrayText.SearchTitle, TrayText.SearchSub));
+        var chips = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(12, 0, 12, 4), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
+        Group<bool?>(chips, [(TrayText.SearchAll, null), (TrayText.SearchFiles, false), (TrayText.SearchFolders, true)], v => _dirs = v);
+        chips.Controls.Add(new Panel { Width = 16, Height = 1, Margin = Padding.Empty });   // a gap between the two groups of chips
+        Group<HashSet<string>?>(chips, [(TrayText.SearchAnyKind, null), (TrayText.SearchDocs, Kinds[0]), (TrayText.SearchImages, Kinds[1]), (TrayText.SearchVideo, Kinds[2]), (TrayText.SearchAudio, Kinds[3]), (TrayText.SearchArchives, Kinds[4]), (TrayText.SearchPrograms, Kinds[5]), (TrayText.SearchCode, Kinds[6])], v => _exts = v);
+        Controls.Add(_list); Controls.Add(_status); Controls.Add(chips); Controls.Add(boxPad); Controls.Add(Theme.Banner(Theme.Search, Theme.Gpu, TrayText.SearchTitle, TrayText.SearchSub));
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
         menu.Items.Add(TrayText.SearchOpen, null, (_, _) => Open(false)); menu.Items.Add(TrayText.SearchOpenFolder, null, (_, _) => Open(true)); menu.Items.Add(TrayText.SearchCopyPath, null, (_, _) => CopyPath());
         _list.ContextMenuStrip = menu;
@@ -37,6 +61,8 @@ internal sealed class SearchForm : Form
         _box.TextChanged += (_, _) => Find();
         _list.RetrieveVirtualItem += (_, e) => e.Item = Row(e.ItemIndex);
         _list.DoubleClick += (_, _) => Open(false);
+        // the folder column takes what the others leave, so a wider window has no empty strip beside the list
+        _list.Resize += (_, _) => { int rest = _list.ClientSize.Width - _list.Columns[0].Width - _list.Columns[2].Width - _list.Columns[3].Width - SystemInformation.VerticalScrollBarWidth - 2; if (rest > 80 && rest != _list.Columns[1].Width) _list.Columns[1].Width = rest; };
         _drives.Changed += () => { try { BeginInvoke(() => { if (Visible) Find(); else ShowState(); }); } catch (InvalidOperationException) { } };
     }
 
@@ -44,7 +70,7 @@ internal sealed class SearchForm : Form
     public void Summon()
     {
         var screen = Screen.FromPoint(Cursor.Position).WorkingArea;
-        if (!Visible) { var size = new Size(Math.Max(MinimumSize.Width, screen.Width * 55 / 100), Math.Max(MinimumSize.Height, screen.Height * 60 / 100)); Bounds = new Rectangle(screen.X + (screen.Width - size.Width) / 2, screen.Y + (screen.Height - size.Height) / 3, size.Width, size.Height); }
+        if (!Visible) { var size = new Size(Math.Max(MinimumSize.Width, Math.Min(screen.Width * 55 / 100, LogicalToDeviceUnits(1100))), Math.Max(MinimumSize.Height, screen.Height * 60 / 100)); Bounds = new Rectangle(screen.X + (screen.Width - size.Width) / 2, screen.Y + (screen.Height - size.Height) / 3, size.Width, size.Height); }
         Show(); Front(); _box.Focus(); _box.SelectAll();
         Task.Run(() => { _drives.Refresh(); try { BeginInvoke(Find); } catch (InvalidOperationException) { } });
     }
@@ -54,22 +80,48 @@ internal sealed class SearchForm : Form
         _cts?.Cancel(); var cts = _cts = new CancellationTokenSource();
         var query = FileQuery.Parse(_box.Text);
         if (query is null) { ShowHits([], 0, 0); return; }
+        query.Dirs = _dirs; query.Extensions = _exts;
         Task.Run(() =>
         {
             var clock = Stopwatch.StartNew();
-            try { var (hits, total) = _drives.Search(query, Max, cts.Token); long ms = clock.ElapsedMilliseconds; BeginInvoke(() => { if (!cts.IsCancellationRequested) ShowHits(hits, total, ms); }); }
+            try { var (hits, total) = _drives.Search(query, Max, cts.Token); hits = Sorted(hits); long ms = clock.ElapsedMilliseconds; BeginInvoke(() => { if (!cts.IsCancellationRequested) ShowHits(hits, total, ms); }); }
             catch (OperationCanceledException) { }
             catch (InvalidOperationException) { }   // the window closed meanwhile
         });
     }
 
-    // a click on the name or folder header orders the matches found (the size and date are read only for the rows on screen, so they cannot order them)
+    // a click on a header orders the matches found (at most Max); the order stays for the next searches. The size and date are read from the disk
+    // for those matches only (a slow network drive would make this wait).
     private void SortBy(int col)
     {
-        if (col > 1) return;
         _sortUp = _sortCol == col ? !_sortUp : true; _sortCol = col;
-        var sorted = _hits.OrderBy(h => col == 0 ? h.Index.Name(h.Entry) : h.Index.PathOf(h.Entry), StringComparer.CurrentCultureIgnoreCase);
-        _hits = [.. _sortUp ? sorted : sorted.Reverse()]; _rows.Clear(); _list.Invalidate(); _list.Columns[0].Width = _list.Columns[0].Width;
+        _hits = Sorted(_hits); _rows.Clear(); _list.Invalidate(); _list.Columns[0].Width = _list.Columns[0].Width;
+    }
+
+    private List<(FileIndex Index, int Entry)> Sorted(List<(FileIndex Index, int Entry)> hits)
+    {
+        int col = _sortCol; bool up = _sortUp;
+        if (col < 0 || hits.Count < 2) return hits;
+        IEnumerable<(FileIndex Index, int Entry)> sorted;
+        if (col <= 1) sorted = hits.OrderBy(h => col == 0 ? h.Index.Name(h.Entry) : h.Index.PathOf(h.Entry), StringComparer.CurrentCultureIgnoreCase);
+        else
+        {
+            var stat = hits.ToDictionary(h => h, h => Stat(h.Index, h.Entry));
+            sorted = hits.OrderBy(h => col == 2 ? stat[h].Size : stat[h].Ticks);
+        }
+        return [.. up ? sorted : sorted.Reverse()];
+    }
+
+    // size (-1 for a folder or an unreadable one) and last write time of one match
+    private static (long Size, long Ticks) Stat(FileIndex x, int e)
+    {
+        try
+        {
+            string path = x.PathOf(e);
+            if (x.IsDir(e)) { var d = new DirectoryInfo(path); return (-1, d.Exists ? d.LastWriteTimeUtc.Ticks : 0); }
+            var f = new FileInfo(path); return f.Exists ? (f.Length, f.LastWriteTimeUtc.Ticks) : (-1, 0);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return (-1, 0); }
     }
 
     private void ShowHits(List<(FileIndex Index, int Entry)> hits, int total, long ms)

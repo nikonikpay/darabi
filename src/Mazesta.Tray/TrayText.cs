@@ -151,6 +151,7 @@ internal static class TrayText
     public const string SearchTitle = "مازستا — جستجوی فایل";
     public const string SearchHint = "نام فایل یا پوشه… (مثل report یا *.mp4)";
     public const string SearchName = "نام", SearchFolder = "پوشه", SearchSize = "اندازه", SearchDate = "تاریخ تغییر";
+    public const string SearchAll = "همه", SearchFiles = "فقط فایل‌ها", SearchFolders = "فقط پوشه‌ها", SearchAnyKind = "هر نوع", SearchDocs = "سند", SearchImages = "تصویر", SearchVideo = "ویدیو", SearchAudio = "صدا", SearchArchives = "فشرده", SearchPrograms = "برنامه", SearchCode = "کد";
     public const string SearchOpen = "باز کردن", SearchOpenFolder = "باز کردن پوشه‌ی آن", SearchCopyPath = "کپی مسیر";
     public static string SearchMenu(string? key) => key is null ? Search : $"{Search}  ({key})";
     public static string SearchReading(int ready, int all) => string.Create(CultureInfo.InvariantCulture, $"در حال خواندن درایوها: {ready} از {all}");

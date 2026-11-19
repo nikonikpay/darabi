@@ -33,25 +33,32 @@ internal static class Theme
     private sealed class BannerPanel : Panel
     {
         private readonly string _glyph, _title, _sub; private readonly Color _accent;
+        private static readonly Bitmap? Logo = LoadLogo();
         public BannerPanel(string glyph, Color accent, string title, string? sub)
         {
             _glyph = glyph; _accent = accent; _title = title; _sub = sub ?? ""; Dock = DockStyle.Top; Height = 70; DoubleBuffered = true;
+            ResizeRedraw = true;   // without it a drag of the window's edge left old copies of the title behind
         }
+        private static Bitmap? LoadLogo() { try { return Icon.ExtractAssociatedIcon(Application.ExecutablePath)?.ToBitmap(); } catch (Exception ex) when (ex is ArgumentException or IOException) { return null; } }
         protected override void OnPaint(PaintEventArgs e)
         {
-            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            using (var back = new LinearGradientBrush(ClientRectangle, Ink2, Color.FromArgb(0x33 + _accent.R / 8, 0x38 + _accent.G / 8, 0x40 + _accent.B / 8), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
-            using (var line = new SolidBrush(_accent)) g.FillRectangle(line, 0, Height - 3, Width, 3);
-            int d = Height - 26, x = Width - 18 - d, y = 11;
-            using (var disc = new SolidBrush(_accent)) g.FillEllipse(disc, x, y, d, d);
-            using (var gf = new Font("Segoe MDL2 Assets", d * 0.42f, FontStyle.Regular, GraphicsUnit.Pixel)) using (var dark = new SolidBrush(OnYellow))
+            if (Width < 8 || Height < 8) return;
+            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit; g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            using (var back = new LinearGradientBrush(ClientRectangle, Color.FromArgb(0xF4, 0x9B, 0x1E), Color.FromArgb(0xDF, 0x6A, 0x12), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
+            using (var line = new SolidBrush(Color.FromArgb(0xB4, 0x4F, 0x00))) g.FillRectangle(line, 0, Height - 3, Width, 3);
+            // right: the Mazesta logo on a dark disc; beside it the tool's own symbol
+            int d = Height - 24, x = Width - 16 - d, y = 10, d2 = d - 8, x2 = x - 10 - d2, y2 = y + 4;
+            using (var disc = new SolidBrush(Ink)) { g.FillEllipse(disc, x, y, d, d); g.FillEllipse(disc, x2, y2, d2, d2); }
+            if (Logo is not null) { int s = d * 7 / 10; g.DrawImage(Logo, x + (d - s) / 2, y + (d - s) / 2, s, s); }
+            using (var gf = new Font("Segoe MDL2 Assets", d2 * 0.46f, FontStyle.Regular, GraphicsUnit.Pixel)) using (var tint = new SolidBrush(_accent))
             {
-                var sz = g.MeasureString(_glyph, gf); g.DrawString(_glyph, gf, dark, x + (d - sz.Width) / 2 + 1, y + (d - sz.Height) / 2 + 1);
+                var sz = g.MeasureString(_glyph, gf); g.DrawString(_glyph, gf, tint, x2 + (d2 - sz.Width) / 2 + 1, y2 + (d2 - sz.Height) / 2 + 1);
             }
+            int room = x2 - 28; if (room < 20) return;
             using var rtl = new StringFormat(StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap) { Alignment = StringAlignment.Near, Trimming = StringTrimming.EllipsisCharacter };
             using var tf = new Font("Segoe UI Semibold", 15f, GraphicsUnit.Point); using var sf = new Font("Segoe UI", 9.5f, GraphicsUnit.Point);
-            using (var p = new SolidBrush(Paper)) g.DrawString(_title, tf, p, new RectangleF(16, 10, x - 28, 30), rtl);
-            using (var p2 = new SolidBrush(Paper2)) g.DrawString(_sub, sf, p2, new RectangleF(16, 40, x - 28, 24), rtl);
+            using (var p = new SolidBrush(OnYellow)) g.DrawString(_title, tf, p, new RectangleF(16, 10, room, 30), rtl);
+            using (var p2 = new SolidBrush(Color.FromArgb(0x4A, 0x27, 0x00))) g.DrawString(_sub, sf, p2, new RectangleF(16, 40, room, 24), rtl);
         }
     }
 
