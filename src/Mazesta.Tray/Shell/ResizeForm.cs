@@ -48,6 +48,7 @@ internal sealed class ResizeForm : Form
             else { row.SubItems[1].Text = r.Error == "format" ? TrayText.ResizeFormat : r.Error ?? ""; row.ForeColor = Theme.Fail; }
             _list.Invalidate();
         }
+        if (IsDisposed) return;
         _status.ForeColor = done == _paths.Count ? Theme.Pass : Theme.Fail; _status.Text = TrayText.ResizeDone(done, _paths.Count); _run.Enabled = true;
     }
 

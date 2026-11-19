@@ -13,6 +13,7 @@ internal sealed class SearchForm : Form
     private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2;
     private int _sortCol = -1; private bool _sortUp = true;
     private readonly DriveSet _drives; private readonly string _shortcut;
+    private readonly ImageList _icons = new() { ColorDepth = ColorDepth.Depth32Bit }; private readonly Dictionary<string, int> _iconOf = new(StringComparer.OrdinalIgnoreCase);
     private readonly TextBox _box; private readonly ListView _list; private readonly Label _status;
     private List<(FileIndex Index, int Entry)> _hits = []; private readonly Dictionary<int, ListViewItem> _rows = [];
     private CancellationTokenSource? _cts; private int _total; private long _ms;
@@ -20,9 +21,10 @@ internal sealed class SearchForm : Form
     public SearchForm(DriveSet drives, string shortcut)
     {
         _drives = drives; _shortcut = shortcut;
-        Theme.Window(this); Text = TrayText.SearchTitle; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; TopMost = true; MinimumSize = new Size(700, 420);
+        Theme.Window(this); Text = TrayText.SearchTitle; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; MinimumSize = new Size(700, 420);
         _box = new TextBox { Dock = DockStyle.Top, Font = new Font("Segoe UI", 15f), PlaceholderText = TrayText.SearchHint }; Theme.Field(_box); _box.BackColor = Theme.Ink3;
-        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, HideSelection = false, MultiSelect = false };
+        _icons.ImageSize = new Size(LogicalToDeviceUnits(16), LogicalToDeviceUnits(16));
+        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, HideSelection = false, MultiSelect = false, SmallImageList = _icons };
         Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), SortBy); Theme.DarkScroll(_list);
         _list.Columns.Add(TrayText.SearchName, 300); _list.Columns.Add(TrayText.SearchFolder, 460); _list.Columns.Add(TrayText.SearchSize, 90, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchDate, 140);
         _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(12, 0, 12, 0) };
@@ -35,7 +37,6 @@ internal sealed class SearchForm : Form
         _box.TextChanged += (_, _) => Find();
         _list.RetrieveVirtualItem += (_, e) => e.Item = Row(e.ItemIndex);
         _list.DoubleClick += (_, _) => Open(false);
-        Deactivate += (_, _) => Hide();
         _drives.Changed += () => { try { BeginInvoke(() => { if (Visible) Find(); else ShowState(); }); } catch (InvalidOperationException) { } };
     }
 
@@ -89,6 +90,7 @@ internal sealed class SearchForm : Form
     private ListViewItem Row(int i)
     {
         if (_rows.TryGetValue(i, out var cached)) return cached;
+        if (i < 0 || i >= _hits.Count) return new ListViewItem(["", "", "", ""]);   // a closing window asks for rows once more after the matches were let go
         var (x, e) = _hits[i]; string path = x.PathOf(e), name = x.Name(e), folder = Path.GetDirectoryName(path) ?? x.Root;
         string size = "", date = "";
         try
@@ -97,9 +99,28 @@ internal sealed class SearchForm : Form
             else { var f = new FileInfo(path); if (f.Exists) { size = Bytes(f.Length); date = f.LastWriteTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture); } }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { }
-        var item = new ListViewItem([name, folder, size, date]) { Tag = path, ForeColor = x.IsDir(e) ? Theme.Yellow : Text1 };
+        var item = new ListViewItem([name, folder, size, date]) { Tag = path, ForeColor = x.IsDir(e) ? Theme.Yellow : Text1, ImageIndex = IconOf(path, name, x.IsDir(e)) };
         if (_rows.Count > 2000) _rows.Clear();
         _rows[i] = item; return item;
+    }
+
+    // Windows' own small icon: a folder's, or the file kind's by its extension (Blender's for a .blend, Word's for a .docx), made once per kind.
+    // A program, shortcut or icon file has its own picture, so it is read from the file itself (once per file; only the rows on screen get here).
+    private int IconOf(string path, string name, bool dir)
+    {
+        string ext = dir ? "" : Path.GetExtension(name).ToLowerInvariant();
+        bool own = ext is ".exe" or ".lnk" or ".ico" or ".scr";
+        string key = dir ? @"\dir" : own ? path : ext.Length is > 1 and < 16 ? ext : @"\file";
+        if (_iconOf.TryGetValue(key, out int i)) return i;
+        var info = new ShFileInfo(); i = -1;
+        uint flags = 0x100 | 0x1 | (own ? 0u : 0x10u) /* ICON | SMALLICON | USEFILEATTRIBUTES (the kind, not the file) */;
+        if (SHGetFileInfo(own ? path : dir ? "folder" : "file" + ext, dir ? 0x10u : 0x80u, ref info, (uint)Marshal.SizeOf<ShFileInfo>(), flags) != 0 && info.Icon != 0)
+        {
+            using (var icon = Icon.FromHandle(info.Icon)) _icons.Images.Add(icon);
+            DestroyIcon(info.Icon); i = _icons.Images.Count - 1;
+        }
+        if (_iconOf.Count > 3000) { _iconOf.Clear(); _icons.Images.Clear(); _rows.Clear(); return -1; }   // many programs: start over rather than grow
+        _iconOf[key] = i; return i;
     }
 
     private static string Bytes(long b) => b < 1024 ? FormattableString.Invariant($"{b} B") : b < 1 << 20 ? FormattableString.Invariant($"{b / 1024.0:0.#} KB") : b < 1L << 30 ? FormattableString.Invariant($"{b / 1048576.0:0.#} MB") : FormattableString.Invariant($"{b / 1073741824.0:0.##} GB");
@@ -111,7 +132,7 @@ internal sealed class SearchForm : Form
     {
         if (Selected is not { } path) return;
         string arg = folder ? $"/select,\"{path}\"" : $"\"{path}\"";
-        try { Process.Start(new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), arg) { UseShellExecute = false })?.Dispose(); Hide(); }
+        try { Process.Start(new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), arg) { UseShellExecute = false })?.Dispose(); }
         catch (System.ComponentModel.Win32Exception) { }
     }
 
@@ -136,7 +157,7 @@ internal sealed class SearchForm : Form
     // turned off in the settings: the rows let go of the index, so its memory can be returned
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _cts?.Cancel(); _hits = []; _rows.Clear(); }
+        if (disposing) { _cts?.Cancel(); _hits = []; _rows.Clear(); _icons.Dispose(); }
         base.Dispose(disposing);
     }
 
@@ -150,6 +171,16 @@ internal sealed class SearchForm : Form
         try { SetForegroundWindow(Handle); Activate(); } finally { if (joined) AttachThreadInput(me, front, false); }
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct ShFileInfo
+    {
+        public nint Icon; public int Index; public uint Attributes;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string DisplayName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)] public string TypeName;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern nint SHGetFileInfo(string path, uint attributes, ref ShFileInfo info, uint size, uint flags);
+    [DllImport("user32.dll")] private static extern bool DestroyIcon(nint icon);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint window, out uint process);
     [DllImport("user32.dll")] private static extern bool AttachThreadInput(uint attach, uint to, bool on);

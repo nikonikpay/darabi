@@ -9,11 +9,12 @@ namespace Mazesta.Tray;
 /// </summary>
 internal static class Theme
 {
-    public static readonly Color Ink = Color.FromArgb(0x15, 0x17, 0x1A), Ink2 = Color.FromArgb(0x1C, 0x1F, 0x23), Ink3 = Color.FromArgb(0x25, 0x29, 0x30), Ink4 = Color.FromArgb(0x2F, 0x34, 0x3B),
-        Well = Color.FromArgb(0x0E, 0x10, 0x12), Paper = Color.FromArgb(0xEC, 0xEB, 0xE6), Paper2 = Color.FromArgb(0xA9, 0xAC, 0xB0), Paper3 = Color.FromArgb(0x73, 0x7A, 0x82), Rule = Color.FromArgb(0x2A, 0x2E, 0x34),
+    // a mid grey (not the app's near-black): the windows are small tools beside other programs, and the near-black ones read as heavy
+    public static readonly Color Ink = Color.FromArgb(0x2B, 0x2F, 0x36), Ink2 = Color.FromArgb(0x33, 0x38, 0x40), Ink3 = Color.FromArgb(0x3E, 0x44, 0x4D), Ink4 = Color.FromArgb(0x4B, 0x52, 0x5C),
+        Well = Color.FromArgb(0x23, 0x27, 0x2D), Paper = Color.FromArgb(0xF2, 0xF1, 0xEC), Paper2 = Color.FromArgb(0xC3, 0xC7, 0xCC), Paper3 = Color.FromArgb(0x93, 0x9A, 0xA3), Rule = Color.FromArgb(0x5A, 0x61, 0x6B),
         Yellow = Color.FromArgb(0xFD, 0xD4, 0x00), OnYellow = Color.FromArgb(0x0C, 0x0C, 0x0C), Pass = Color.FromArgb(0x2E, 0xC0, 0x8E), Fail = Color.FromArgb(0xEE, 0x4B, 0x3D), Warn = Color.FromArgb(0xF2, 0xA1, 0x22),
         Cpu = Color.FromArgb(0x5B, 0xA8, 0xFF), Gpu = Color.FromArgb(0xB3, 0x8B, 0xFF), Ram = Color.FromArgb(0x35, 0xD0, 0xE0), Storage = Color.FromArgb(0xFF, 0x9A, 0x4D), Net = Color.FromArgb(0xFF, 0x78, 0xB9),
-        Select = Color.FromArgb(0x3A, 0x34, 0x10);
+        Select = Color.FromArgb(0x57, 0x4F, 0x1C), Stripe = Color.FromArgb(0x29, 0x2D, 0x34);
 
     // Segoe MDL2 Assets glyphs (on every Windows 10 and 11)
     public const string Lock = "", Edit = "", Picture = "", Drive = "", Search = "", Volume = "";
@@ -39,7 +40,7 @@ internal static class Theme
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            using (var back = new LinearGradientBrush(ClientRectangle, Ink2, Color.FromArgb(0x1C + _accent.R / 8, 0x1F + _accent.G / 8, 0x23 + _accent.B / 8), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
+            using (var back = new LinearGradientBrush(ClientRectangle, Ink2, Color.FromArgb(0x33 + _accent.R / 8, 0x38 + _accent.G / 8, 0x40 + _accent.B / 8), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
             using (var line = new SolidBrush(_accent)) g.FillRectangle(line, 0, Height - 3, Width, 3);
             int d = Height - 26, x = Width - 18 - d, y = 11;
             using (var disc = new SolidBrush(_accent)) g.FillEllipse(disc, x, y, d, d);
@@ -63,10 +64,14 @@ internal static class Theme
         return b;
     }
 
+    private static readonly Font ChipFont = new("Segoe UI", 10f);
+
     /// <summary>An option as a chip: dim when off, yellow when on (a plain check box is a white square on the dark window).</summary>
     public static CheckBox Chip(string text)
     {
-        var c = new CheckBox { Text = text, Appearance = Appearance.Button, FlatStyle = FlatStyle.Flat, AutoSize = true, MinimumSize = new Size(0, 30), Cursor = Cursors.Hand, Margin = new Padding(0, 3, 0, 3), Padding = new Padding(8, 0, 8, 0), BackColor = Ink3, ForeColor = Paper2 };
+        // sized by hand: the automatic size of a button-looking check box cut the end off a long right-to-left text
+        var c = new CheckBox { Text = text, Appearance = Appearance.Button, FlatStyle = FlatStyle.Flat, AutoSize = false, Font = ChipFont, Height = 30, Cursor = Cursors.Hand, Margin = new Padding(0, 3, 6, 3), BackColor = Ink3, ForeColor = Paper2 };
+        c.Width = TextRenderer.MeasureText(text, ChipFont, new Size(int.MaxValue, 30), TextFormatFlags.NoPrefix).Width + 30;
         c.FlatAppearance.BorderColor = Rule; c.FlatAppearance.CheckedBackColor = Yellow; c.FlatAppearance.MouseOverBackColor = Ink4;
         void Tint() => c.ForeColor = !c.Enabled ? Paper3 : c.Checked ? OnYellow : Paper2;
         c.CheckedChanged += (_, _) => Tint(); c.EnabledChanged += (_, _) => Tint();
@@ -75,16 +80,21 @@ internal static class Theme
 
     public static void Field(TextBox t) { t.BorderStyle = BorderStyle.FixedSingle; t.BackColor = Ink3; t.ForeColor = Paper; }
 
+    // in a right-to-left drop-down Persian text reads from the right edge; Latin text ("1280 px") sits at the same edge but keeps its own order
+    private static TextFormatFlags Side(ComboBox c, string text) =>
+        c.RightToLeft != RightToLeft.Yes ? TextFormatFlags.Left : text.Any(ch => ch >= '؀' && ch <= 'ۿ') ? TextFormatFlags.Right | TextFormatFlags.RightToLeft : TextFormatFlags.Right;
+
     /// <summary>A drop-down drawn by hand: the system's draws the chosen row in blue with dark text.</summary>
     public static void Combo(ComboBox c)
     {
         c.DropDownStyle = ComboBoxStyle.DropDownList; c.FlatStyle = FlatStyle.Flat; c.BackColor = Ink3; c.ForeColor = Paper; c.DrawMode = DrawMode.OwnerDrawFixed; c.ItemHeight = 26;
+        _ = new ComboSkin(c);
         c.DrawItem += (_, e) =>
         {
             if (e.Index < 0) return;
             bool hot = (e.State & DrawItemState.Selected) != 0 && (e.State & DrawItemState.ComboBoxEdit) == 0;
             using (var b = new SolidBrush(hot ? Select : Ink3)) e.Graphics.FillRectangle(b, e.Bounds);
-            TextRenderer.DrawText(e.Graphics, c.GetItemText(c.Items[e.Index]), c.Font, Rectangle.Inflate(e.Bounds, -6, 0), hot ? Yellow : Paper, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            TextRenderer.DrawText(e.Graphics, c.GetItemText(c.Items[e.Index]), c.Font, Rectangle.Inflate(e.Bounds, -6, 0), hot ? Yellow : Paper, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | Side(c, c.GetItemText(c.Items[e.Index]) ?? ""));
         };
     }
 
@@ -114,7 +124,7 @@ internal static class Theme
         lv.DrawSubItem += (_, e) =>
         {
             var g = e.Graphics; var item = e.Item!; bool chosen = item.Selected;
-            Color back = chosen ? Select : e.ItemIndex % 2 == 0 ? Well : Color.FromArgb(0x13, 0x15, 0x18);
+            Color back = chosen ? Select : e.ItemIndex % 2 == 0 ? Well : Stripe;
             using (var b = new SolidBrush(back)) g.FillRectangle(b, e.Bounds);
             var r = e.Bounds; r.Inflate(-8, 0);
             if (e.ColumnIndex == 0)
@@ -127,6 +137,50 @@ internal static class Theme
             Color fore = item.ForeColor == SystemColors.WindowText || item.ForeColor.IsEmpty ? Paper : item.ForeColor;
             TextRenderer.DrawText(g, e.SubItem!.Text, lv.Font, r, chosen && fore == Paper ? Color.White : fore, align | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
         };
+    }
+
+    /// <summary>Paints over the system's flat drop-down after it has drawn itself: a border all round (it had none at the arrow side) and an arrow button in the theme's greys.</summary>
+    private sealed class ComboSkin : NativeWindow
+    {
+        private readonly ComboBox _c;
+        public ComboSkin(ComboBox c)
+        {
+            _c = c; c.HandleCreated += (_, _) => AssignHandle(c.Handle); c.HandleDestroyed += (_, _) => ReleaseHandle();
+            if (c.IsHandleCreated) AssignHandle(c.Handle);
+            c.GotFocus += (_, _) => c.Invalidate(); c.LostFocus += (_, _) => c.Invalidate(); c.DropDown += (_, _) => c.Invalidate(); c.DropDownClosed += (_, _) => c.Invalidate();
+        }
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 0xF /* WM_PAINT */ && _c.DropDownStyle == ComboBoxStyle.DropDownList) { Draw(); m.Result = 0; return; }
+            base.WndProc(ref m);
+        }
+        // the whole control drawn here: the system's flat one has a white arrow button and no border at that side
+        private void Draw()
+        {
+            nint hdc = BeginPaint(_c.Handle, out var ps);
+            try
+            {
+                var info = new ComboInfo { Size = Marshal.SizeOf<ComboInfo>() }; GetComboBoxInfo(_c.Handle, ref info);
+                using var g = Graphics.FromHdc(hdc); g.SmoothingMode = SmoothingMode.AntiAlias; var all = new Rectangle(0, 0, _c.Width, _c.Height);
+                using (var fill = new SolidBrush(_c.Enabled ? Ink3 : Ink2)) g.FillRectangle(fill, all);
+                var b = Rectangle.FromLTRB(info.Button.Left, info.Button.Top, info.Button.Right, info.Button.Bottom);
+                if (b.Width < 4) b = _c.RightToLeft == RightToLeft.Yes ? new Rectangle(0, 0, 24, _c.Height) : new Rectangle(_c.Width - 24, 0, 24, _c.Height);
+                using (var fill = new SolidBrush(Ink4)) g.FillRectangle(fill, b);
+                int cx = b.X + b.Width / 2, cy = b.Y + b.Height / 2;
+                using (var arrow = new SolidBrush(_c.Enabled ? Paper : Paper3)) g.FillPolygon(arrow, [new Point(cx - 4, cy - 2), new Point(cx + 4, cy - 2), new Point(cx, cy + 3)]);
+                bool rtl = _c.RightToLeft == RightToLeft.Yes; var text = rtl ? Rectangle.FromLTRB(b.Right + 2, 0, _c.Width - 6, _c.Height) : Rectangle.FromLTRB(6, 0, b.Left - 2, _c.Height);
+                TextRenderer.DrawText(g, _c.Text, _c.Font, text, _c.Enabled ? Paper : Paper3, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | Side(_c, _c.Text));
+                using var edge = new Pen(_c.Focused || _c.DroppedDown ? Yellow : Rule);
+                g.DrawRectangle(edge, 0, 0, _c.Width - 1, _c.Height - 1);
+            }
+            finally { EndPaint(_c.Handle, ref ps); }
+        }
+        [StructLayout(LayoutKind.Sequential)] private struct Ps { public nint Dc; public bool Erase; public Rc Paint; public bool Restore, Update; [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)] public byte[] Reserved; }
+        [DllImport("user32.dll")] private static extern nint BeginPaint(nint window, out Ps ps);
+        [DllImport("user32.dll")] private static extern bool EndPaint(nint window, ref Ps ps);
+        [StructLayout(LayoutKind.Sequential)] private struct Rc { public int Left, Top, Right, Bottom; }
+        [StructLayout(LayoutKind.Sequential)] private struct ComboInfo { public int Size; public Rc Item, Button; public int State; public nint Combo, Edit, List; }
+        [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(nint window, ref ComboInfo info);
     }
 
     /// <summary>The scroll bars dark too (Windows' own dark theme for them).</summary>

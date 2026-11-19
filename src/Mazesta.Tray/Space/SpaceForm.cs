@@ -215,7 +215,8 @@ internal sealed class SpaceForm : Form
     private ListViewItem Row(int row)
     {
         if (_cache.TryGetValue(row, out var cached)) return cached;
-        var t = _tree!; int e = EntryAt(row); bool dir = t.IsDir(e);
+        if (_tree is not { } t || row < 0 || EntryAt(row) < 0) return new ListViewItem(["", "", "", "", ""]);   // a closing window asks for rows once more after the tree was let go
+        int e = EntryAt(row); bool dir = t.IsDir(e);
         string name = t.Name(e);
         if (!_flat) name = (dir ? (_open.Contains(e) ? "▾ " : "▸ ") : "   ") + name;
         string size = t.Unread(e) ? TrayText.SpaceUnread : (t.PartUnread(e) ? "≥ " : "") + Bytes(t.Size(e));

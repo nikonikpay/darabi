@@ -145,7 +145,7 @@ internal sealed class RenameForm : Form
         _apply.Enabled = false;
         BatchRename.Outcome r;
         try { r = await Task.Run(() => BatchRename.Apply(items, _log)); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Say(_result, e.Message, Bad); Preview(); return; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { if (!IsDisposed) { Say(_result, e.Message, Bad); Preview(); } return; }
         if (IsDisposed) return;
         var failed = r.Failed.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
         // the files keep their new names for the next round of changes
@@ -159,7 +159,7 @@ internal sealed class RenameForm : Form
         var steps = BatchRename.Read(_log); _undo.Enabled = false;
         BatchRename.Outcome r;
         try { r = await Task.Run(() => BatchRename.Undo(_log)); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Say(_result, e.Message, Bad); RefreshUndo(); return; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { if (!IsDisposed) { Say(_result, e.Message, Bad); RefreshUndo(); } return; }
         if (IsDisposed) return;
         var back = steps.ToDictionary(s => s.To, s => s.From, StringComparer.OrdinalIgnoreCase);
         var failed = r.Failed.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
