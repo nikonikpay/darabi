@@ -10,11 +10,11 @@ namespace Mazesta.Tray.Shell;
 internal sealed class ShellInbox : IDisposable
 {
     private readonly FileSystemWatcher? _watch; private readonly System.Windows.Forms.Timer _quiet = new() { Interval = 1000 };
-    private readonly Control _ui = new(); private readonly string _request; private readonly Action _wakeApp;
+    private readonly Control _ui = new(); private readonly string _request; private readonly Action _wakeApp; private readonly Action<string, List<string>> _openTool;
 
-    public ShellInbox(string requestFile, Action wakeApp)
+    public ShellInbox(string requestFile, Action wakeApp, Action<string, List<string>> openTool)
     {
-        _request = requestFile; _wakeApp = wakeApp; _ui.CreateControl();
+        _request = requestFile; _wakeApp = wakeApp; _openTool = openTool; _ui.CreateControl();
         _quiet.Tick += (_, _) => { _quiet.Stop(); Collect(); };
         try
         {
@@ -52,6 +52,9 @@ internal sealed class ShellInbox : IDisposable
             }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; }
+        // the tools with a window of the tray's own open it here, with no app and no UAC prompt; only the rest go to the app
+        foreach (var tool in new[] { ShellFiles.Lock, ShellFiles.Rename })
+            if (byTool.Remove(tool, out var own)) _openTool(tool, [.. own.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.CurrentCultureIgnoreCase)]);
         if (byTool.Count == 0) return;
         var all = Read();
         all.AddRange(byTool.Select(x => new ShellFiles.Request(x.Key, [.. x.Value.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.CurrentCultureIgnoreCase)])));

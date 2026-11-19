@@ -54,6 +54,7 @@ public static class FileLocks
         {
             using var p = Process.GetProcessById(holder.Pid);
             if (p.StartTime.ToFileTimeUtc() != holder.StartTime) return "gone";
+            if (IsProcessCritical(p.Handle, out bool critical) && critical) return "protected";   // ending one of these stops Windows
             p.Kill(); return p.WaitForExit(5000) ? null : "timeout";
         }
         catch (ArgumentException) { return "gone"; }
@@ -72,6 +73,7 @@ public static class FileLocks
     }
 
     private const int ErrorMoreData = 234;
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsProcessCritical(nint process, [MarshalAs(UnmanagedType.Bool)] out bool critical);
     [StructLayout(LayoutKind.Sequential)] private struct RmUniqueProcess { public int ProcessId; public System.Runtime.InteropServices.ComTypes.FILETIME StartTime; }
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct RmProcessInfo

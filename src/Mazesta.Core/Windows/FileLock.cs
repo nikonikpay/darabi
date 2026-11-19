@@ -11,8 +11,14 @@ public sealed record FileLockHolder(int Pid, long StartTime, string Name, string
         1 or 2 => FileLockKind.Window, 3 => FileLockKind.Service, 4 => FileLockKind.Explorer, 5 => FileLockKind.Console, 1000 => FileLockKind.Critical, _ => FileLockKind.Other,
     };
 
-    /// <summary>Services and Windows' critical processes are never closed from here: ending one can stop Windows or lose its data.</summary>
-    public bool CanClose => Kind is not (FileLockKind.Service or FileLockKind.Critical) && Pid > 4;
+    private static readonly HashSet<string> SystemNames = new(StringComparer.OrdinalIgnoreCase) { "System", "Registry", "smss", "csrss", "wininit", "winlogon", "services", "lsass", "dwm", "fontdrvhost", "svchost" };
+
+    /// <summary>
+    /// Services and Windows' own processes are never closed from here: ending one can stop Windows or lose its data. Restart Manager's "critical"
+    /// label is not used for this: it also marks an ordinary elevated program it cannot restart, such as the owner's own app.
+    /// <c>FileLocks.Close</c> adds the kernel's own check (a process marked critical) before it ends anything.
+    /// </summary>
+    public bool CanClose => Kind is not FileLockKind.Service && Pid > 4 && !SystemNames.Contains(System.IO.Path.GetFileNameWithoutExtension(Path ?? Name));
 }
 
 /// <summary>The answer to "who holds these files": <see cref="Error"/> set means Windows could not tell, which is not "nobody".</summary>
