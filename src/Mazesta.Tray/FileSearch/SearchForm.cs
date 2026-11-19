@@ -28,12 +28,12 @@ internal sealed class SearchForm : Form
     ];
 
     // chips that act as one choice: clicking one turns the others off (the one on stays on), and the search runs again
-    private void Group<T>(FlowLayoutPanel host, (string Text, T Value)[] options, Action<T> set)
+    private void Group<T>(FlowLayoutPanel host, (string Text, T Value, string Glyph)[] options, Action<T> set)
     {
         var chips = new List<CheckBox>();
-        foreach (var (text, value) in options)
+        foreach (var (text, value, glyph) in options)
         {
-            var c = Theme.Chip(text); c.Checked = chips.Count == 0; chips.Add(c); host.Controls.Add(c);
+            var c = Theme.Chip(text, glyph); c.Checked = chips.Count == 0; chips.Add(c); host.Controls.Add(c);
             c.Click += (_, _) => { foreach (var o in chips) o.Checked = o == c; set(value); Find(); };
         }
     }
@@ -42,18 +42,25 @@ internal sealed class SearchForm : Form
     {
         _drives = drives; _shortcut = shortcut;
         Theme.Window(this); Text = TrayText.SearchTitle; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; MinimumSize = new Size(700, 420);
-        _box = new TextBox { Dock = DockStyle.Top, Font = Theme.Reg(15f), PlaceholderText = TrayText.SearchHint }; Theme.Field(_box); _box.BackColor = Theme.Ink3;
+        _box = new TextBox { Dock = DockStyle.Fill, Font = Theme.Reg(15f), PlaceholderText = TrayText.SearchHint, BorderStyle = BorderStyle.None, BackColor = Theme.Ink3, ForeColor = Theme.Paper };
         _icons.ImageSize = new Size(LogicalToDeviceUnits(16), LogicalToDeviceUnits(16));
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, HideSelection = false, MultiSelect = false, SmallImageList = _icons };
-        Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), SortBy); Theme.DarkScroll(_list);
-        _list.Columns.Add(TrayText.SearchName, 300); _list.Columns.Add(TrayText.SearchFolder, 460); _list.Columns.Add(TrayText.SearchSize, 90, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchDate, 140);
+        Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), SortBy, flex: 1); Theme.DarkScroll(_list);
+        _list.Columns.Add(TrayText.SearchName, 300); _list.Columns.Add(TrayText.SearchFolder, 460); _list.Columns.Add(TrayText.SearchSize, 100, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchDate, 165);
         _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(12, 0, 12, 0) };
-        var boxPad = new Panel { Dock = DockStyle.Top, Height = 54, Padding = new Padding(12, 10, 12, 8), BackColor = Theme.Ink2 }; boxPad.Controls.Add(_box);
-        var chips = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(12, 0, 12, 4), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
-        Group<bool?>(chips, [(TrayText.SearchAll, null), (TrayText.SearchFiles, false), (TrayText.SearchFolders, true)], v => _dirs = v);
+        var boxPad = new Panel { Dock = DockStyle.Top, Height = 62, Padding = new Padding(12, 10, 12, 6), BackColor = Theme.Ink };
+        var field = new Theme.RoundPanel { Dock = DockStyle.Fill, Padding = new Padding(14, 9, 0, 0), Radius = 12 }; field.Active = () => _box.Focused; _box.GotFocus += (_, _) => field.Invalidate(); _box.LostFocus += (_, _) => field.Invalidate();
+        var lens = new Label { Dock = DockStyle.Right, Width = 44, Text = Theme.Search, Font = new Font("Segoe MDL2 Assets", 13f), ForeColor = Theme.Paper3, BackColor = Theme.Ink3, TextAlign = ContentAlignment.MiddleCenter };
+        field.Controls.Add(_box); field.Controls.Add(lens); boxPad.Controls.Add(field);
+        // the list sits in a frame with round corners (the frame clips it to them)
+        var frame = new Theme.RoundPanel { Dock = DockStyle.Fill, Padding = new Padding(2), Fill = Theme.Well, Radius = 12 }; frame.Controls.Add(_list);
+        frame.SizeChanged += (_, _) => { if (frame.Width < 4 || frame.Height < 4) return; using var rr = Theme.RoundRect(new Rectangle(0, 0, frame.Width, frame.Height), 12); frame.Region?.Dispose(); frame.Region = new Region(rr); };
+        var listHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 2, 12, 8), BackColor = Theme.Ink }; listHost.Controls.Add(frame);
+        var chips = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(12, 0, 12, 4), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink };
+        Group<bool?>(chips, [(TrayText.SearchAll, null, ""), (TrayText.SearchFiles, false, ""), (TrayText.SearchFolders, true, "\uF12B")], v => _dirs = v);
         chips.Controls.Add(new Panel { Width = 16, Height = 1, Margin = Padding.Empty });   // a gap between the two groups of chips
-        Group<HashSet<string>?>(chips, [(TrayText.SearchAnyKind, null), (TrayText.SearchDocs, Kinds[0]), (TrayText.SearchImages, Kinds[1]), (TrayText.SearchVideo, Kinds[2]), (TrayText.SearchAudio, Kinds[3]), (TrayText.SearchArchives, Kinds[4]), (TrayText.SearchPrograms, Kinds[5]), (TrayText.SearchCode, Kinds[6])], v => _exts = v);
-        Controls.Add(_list); Controls.Add(_status); Controls.Add(chips); Controls.Add(boxPad); Controls.Add(Theme.Banner(Theme.Search, Theme.Gpu, TrayText.SearchTitle, TrayText.SearchSub));
+        Group<HashSet<string>?>(chips, [(TrayText.SearchAnyKind, null, ""), (TrayText.SearchDocs, Kinds[0], ""), (TrayText.SearchImages, Kinds[1], ""), (TrayText.SearchVideo, Kinds[2], ""), (TrayText.SearchAudio, Kinds[3], ""), (TrayText.SearchArchives, Kinds[4], ""), (TrayText.SearchPrograms, Kinds[5], ""), (TrayText.SearchCode, Kinds[6], "")], v => _exts = v);
+        Controls.Add(listHost); Controls.Add(_status); Controls.Add(chips); Controls.Add(boxPad); Controls.Add(Theme.Banner(Theme.Search, Theme.Gpu, TrayText.SearchTitle, TrayText.SearchSub));
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
         menu.Items.Add(TrayText.SearchOpen, null, (_, _) => Open(false)); menu.Items.Add(TrayText.SearchOpenFolder, null, (_, _) => Open(true)); menu.Items.Add(TrayText.SearchCopyPath, null, (_, _) => CopyPath());
         _list.ContextMenuStrip = menu;
@@ -61,8 +68,6 @@ internal sealed class SearchForm : Form
         _box.TextChanged += (_, _) => Find();
         _list.RetrieveVirtualItem += (_, e) => e.Item = Row(e.ItemIndex);
         _list.DoubleClick += (_, _) => Open(false);
-        // the folder column takes what the others leave, so a wider window has no empty strip beside the list
-        _list.Resize += (_, _) => { int rest = _list.ClientSize.Width - _list.Columns[0].Width - _list.Columns[2].Width - _list.Columns[3].Width - SystemInformation.VerticalScrollBarWidth - 2; if (rest > 80 && rest != _list.Columns[1].Width) _list.Columns[1].Width = rest; };
         _drives.Changed += () => { try { BeginInvoke(() => { if (Visible) Find(); else ShowState(); }); } catch (InvalidOperationException) { } };
     }
 

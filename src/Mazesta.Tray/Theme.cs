@@ -11,23 +11,32 @@ internal static class Theme
 {
     // The app's own typeface (Vazirmatn, which the page loads as a web font): the setup installs it for Windows, and when it is not installed the copy
     // beside the exe is loaded for this process alone, so GDI and GDI+ both find it. Without either, Segoe UI.
-    public static readonly string Face = LoadFace();
-    private static string LoadFace()
+    // GDI+ finds a family by name only among the installed fonts, so a font loaded for this process alone is held in a collection and fonts are made from its
+    // families (the semi-bold is the variable font's own "SemiBold" instance). The same file is also added to GDI (FR_PRIVATE), because the controls draw their
+    // text with GDI (TextRenderer, the list views) and look the face up by name there.
+    private static readonly System.Drawing.Text.PrivateFontCollection? Own = LoadOwn();
+    public static readonly string Face = Own is null ? "Segoe UI" : "Vazirmatn";
+    private static System.Drawing.Text.PrivateFontCollection? LoadOwn()
     {
         try
         {
-            if (FontFamily.Families.Any(f => f.Name == "Vazirmatn")) return "Vazirmatn";
             string file = Path.Combine(AppContext.BaseDirectory, "wwwroot", "fonts", "Vazirmatn-Variable.ttf");
-            if (File.Exists(file) && AddFontResourceEx(file, 0x10 /* FR_PRIVATE */, 0) > 0) return "Vazirmatn";
+            if (!File.Exists(file) || AddFontResourceEx(file, 0x10 /* FR_PRIVATE */, 0) == 0) return null;
+            var c = new System.Drawing.Text.PrivateFontCollection(); c.AddFontFile(file); return c.Families.Any(f => f.Name == "Vazirmatn") ? c : null;
         }
-        catch (Exception e) when (e is IOException or ArgumentException or UnauthorizedAccessException) { }
-        return "Segoe UI";
+        catch (Exception e) when (e is IOException or ArgumentException or UnauthorizedAccessException) { return null; }
     }
     [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, nint reserved);
-    public static Font Reg(float size, FontStyle style = FontStyle.Regular) => new(Face, size, style);
-    public static Font Reg(float size, GraphicsUnit unit) => new(Face, size, FontStyle.Regular, unit);
-    public static Font Semi(float size) => new(Face, size, FontStyle.Bold);
-    public static Font Semi(float size, GraphicsUnit unit) => new(Face, size, FontStyle.Bold, unit);
+    private static Font Make(float size, bool semi, GraphicsUnit unit)
+    {
+        if (Own is null) return new Font(Face, size, semi ? FontStyle.Bold : FontStyle.Regular, unit);
+        var family = Own.Families.FirstOrDefault(f => f.Name == (semi ? "Vazirmatn SemiBold" : "Vazirmatn")) ?? Own.Families[0];
+        return new Font(family, size, FontStyle.Regular, unit);
+    }
+    public static Font Reg(float size, FontStyle style = FontStyle.Regular) => Make(size, (style & FontStyle.Bold) != 0, GraphicsUnit.Point);
+    public static Font Reg(float size, GraphicsUnit unit) => Make(size, false, unit);
+    public static Font Semi(float size) => Make(size, true, GraphicsUnit.Point);
+    public static Font Semi(float size, GraphicsUnit unit) => Make(size, true, unit);
 
     // a mid grey (not the app's near-black): the windows are small tools beside other programs, and the near-black ones read as heavy
     public static readonly Color Ink = Color.FromArgb(0x2B, 0x2F, 0x36), Ink2 = Color.FromArgb(0x33, 0x38, 0x40), Ink3 = Color.FromArgb(0x3E, 0x44, 0x4D), Ink4 = Color.FromArgb(0x4B, 0x52, 0x5C),
@@ -59,7 +68,7 @@ internal static class Theme
             _glyph = glyph; _accent = accent; _title = title; _sub = sub ?? ""; Dock = DockStyle.Top; Height = 70; DoubleBuffered = true;
             ResizeRedraw = true;   // without it a drag of the window's edge left old copies of the title behind
         }
-        private static Bitmap? LoadLogo() { try { return Icon.ExtractAssociatedIcon(Application.ExecutablePath)?.ToBitmap(); } catch (Exception ex) when (ex is ArgumentException or IOException) { return null; } }
+        private static Bitmap? LoadLogo() { try { return Icon.ExtractIcon(Application.ExecutablePath, 0, 128)?.ToBitmap() ?? Icon.ExtractAssociatedIcon(Application.ExecutablePath)?.ToBitmap(); } catch (Exception ex) when (ex is ArgumentException or IOException) { return null; } }
         protected override void OnPaint(PaintEventArgs e)
         {
             if (Width < 8 || Height < 8) return;
@@ -68,8 +77,8 @@ internal static class Theme
             using (var line = new SolidBrush(Color.FromArgb(0xB8, 0x92, 0x00))) g.FillRectangle(line, 0, Height - 3, Width, 3);
             // right: the Mazesta logo on a dark disc; beside it the tool's own symbol
             int d = Height - 24, x = Width - 16 - d, y = 10, d2 = d - 8, x2 = x - 10 - d2, y2 = y + 4;
-            using (var disc = new SolidBrush(Ink)) { g.FillEllipse(disc, x, y, d, d); g.FillEllipse(disc, x2, y2, d2, d2); }
-            if (Logo is not null) { int s = d * 7 / 10; g.DrawImage(Logo, x + (d - s) / 2, y + (d - s) / 2, s, s); }
+            using (var disc = new SolidBrush(Ink)) g.FillEllipse(disc, x2, y2, d2, d2);
+            if (Logo is not null) g.DrawImage(Logo, x, y, d, d);   // the logo as it is: a dark ring round it read as a grey border
             using (var gf = new Font("Segoe MDL2 Assets", d2 * 0.46f, FontStyle.Regular, GraphicsUnit.Pixel)) using (var tint = new SolidBrush(_accent))
             {
                 var sz = g.MeasureString(_glyph, gf); g.DrawString(_glyph, gf, tint, x2 + (d2 - sz.Width) / 2 + 1, y2 + (d2 - sz.Height) / 2 + 1);
@@ -82,27 +91,80 @@ internal static class Theme
         }
     }
 
-    public static Button Button(string text, bool primary = false)
+    public static Button Button(string text, bool primary = false) => new RoundButton(text, primary);
+
+    /// <summary>A button with round corners, drawn here (the flat system button is square and its text sits wherever the system puts it).</summary>
+    private sealed class RoundButton : Button
     {
-        var b = new Button { Text = text, AutoSize = true, MinimumSize = new Size(0, 34), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Margin = new Padding(4), Padding = new Padding(10, 0, 10, 0),
-            BackColor = primary ? Yellow : Ink4, ForeColor = primary ? OnYellow : Paper, Font = Theme.Semi(10f) };
-        b.FlatAppearance.BorderSize = 0; b.FlatAppearance.MouseOverBackColor = primary ? Color.FromArgb(0xFF, 0xE2, 0x4A) : Color.FromArgb(0x3C, 0x42, 0x4B);
-        b.EnabledChanged += (_, _) => { b.BackColor = b.Enabled ? (primary ? Yellow : Ink4) : Ink3; b.ForeColor = b.Enabled ? (primary ? OnYellow : Paper) : Paper3; };
-        return b;
+        private readonly bool _primary; private bool _hot;
+        public RoundButton(string text, bool primary)
+        {
+            _primary = primary; Text = text; AutoSize = true; MinimumSize = new Size(0, 36); Cursor = Cursors.Hand; Margin = new Padding(4); Font = Theme.Semi(10f);
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+        }
+        public override Size GetPreferredSize(Size proposed) => new(TextRenderer.MeasureText(Text, Font, new Size(int.MaxValue, 40), TextFormatFlags.NoPrefix).Width + 34, 36);
+        protected override void OnMouseEnter(EventArgs e) { _hot = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { _hot = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
+            Color fill = !Enabled ? Ink3 : _primary ? (_hot ? Color.FromArgb(0xFF, 0xE2, 0x4A) : Yellow) : (_hot ? Color.FromArgb(0x58, 0x60, 0x6B) : Ink4);
+            using (var path = RoundRect(new Rectangle(0, 0, Width - 1, Height - 1), 9)) { using var b = new SolidBrush(fill); g.FillPath(b, path); if (Focused && ShowFocusCues) { using var pen = new Pen(Paper3); g.DrawPath(pen, path); } }
+            TextRenderer.DrawText(g, Text, Font, ClientRectangle, !Enabled ? Paper3 : _primary ? OnYellow : Paper, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+        }
+    }
+
+    public static GraphicsPath RoundRect(Rectangle r, int radius)
+    {
+        var p = new GraphicsPath(); int d = radius * 2;
+        p.AddArc(r.X, r.Y, d, d, 180, 90); p.AddArc(r.Right - d, r.Y, d, d, 270, 90); p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90); p.AddArc(r.X, r.Bottom - d, d, d, 90, 90); p.CloseFigure(); return p;
+    }
+
+    /// <summary>A panel with round corners (and a border that turns yellow while <see cref="Active"/> says so): the frame of a text box or a list.</summary>
+    public sealed class RoundPanel : Panel
+    {
+        public Color Fill = Ink3, Edge = Rule; public int Radius = 10; public Func<bool>? Active;
+        public RoundPanel() { DoubleBuffered = true; ResizeRedraw = true; }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            if (Width < 4 || Height < 4) return;
+            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
+            using var path = RoundRect(new Rectangle(0, 0, Width - 1, Height - 1), Radius);
+            using (var b = new SolidBrush(Fill)) g.FillPath(b, path);
+            bool on = Active?.Invoke() == true; using var pen = new Pen(on ? Yellow : Edge, on ? 2 : 1); g.DrawPath(pen, path);
+        }
     }
 
     private static readonly Font ChipFont = Theme.Reg(10f);
 
-    /// <summary>An option as a chip: dim when off, yellow when on (a plain check box is a white square on the dark window).</summary>
-    public static CheckBox Chip(string text)
+    /// <summary>An option as a chip with an icon: dim when off, yellow when on (a plain check box is a white square on the dark window).</summary>
+    public static CheckBox Chip(string text, string glyph = "") => new ChipBox(text, glyph);
+
+    private sealed class ChipBox : CheckBox
     {
-        // sized by hand: the automatic size of a button-looking check box cut the end off a long right-to-left text
-        var c = new CheckBox { Text = text, Appearance = Appearance.Button, FlatStyle = FlatStyle.Flat, AutoSize = false, Font = ChipFont, Height = 30, Cursor = Cursors.Hand, Margin = new Padding(0, 3, 6, 3), BackColor = Ink3, ForeColor = Paper2 };
-        c.Width = TextRenderer.MeasureText(text, ChipFont, new Size(int.MaxValue, 30), TextFormatFlags.NoPrefix).Width + 30;
-        c.FlatAppearance.BorderColor = Rule; c.FlatAppearance.CheckedBackColor = Yellow; c.FlatAppearance.MouseOverBackColor = Ink4;
-        void Tint() => c.ForeColor = !c.Enabled ? Paper3 : c.Checked ? OnYellow : Paper2;
-        c.CheckedChanged += (_, _) => Tint(); c.EnabledChanged += (_, _) => Tint();
-        return c;
+        private readonly string _glyph; private bool _hot; private static readonly Font IconFont = new("Segoe MDL2 Assets", 11f);
+        public ChipBox(string text, string glyph)
+        {
+            _glyph = glyph; Text = text; Appearance = Appearance.Button; AutoSize = false; Font = ChipFont; Height = 32; Cursor = Cursors.Hand; Margin = new Padding(0, 3, 5, 3);
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            // sized by hand: the automatic size of a button-looking check box cut the end off a long right-to-left text
+            Width = TextRenderer.MeasureText(text, ChipFont, new Size(int.MaxValue, 30), TextFormatFlags.NoPrefix).Width + 20 + (glyph.Length > 0 ? 22 : 0);
+        }
+        protected override void OnMouseEnter(EventArgs e) { _hot = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { _hot = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnCheckedChanged(EventArgs e) { Invalidate(); base.OnCheckedChanged(e); }
+        protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
+            Color fill = Checked ? Yellow : _hot ? Ink4 : Ink3, edge = Checked ? Yellow : Rule, fore = !Enabled ? Paper3 : Checked ? OnYellow : Paper2;
+            using (var path = RoundRect(new Rectangle(0, 0, Width - 1, Height - 1), 10)) { using (var b = new SolidBrush(fill)) g.FillPath(b, path); using var pen = new Pen(edge); g.DrawPath(pen, path); }
+            bool rtl = RightToLeft == RightToLeft.Yes; int pad = 9, icon = _glyph.Length > 0 ? 22 : 0;
+            if (icon > 0) TextRenderer.DrawText(g, _glyph, IconFont, new Rectangle(rtl ? Width - pad - 18 : pad, 0, 18, Height), fore, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            var text = rtl ? Rectangle.FromLTRB(pad, 0, Width - pad - icon, Height) : Rectangle.FromLTRB(pad + icon, 0, Width - pad, Height);
+            TextRenderer.DrawText(g, Text, Font, text, fore, TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | (rtl ? TextFormatFlags.Right | TextFormatFlags.RightToLeft : TextFormatFlags.Left));
+        }
     }
 
     public static void Field(TextBox t) { t.BorderStyle = BorderStyle.FixedSingle; t.BackColor = Ink3; t.ForeColor = Paper; }
@@ -129,14 +191,24 @@ internal static class Theme
     /// A details list drawn by hand: a header with readable text (and an arrow on the sorted column, when <paramref name="sort"/> says which), rows with
     /// a faint stripe, and the chosen row in yellow. Icons and the indent of a tree row (the item's image and <see cref="ListViewItem.IndentCount"/>) are drawn here too.
     /// </summary>
-    public static void List(ListView lv, Func<(int Column, bool Ascending)?>? sort = null, Action<int>? clicked = null)
+    public static void List(ListView lv, Func<(int Column, bool Ascending)?>? sort = null, Action<int>? clicked = null, int flex = -1)
     {
         lv.OwnerDraw = true; lv.BackColor = Well; lv.ForeColor = Paper; lv.BorderStyle = BorderStyle.None; lv.FullRowSelect = true; lv.HeaderStyle = clicked is null ? ColumnHeaderStyle.Nonclickable : ColumnHeaderStyle.Clickable;
         lv.SmallImageList ??= new ImageList { ImageSize = new Size(16, 26) };
         lv.ColumnClick += (_, e) => clicked?.Invoke(e.Column);
-        // the last column takes what is left, so no bare (white) stretch of the system's header shows after it
-        void Fill() { if (lv.Columns.Count == 0) return; int others = 0; for (int i = 0; i < lv.Columns.Count - 1; i++) others += lv.Columns[i].Width; lv.Columns[^1].Width = Math.Max(80, lv.ClientSize.Width - others); }
-        lv.SizeChanged += (_, _) => Fill(); lv.HandleCreated += (_, _) => Fill(); lv.ColumnWidthChanged += (_, e) => { if (e.ColumnIndex < lv.Columns.Count - 1) Fill(); };
+        // one column (the last, unless told) takes what the others leave, so no bare (white) stretch of the system's header shows after it. One routine, guarded:
+        // setting a width raises the width event, and the old two-way handlers fed each other, so the columns kept growing and shrinking while the window was dragged.
+        bool busy = false;
+        void Fill()
+        {
+            if (busy || lv.Columns.Count < 2 || !lv.IsHandleCreated) return;
+            int at = flex < 0 ? lv.Columns.Count - 1 : flex, others = 0; for (int i = 0; i < lv.Columns.Count; i++) if (i != at) others += lv.Columns[i].Width;
+            int want = Math.Max(80, lv.ClientSize.Width - others);
+            if (want == lv.Columns[at].Width) return;
+            busy = true; try { lv.Columns[at].Width = want; } finally { busy = false; }
+        }
+        typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(lv, true);
+        lv.ClientSizeChanged += (_, _) => Fill(); lv.HandleCreated += (_, _) => Fill(); lv.ColumnWidthChanged += (_, e) => { if (e.ColumnIndex != (flex < 0 ? lv.Columns.Count - 1 : flex)) Fill(); };
         var head = Theme.Semi(9.5f);
         lv.DrawColumnHeader += (_, e) =>
         {
