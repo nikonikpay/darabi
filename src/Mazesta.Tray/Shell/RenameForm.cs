@@ -26,7 +26,7 @@ internal sealed class RenameForm : Form
 
         Section(TrayText.RenameSecText);
         _find = Txt(TrayText.RenameFind); _replace = Txt(TrayText.RenameReplace);
-        _regex = Chk(TrayText.RenameRegex); _matchCase = Chk(TrayText.RenameCase); _first = Chk(TrayText.RenameFirst);
+        _regex = Chk(TrayText.RenameRegex, ""); _matchCase = Chk(TrayText.RenameCase, ""); _first = Chk(TrayText.RenameFirst);
         Section(TrayText.RenameSecAdd);
         _prefix = Txt(TrayText.RenamePrefix); _suffix = Txt(TrayText.RenameSuffix); _cutFirst = Num(TrayText.RenameCutFirst, 0, 200, 0); _cutLast = Num(TrayText.RenameCutLast, 0, 200, 0);
         Section(TrayText.RenameSecNumber);
@@ -35,9 +35,9 @@ internal sealed class RenameForm : Form
         Section(TrayText.RenameSecStyle);
         _case = Combo(TrayText.RenameCases); _spaces = Combo(TrayText.RenameSpaces); _latin = Chk(TrayText.RenameLatin); _persian = Chk(TrayText.RenamePersian);
         Section(TrayText.RenameSecDate);
-        _date = Combo(TrayText.RenameDates); _time = Chk(TrayText.RenameTime); _shamsi = Chk(TrayText.RenameShamsi);
+        _date = Combo(TrayText.RenameDates); _time = Chk(TrayText.RenameTime, ""); _shamsi = Chk(TrayText.RenameShamsi, "");
         Section(TrayText.RenameSecExt);
-        _extLower = Chk(TrayText.RenameExtLower); _extChange = Chk(TrayText.RenameExtNew); _ext = Txt(null);
+        _extLower = Chk(TrayText.RenameExtLower); _extChange = Chk(TrayText.RenameExtNew, ""); _ext = Txt(null);
         Section(null);
         _order = Combo(TrayText.RenameOrders);
 
@@ -48,8 +48,12 @@ internal sealed class RenameForm : Form
         var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
         _apply = Btn(TrayText.RenameApply, Apply, true); _undo = Btn(TrayText.RenameUndo, Undo, false); _undo.Visible = false;
         bar.Controls.AddRange([_apply, _undo, Btn(TrayText.RenameClose, Close, false)]);
-        var left = new Panel { Dock = DockStyle.Fill };
-        left.Controls.Add(_list); left.Controls.Add(_result); left.Controls.Add(_status);
+        // the list in a round card of its own, like PowerRename's
+        var frame = new Theme.RoundPanel { Dock = DockStyle.Fill, Padding = new Padding(2), Fill = Theme.Well, Radius = 12 };
+        frame.SizeChanged += (_, _) => { if (frame.Width < 8 || frame.Height < 8) return; using var p = Theme.RoundRect(new Rectangle(0, 0, frame.Width, frame.Height), 12); frame.Region = new Region(p); };
+        frame.Controls.Add(_list);
+        var left = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 6, 4, 8) };
+        left.Controls.Add(frame); left.Controls.Add(_result); left.Controls.Add(_status);
         Controls.Add(left); Controls.Add(_opts); Controls.Add(Theme.Banner(Theme.Edit, Theme.Cpu, TrayText.RenameTitle, TrayText.RenameSub)); Controls.Add(bar);
         Shown += (_, _) => { Activate(); _ready = true; Sync(); Preview(); RefreshUndo(); };
     }
@@ -58,25 +62,27 @@ internal sealed class RenameForm : Form
     private void Section(string? title)
     {
         if (title is null) return;
-        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 20, 0, 4), Font = Theme.Semi(11f), ForeColor = Theme.Yellow, RightToLeft = RightToLeft.Yes });
+        // a hairline between groups and a quiet caption (PowerRename's way), not a loud heading
+        if (_opts.Controls.Count > 0) _opts.Controls.Add(new Panel { Width = 370, Height = 1, BackColor = Theme.Rule, Margin = new Padding(0, 16, 0, 0) });
+        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 10, 0, 2), Font = Theme.Semi(10.5f), ForeColor = Theme.Yellow, RightToLeft = RightToLeft.Yes });
     }
     private TextBox Txt(string? label)
     {
-        if (label is not null) _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 2) });
-        var t = new TextBox { Width = 370 }; Theme.Field(t); t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(t); return t;
+        if (label is not null) _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 0) });
+        var t = new TextBox(); t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(t, 370)); return t;
     }
     private NumericUpDown Num(string label, int min, int max, int value)
     {
-        _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 2) });
-        var n = new NumericUpDown { Width = 140, Minimum = min, Maximum = max, Value = value, BackColor = Theme.Ink3, ForeColor = Text1, BorderStyle = BorderStyle.FixedSingle }; n.ValueChanged += (_, _) => Changed(); _opts.Controls.Add(n); return n;
+        _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 0) });
+        var n = new NumericUpDown { Minimum = min, Maximum = max, Value = value }; n.ValueChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(n, 140)); return n;
     }
-    private CheckBox Chk(string label)
+    private CheckBox Chk(string label, string glyph = "")
     {
-        var c = Theme.Chip(label); c.CheckedChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
+        var c = Theme.Chip(label, glyph); c.CheckedChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
     }
     private ComboBox Combo(string[] items)
     {
-        var c = new ComboBox { Width = 370, Margin = new Padding(0, 6, 0, 2) }; Theme.Combo(c);
+        var c = new ComboBox { Width = 370, Margin = new Padding(0, 6, 0, 2) }; Theme.Combo(c); c.ItemHeight = 28;
         c.Items.AddRange(items); c.SelectedIndex = 0; c.SelectedIndexChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
     }
     private static Button Btn(string text, Action click, bool primary)

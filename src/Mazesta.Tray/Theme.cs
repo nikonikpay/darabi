@@ -38,12 +38,13 @@ internal static class Theme
     public static Font Semi(float size) => Make(size, true, GraphicsUnit.Point);
     public static Font Semi(float size, GraphicsUnit unit) => Make(size, true, unit);
 
-    // a mid grey (not the app's near-black): the windows are small tools beside other programs, and the near-black ones read as heavy
-    public static readonly Color Ink = Color.FromArgb(0x2B, 0x2F, 0x36), Ink2 = Color.FromArgb(0x33, 0x38, 0x40), Ink3 = Color.FromArgb(0x3E, 0x44, 0x4D), Ink4 = Color.FromArgb(0x4B, 0x52, 0x5C),
-        Well = Color.FromArgb(0x23, 0x27, 0x2D), Paper = Color.FromArgb(0xF2, 0xF1, 0xEC), Paper2 = Color.FromArgb(0xC3, 0xC7, 0xCC), Paper3 = Color.FromArgb(0x93, 0x9A, 0xA3), Rule = Color.FromArgb(0x5A, 0x61, 0x6B),
+    // Windows 11's own dark greys (what PowerToys' windows use: window #202020, fields #2B2B2B, list card #272727), neutral and not the app's near-black or bluish grey,
+    // so a window beside other programs sits quietly; the accent is the logo's yellow where PowerToys uses the system accent
+    public static readonly Color Ink = Color.FromArgb(0x20, 0x20, 0x20), Ink2 = Color.FromArgb(0x27, 0x27, 0x27), Ink3 = Color.FromArgb(0x2D, 0x2D, 0x2D), Ink4 = Color.FromArgb(0x3A, 0x3A, 0x3A),
+        Well = Color.FromArgb(0x27, 0x27, 0x27), Paper = Color.FromArgb(0xF3, 0xF3, 0xF3), Paper2 = Color.FromArgb(0xCF, 0xCF, 0xCF), Paper3 = Color.FromArgb(0x9B, 0x9B, 0x9B), Rule = Color.FromArgb(0x45, 0x45, 0x45),
         Yellow = Color.FromArgb(0xFD, 0xD4, 0x00), OnYellow = Color.FromArgb(0x0C, 0x0C, 0x0C), Pass = Color.FromArgb(0x2E, 0xC0, 0x8E), Fail = Color.FromArgb(0xEE, 0x4B, 0x3D), Warn = Color.FromArgb(0xF2, 0xA1, 0x22),
         Cpu = Color.FromArgb(0x5B, 0xA8, 0xFF), Gpu = Color.FromArgb(0xB3, 0x8B, 0xFF), Ram = Color.FromArgb(0x35, 0xD0, 0xE0), Storage = Color.FromArgb(0xFF, 0x9A, 0x4D), Net = Color.FromArgb(0xFF, 0x78, 0xB9),
-        Select = Color.FromArgb(0x57, 0x4F, 0x1C), Stripe = Color.FromArgb(0x29, 0x2D, 0x34);
+        Select = Color.FromArgb(0x57, 0x4F, 0x1C), Stripe = Color.FromArgb(0x2B, 0x2B, 0x2B);
 
     // Segoe MDL2 Assets glyphs (on every Windows 10 and 11)
     public const string Lock = "", Edit = "", Picture = "", Drive = "", Search = "", Volume = "";
@@ -109,7 +110,7 @@ internal static class Theme
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
-            Color fill = !Enabled ? Ink3 : _primary ? (_hot ? Color.FromArgb(0xFF, 0xE2, 0x4A) : Yellow) : (_hot ? Color.FromArgb(0x58, 0x60, 0x6B) : Ink4);
+            Color fill = !Enabled ? Ink3 : _primary ? (_hot ? Color.FromArgb(0xFF, 0xE2, 0x4A) : Yellow) : (_hot ? Color.FromArgb(0x4A, 0x4A, 0x4A) : Ink4);
             using (var path = RoundRect(new Rectangle(0, 0, Width - 1, Height - 1), 9)) { using var b = new SolidBrush(fill); g.FillPath(b, path); if (Focused && ShowFocusCues) { using var pen = new Pen(Paper3); g.DrawPath(pen, path); } }
             TextRenderer.DrawText(g, Text, Font, ClientRectangle, !Enabled ? Paper3 : _primary ? OnYellow : Paper, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
         }
@@ -169,6 +170,16 @@ internal static class Theme
 
     public static void Field(TextBox t) { t.BorderStyle = BorderStyle.FixedSingle; t.BackColor = Ink3; t.ForeColor = Paper; }
 
+    /// <summary>A text (or number) box inside a round frame that rings yellow while it has the focus: what <see cref="Field"/> cannot be, a box with round corners.</summary>
+    public static RoundPanel Boxed(Control inner, int width, int height = 36)
+    {
+        inner.BackColor = Ink3; inner.ForeColor = Paper; inner.Dock = DockStyle.Fill;
+        if (inner is TextBox t) t.BorderStyle = BorderStyle.None; else if (inner is NumericUpDown n) n.BorderStyle = BorderStyle.None;
+        var p = new RoundPanel { Width = width, Height = height, Fill = Ink3, Radius = 8, Padding = new Padding(10, (height - 20) / 2, 10, 0), Margin = new Padding(0, 4, 0, 2) };
+        p.Active = () => inner.ContainsFocus; inner.GotFocus += (_, _) => p.Invalidate(); inner.LostFocus += (_, _) => p.Invalidate();
+        p.Controls.Add(inner); return p;
+    }
+
     // in a right-to-left drop-down Persian text reads from the right edge; Latin text ("1280 px") sits at the same edge but keeps its own order
     private static TextFormatFlags Side(ComboBox c, string text) =>
         c.RightToLeft != RightToLeft.Yes ? TextFormatFlags.Left : text.Any(ch => ch >= '؀' && ch <= 'ۿ') ? TextFormatFlags.Right | TextFormatFlags.RightToLeft : TextFormatFlags.Right;
@@ -193,7 +204,7 @@ internal static class Theme
     /// </summary>
     public static void List(ListView lv, Func<(int Column, bool Ascending)?>? sort = null, Action<int>? clicked = null, int flex = -1)
     {
-        lv.OwnerDraw = true; lv.BackColor = Well; lv.ForeColor = Paper; lv.BorderStyle = BorderStyle.None; lv.FullRowSelect = true; lv.HeaderStyle = clicked is null ? ColumnHeaderStyle.Nonclickable : ColumnHeaderStyle.Clickable;
+        lv.OwnerDraw = true; lv.BackColor = Well; lv.ForeColor = Paper; lv.BorderStyle = BorderStyle.None; lv.FullRowSelect = true; lv.HeaderStyle = ColumnHeaderStyle.Clickable;   // a non-clickable header was painted by the system, white, and skipped DrawColumnHeader
         lv.SmallImageList ??= new ImageList { ImageSize = new Size(16, 26) };
         lv.ColumnClick += (_, e) => clicked?.Invoke(e.Column);
         // one column (the last, unless told) takes what the others leave, so no bare (white) stretch of the system's header shows after it. One routine, guarded:
@@ -209,6 +220,7 @@ internal static class Theme
         }
         typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(lv, true);
         lv.ClientSizeChanged += (_, _) => Fill(); lv.HandleCreated += (_, _) => Fill(); lv.ColumnWidthChanged += (_, e) => { if (e.ColumnIndex != (flex < 0 ? lv.Columns.Count - 1 : flex)) Fill(); };
+        HeaderSkin.Attach(lv, sort);
         var head = Theme.Semi(9.5f);
         lv.DrawColumnHeader += (_, e) =>
         {
@@ -239,6 +251,59 @@ internal static class Theme
     }
 
     /// <summary>Paints over the system's flat drop-down after it has drawn itself: a border all round (it had none at the arrow side) and an arrow button in the theme's greys.</summary>
+    /// <summary>
+    /// The list's header painted here, whole (columns, the stretch after the last one, the yellow rule): the list view's own owner-draw call for the header
+    /// came only for virtual lists, and the others showed the system's white header.
+    /// </summary>
+    private sealed class HeaderSkin : NativeWindow
+    {
+        private readonly ListView _lv; private readonly Func<(int Column, bool Ascending)?>? _sort; private static readonly Font Head = Theme.Semi(9.5f);
+        private HeaderSkin(ListView lv, nint header, Func<(int Column, bool Ascending)?>? sort)
+        {
+            _lv = lv; _sort = sort; AssignHandle(header);
+            lv.ColumnClick += (_, _) => { try { lv.BeginInvoke(() => InvalidateRect(Handle, 0, true)); } catch (InvalidOperationException) { } };
+            lv.HandleDestroyed += (_, _) => ReleaseHandle();
+        }
+        public static void Attach(ListView lv, Func<(int Column, bool Ascending)?>? sort)
+        {
+            void Go() { nint h = SendMessage(lv.Handle, 0x101F /* LVM_GETHEADER */, 0, 0); if (h != 0) _ = new HeaderSkin(lv, h, sort); }
+            lv.HandleCreated += (_, _) => Go(); if (lv.IsHandleCreated) Go();
+        }
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 0x14 /* WM_ERASEBKGND */) { m.Result = 1; return; }
+            if (m.Msg == 0xF /* WM_PAINT */) { Paint(); ValidateRect(Handle, 0); m.Result = 0; return; }
+            base.WndProc(ref m);
+        }
+        private void Paint()
+        {
+            GetClientRect(Handle, out var rc); if (rc.Right < 2 || rc.Bottom < 2) return;
+            using var bmp = new Bitmap(rc.Right, rc.Bottom);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Ink3);
+                using (var p = new Pen(Yellow, 2)) g.DrawLine(p, 0, rc.Bottom - 1, rc.Right, rc.Bottom - 1);
+                var s = _sort?.Invoke();
+                for (int i = 0; i < _lv.Columns.Count; i++)
+                {
+                    var r = new Rc(); if (SendMessage(Handle, 0x1207 /* HDM_GETITEMRECT */, i, ref r) == 0) continue;
+                    var col = _lv.Columns[i]; bool on = s is { } x && x.Column == i;
+                    using (var p = new Pen(Rule)) g.DrawLine(p, r.Right - 1, r.Top + 6, r.Right - 1, r.Bottom - 8);
+                    string text = col.Text + (on ? (s!.Value.Ascending ? "  ▲" : "  ▼") : "");
+                    TextRenderer.DrawText(g, text, Head, Rectangle.Inflate(Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom - 2), -8, 0), on ? Yellow : Paper,
+                        (col.TextAlign == HorizontalAlignment.Right ? TextFormatFlags.Right : TextFormatFlags.Left) | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+                }
+            }
+            using var wg = Graphics.FromHwnd(Handle); wg.DrawImageUnscaled(bmp, 0, 0);
+        }
+        [StructLayout(LayoutKind.Sequential)] private struct Rc { public int Left, Top, Right, Bottom; }
+        [DllImport("user32.dll")] private static extern nint SendMessage(nint w, int msg, nint wp, nint lp);
+        [DllImport("user32.dll")] private static extern nint SendMessage(nint w, int msg, nint wp, ref Rc lp);
+        [DllImport("user32.dll")] private static extern bool GetClientRect(nint w, out Rc r);
+        [DllImport("user32.dll")] private static extern bool ValidateRect(nint w, nint r);
+        [DllImport("user32.dll")] private static extern bool InvalidateRect(nint w, nint r, bool erase);
+    }
+
     private sealed class ComboSkin : NativeWindow
     {
         private readonly ComboBox _c;
@@ -261,16 +326,17 @@ internal static class Theme
             {
                 var info = new ComboInfo { Size = Marshal.SizeOf<ComboInfo>() }; GetComboBoxInfo(_c.Handle, ref info);
                 using var g = Graphics.FromHdc(hdc); g.SmoothingMode = SmoothingMode.AntiAlias; var all = new Rectangle(0, 0, _c.Width, _c.Height);
-                using (var fill = new SolidBrush(_c.Enabled ? Ink3 : Ink2)) g.FillRectangle(fill, all);
+                g.Clear(_c.Parent?.BackColor ?? Ink);   // the corners outside the rounded face take the window's colour
                 var b = Rectangle.FromLTRB(info.Button.Left, info.Button.Top, info.Button.Right, info.Button.Bottom);
-                if (b.Width < 4) b = _c.RightToLeft == RightToLeft.Yes ? new Rectangle(0, 0, 24, _c.Height) : new Rectangle(_c.Width - 24, 0, 24, _c.Height);
-                using (var fill = new SolidBrush(Ink4)) g.FillRectangle(fill, b);
+                if (b.Width < 4) b = _c.RightToLeft == RightToLeft.Yes ? new Rectangle(0, 0, 28, _c.Height) : new Rectangle(_c.Width - 28, 0, 28, _c.Height);
+                using var face = RoundRect(new Rectangle(0, 0, _c.Width - 1, _c.Height - 1), 8);
+                using (var fill = new SolidBrush(_c.Enabled ? Ink3 : Ink2)) g.FillPath(fill, face);
                 int cx = b.X + b.Width / 2, cy = b.Y + b.Height / 2;
-                using (var arrow = new SolidBrush(_c.Enabled ? Paper : Paper3)) g.FillPolygon(arrow, [new Point(cx - 4, cy - 2), new Point(cx + 4, cy - 2), new Point(cx, cy + 3)]);
+                using (var chev = new Pen(_c.Enabled ? Paper2 : Paper3, 1.6f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round }) g.DrawLines(chev, [new Point(cx - 4, cy - 2), new Point(cx, cy + 2), new Point(cx + 4, cy - 2)]);
                 bool rtl = _c.RightToLeft == RightToLeft.Yes; var text = rtl ? Rectangle.FromLTRB(b.Right + 2, 0, _c.Width - 6, _c.Height) : Rectangle.FromLTRB(6, 0, b.Left - 2, _c.Height);
                 TextRenderer.DrawText(g, _c.Text, _c.Font, text, _c.Enabled ? Paper : Paper3, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | Side(_c, _c.Text));
                 using var edge = new Pen(_c.Focused || _c.DroppedDown ? Yellow : Rule);
-                g.DrawRectangle(edge, 0, 0, _c.Width - 1, _c.Height - 1);
+                g.DrawPath(edge, face);
             }
             finally { EndPaint(_c.Handle, ref ps); }
         }

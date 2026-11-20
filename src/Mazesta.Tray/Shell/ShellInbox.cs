@@ -9,7 +9,7 @@ namespace Mazesta.Tray.Shell;
 /// </summary>
 internal sealed class ShellInbox : IDisposable
 {
-    private readonly FileSystemWatcher? _watch; private readonly System.Windows.Forms.Timer _quiet = new() { Interval = 1000 };
+    private readonly FileSystemWatcher? _watch; private readonly System.Windows.Forms.Timer _quiet = new() { Interval = 350 };   // one selection's starts come within milliseconds of each other; a long wait made the window feel slow to open
     private readonly Control _ui = new(); private readonly string _request; private readonly Action _wakeApp; private readonly Action<string, List<string>> _openTool;
 
     public ShellInbox(string requestFile, Action wakeApp, Action<string, List<string>> openTool)
