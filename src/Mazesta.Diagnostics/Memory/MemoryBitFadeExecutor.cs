@@ -1,4 +1,4 @@
-using System.Diagnostics; using System.Runtime.InteropServices;
+using System.Diagnostics;
 namespace Mazesta.Diagnostics.Memory;
 
 /// <summary>
@@ -28,18 +28,13 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
 
     private static TestRunResult Run(TestExecutionRequest request, long budget, DateTimeOffset started, CancellationToken ct)
     {
-        var blocks = new List<NativeBlock>(); long errors = 0; string first = ""; int locked = 0; var sw = Stopwatch.StartNew();
+        var blocks = new List<NativeBlock>(); long errors = 0; string first = ""; int locked = 0; var sw = Stopwatch.StartNew(); RamLock? ramLock = null;
         var total = TimeSpan.FromSeconds(request.DurationSeconds); var held = new List<double>();
-        // The process's working-set limits are raised to lock the blocks and put back afterwards, however the run ends.
-        bool hadLimits = GetProcessWorkingSetSizeEx(GetCurrentProcess(), out nint oldMin, out nint oldMax, out uint oldFlags);
         try
         {
             for (long allocated = 0; allocated + BlockBytes <= budget; allocated += BlockBytes) { ct.ThrowIfCancellationRequested(); var b = new NativeBlock(BlockBytes); b.Span.Clear(); blocks.Add(b); }
             long bytes = (long)blocks.Count * BlockBytes;
-            // The minimum is what is locked plus what the process already uses; the maximum leaves room above it.
-            nint min = (nint)(bytes + (Environment.WorkingSet)), max = (nint)(bytes + Environment.WorkingSet + (512L << 20));
-            SetProcessWorkingSetSizeEx(GetCurrentProcess(), min, max, 0);
-            foreach (var b in blocks) if (b.Lock()) locked++;
+            ramLock = new RamLock(blocks); locked = ramLock.Locked;   // the working-set limits are raised for the lock and put back afterwards, however the run ends
             request.Note("Log_Mem_BitFade_Locked", "SetProcessWorkingSetSizeEx(min = locked + in use); VirtualLock(every block)", bytes >> 20, locked, blocks.Count);
 
             foreach (var (value, name, index) in new[] { ((byte)0xFF, "all ones", 0), ((byte)0x00, "all zeros", 1) })
@@ -65,7 +60,7 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
         finally
         {
             foreach (var b in blocks) b.Dispose();
-            if (hadLimits) SetProcessWorkingSetSizeEx(GetCurrentProcess(), oldMin, oldMax, oldFlags);
+            ramLock?.Dispose();
         }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
         // A fault seen is a fault whatever the hold; a clean result counts only when every block was locked and each pattern was held long enough.
@@ -79,8 +74,4 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
          + $"; {locked} of {blocks} blocks locked in RAM"
          + (locked < blocks ? " - Windows would not lock the rest, so they may have been paged out while waiting and their result says nothing about the RAM" : "")
          + "; addressed by buffer offset, not physical address or slot" + (first.Length > 0 ? $"; {first}" : "");
-
-    [DllImport("kernel32.dll")] private static extern nint GetCurrentProcess();
-    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetProcessWorkingSetSizeEx(nint process, nint min, nint max, uint flags);
-    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetProcessWorkingSetSizeEx(nint process, out nint min, out nint max, out uint flags);
 }

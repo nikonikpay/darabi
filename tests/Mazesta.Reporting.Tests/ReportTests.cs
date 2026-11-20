@@ -37,6 +37,35 @@ public class ReportTests
         string html = ReportHtml.Write(r); Assert.Contains("<polyline", html); Assert.Contains("70.0 °C", html);
     }
 
+    [Fact] public void Each_test_card_holds_its_own_figures_with_min_avg_max_and_fps_range()
+    {
+        static SensorSummary S(string id, string hw, string name, string kind, string unit, string role, double lo, double avg, double hi) =>
+            new(id, hw, name, kind, unit, lo, avg, hi, 30, [new(0, lo), new(10, hi), new(20, avg), new(30, hi)], role);
+        var gpu = Test("gpu.thermal", ReportOutcome.Passed, 0, 30, 0, "GPU temperature scene; 61.0 FPS average; 52.5 FPS lowest half-second; 70.2 FPS highest half-second");
+        var cpu = Test("cpu.stress", ReportOutcome.Passed, 40, 30);
+        var sets = new[]
+        {
+            new TestSensorSet("gpu.thermal", [S("g1", "NVIDIA RTX 3090", "GPU Core", "Temperature", "°C", "GpuCoreTemp", 46, 60, 80), S("g2", "NVIDIA RTX 3090", "GPU Core", "Load", "%", "GpuLoad3D", 10, 96, 100)]),
+            new TestSensorSet("cpu.stress", [S("c1", "AMD Ryzen", "Core (Tctl/Tdie)", "Temperature", "°C", "CpuTctlTdie", 40, 62, 70)])
+        };
+        var r = SessionReport.Create("x", "1", T0, [gpu, cpu], [S("g1", "NVIDIA RTX 3090", "GPU Core", "Temperature", "°C", "GpuCoreTemp", 46, 60, 80)], HardwareInventory.Empty) with { TestSensors = sets };
+        string html = ReportHtml.Write(r);
+        Assert.Contains("class=\"tcard Passed\"", html); Assert.Contains("52.5 FPS", html); Assert.Contains("70.2 FPS", html); Assert.Contains("61.0 FPS", html);
+        Assert.Contains("80.0 °C", html); Assert.Contains("CPU · Core (Tctl/Tdie)", html);
+        Assert.Contains("اوج مقدار در", html); Assert.Contains("data-dur=", html); Assert.Contains("<script>", html); Assert.Contains("زمان از شروع", html); Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(html, "class=\"tcard ").Count);
+        Assert.Equal(ReportJson.Write(r), ReportJson.Write(ReportJson.Read(ReportJson.Write(r))!));   // the per-test figures survive the file    }
+    }
+
+    [Fact] public void A_test_card_shows_its_speed_result_and_a_benchmark_card_its_metrics_and_readings()
+    {
+        var t = Test("gpu.steady", ReportOutcome.Passed, 0, 30, 0, "GPU Steady compute stress; 9797 Gop/s integer; each of 1430 batches");
+        var s = new SensorSummary("g#v", "NVIDIA", "GPU Memory Used", "Data", "MB", 1000, 2000, 3000, 5, [new(0, 1000), new(5, 3000)], "GpuVramUsed");
+        var bm = new BenchmarkEntry("bench.gpu.rt", "Render", T0.AddSeconds(100), [new("Mrays/s", 12.3456, "Mrays/s")], null, T0.AddSeconds(40));
+        var r = SessionReport.Create("x", "1", T0, [t], [], HardwareInventory.Empty, benchmarks: [bm]) with { TestSensors = [new("bench.gpu.rt|" + T0.AddSeconds(100).UtcTicks, [s])] };
+        string html = ReportHtml.Write(r);
+        Assert.Contains("9797 Gop/s", html); Assert.Contains("حافظه و حجم", html); Assert.Contains("12.35 Mrays/s", html); Assert.Contains("class=\"tcard Bench\"", html); Assert.Contains("3000", html);
+    }
+
     [Fact] public void Benchmarks_are_listed_with_their_time_and_never_change_the_verdict()
     {
         var bm = new BenchmarkEntry("bench.cpu", "<CPU>", T0, [new("Single", 12.3456, "GFLOPS"), new("Multi", 250.4, "GFLOPS")], "matrix");

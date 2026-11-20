@@ -144,6 +144,7 @@ public sealed class FileIndex
 
     private void Offer(FileQuery query, int e, Top top)
     {
+        if (!query.Allows((_flags[e] & Dir) != 0, _names.AsSpan(_start[e], _len[e]))) return;
         int rank = query.Rank(_names.AsSpan(_start[e], _len[e]));
         if (rank < 0) return;
         // among equal names the shorter path first (C:\Windows\System32\cmd.exe before WinSxS\...\r\cmd.exe): measured up the chain only for the
@@ -243,6 +244,21 @@ public sealed class FileQuery
 
     /// <summary>The first word, which the index looks for across all names at once (null when only patterns were typed, or it has case outside ASCII).</summary>
     public Word? Anchor => _words.Length > 0 && (_words[0].Ascii || !_words[0].Cased) ? _words[0] : null;
+
+    /// <summary>Only files (false) or only folders (true); null for both.</summary>
+    public bool? Dirs { get; set; }
+    /// <summary>Only files with one of these extensions (no dot; build it with <see cref="StringComparer.OrdinalIgnoreCase"/>); null for any.</summary>
+    public HashSet<string>? Extensions { get; set; }
+
+    internal bool Allows(bool dir, ReadOnlySpan<byte> name)
+    {
+        if (Dirs is { } d && d != dir) return false;
+        if (Extensions is not { } set) return true;
+        int dot = name.LastIndexOf((byte)'.');
+        if (dir || dot < 0 || name.Length - dot - 1 is 0 or > 8) return false;
+        Span<char> ext = stackalloc char[8];
+        return set.GetAlternateLookup<ReadOnlySpan<char>>().Contains(ext[..Encoding.UTF8.GetChars(name[(dot + 1)..], ext)]);
+    }
 
     /// <summary>Null when nothing is asked (only spaces).</summary>
     public static FileQuery? Parse(string? text)

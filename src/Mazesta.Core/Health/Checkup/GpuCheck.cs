@@ -31,6 +31,9 @@ public static class GpuCheck
     /// <summary>The memory chips' own sensor under load: GDDR6X slows itself near 110 °C and GDDR6 is rated to about 95-105 °C, so from 96 °C the
     /// pads or the airflow over the memory need a look, and from 104 °C the card is about to cut its memory clock (or already does).</summary>
     public const double VramWarm = 96, VramHot = 104;
+    /// <summary>Where the driver gives no reason for a held clock, the card's heat under load is read against these: the hottest point of the die
+    /// (Radeon cards slow themselves at 110 °C), or, on a card that reports only its core, the 100 °C few cards are built to pass. Mazesta's own lines.</summary>
+    public const double HotSpotWarm = 105, HotSpotHot = 110, CoreWarm = 90, CoreHot = 100;
 
     public static IReadOnlyList<Finding> Evaluate(GpuRunTrace run)
     {
@@ -55,6 +58,15 @@ public static class GpuCheck
                 Add(FindingCode.GpuPowerLimited, FindingLevel.Good, [Pct(r.PowerCap), .. r.PowerLimitW is { } pl ? [M("Check_M_PowerLimit", pl, Watt)] : Array.Empty<Measure>(),
                     .. loaded(run.Power) is { Count: > 0 } p ? [M("Check_M_Power", p.Median(), Watt)] : Array.Empty<Measure>()]);
             if (!hot && Share(r.HwThermal) < 0.02 && tempMax is { } tmax && r.SlowdownTempC is { } slow) Add(FindingCode.GpuHeatOk, FindingLevel.Good, [M("Check_M_TempMax", tmax, Celsius), M("Check_M_SlowdownTemp", slow, Celsius)]);
+        }
+
+        // A card whose driver does not say what held its clock (Radeon, Arc): judged by temperature alone, by the hottest point where the card reports it.
+        if (run.Throttle is null)
+        {
+            if (loaded(run.HotSpot) is { Count: >= 5 } hs) Heat(hs.Max(), HotSpotWarm, HotSpotHot, "Check_M_HotspotMax");
+            else if (loaded(run.CoreTemp) is { Count: >= 5 } ct) Heat(ct.Max(), CoreWarm, CoreHot, "Check_M_TempMax");
+            void Heat(double max, double warm, double hot, string key)
+                => Add(max >= warm ? FindingCode.GpuRunsHot : FindingCode.GpuHeatOk, max >= hot ? FindingLevel.Problem : max >= warm ? FindingLevel.Attention : FindingLevel.Good, [M(key, max, Celsius)]);
         }
 
         if (loaded(run.CoreTemp) is { Count: >= 5 } core && loaded(run.HotSpot) is { Count: >= 5 } spot)

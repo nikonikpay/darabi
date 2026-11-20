@@ -7,6 +7,9 @@ namespace Mazesta.Diagnostics.Cpu;
 /// busy thread lets a core reach its highest boost clock and lowest voltage - the state where an unstable boost / Curve Optimizer / undervolt
 /// setting fails, and which an all-core load never reaches. With the variable load the thread also pauses at random moments, so the core
 /// keeps dropping out of and back into boost, which is when marginal voltage steps show.
+/// A visit is three kinds of work, a third of it each: the matrix products, vector multiply-adds (AVX2 + FMA, SSE2 on a CPU without them - not
+/// AVX-512, which lowers the clock the test is after) and the integer block with its divider and branches. A core that holds one and not
+/// another fails here; each kind has its own reference worked out in advance.
 /// Every core computes the same seeded matrices, and each product is checked against the checksum worked out in advance for them (not
 /// against the first core's answer, which would blame every good core if the first one were the bad one), so the core that computed wrongly
 /// is named: a wrong answer is an error, not a crash the technician has to guess about.
@@ -16,12 +19,15 @@ namespace Mazesta.Diagnostics.Cpu;
 public sealed class CpuCoreCycleExecutor : ITestExecutor
 {
     public const string SecondsPerCoreOption = "secondsPerCore", LoadOption = "load", CoresOption = "cores";
-    public static readonly TestDefinition Definition = new(new TestId("cpu.singlecore"), "Test_Cpu_SingleCore", 300,
+    /// <summary>A core's unstable boost shows after minutes on that core, not seconds: a minute a core by default, so the default length grows
+    /// with the processor (five minutes at least, an hour at most).</summary>
+    public const int DefaultSecondsPerCore = 60;
+    public static readonly TestDefinition Definition = new(new TestId("cpu.singlecore"), "Test_Cpu_SingleCore", Math.Clamp(CpuTopology.Cores.Count * DefaultSecondsPerCore, 300, 3600),
     [
         // How many are loaded at a time: 1 is the single-core test proper; more moves a group of that many round the processor, up to
         // every thread it has (then it is an all-thread load, and nothing moves).
         new TestOption(CoresOption, "Test_Option_CoresAtOnce", TestOptionKind.Choice, "1", () => [.. Enumerable.Range(1, Math.Max(1, CpuTopology.Cores.Sum(c => c.Threads))).Select(n => new OptionChoice(n.ToString(System.Globalization.CultureInfo.InvariantCulture), n.ToString(System.Globalization.CultureInfo.InvariantCulture)))]),
-        new TestOption(SecondsPerCoreOption, "Test_Option_SecondsPerCore", TestOptionKind.Integer, "10"),
+        new TestOption(SecondsPerCoreOption, "Test_Option_SecondsPerCore", TestOptionKind.Integer, "60"),
         new TestOption(LoadOption, "Test_Option_Load", TestOptionKind.Choice, "variable", () => [new("variable", "Test_Load_Variable", true), new("steady", "Test_Load_Steady", true)]),
     ]);
     TestDefinition ITestExecutor.Definition => Definition;
@@ -74,7 +80,10 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
         ulong reference = CpuMatrixStressExecutor.Expected[0]; var errorsByCore = new long[_cores.Count]; var unpinned = new List<int>(); var covered = new bool[_cores.Count];
         long multiplies = 0, visits = 0; var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         int atOnce = groups[0].Count; bool hybrid = _cores.Select(x => x.EfficiencyClass).Distinct().Count() > 1;
-        string Describe() => this.Describe(request, started, slice, variable, atOnce, Interlocked.Read(ref multiplies), visits, errorsByCore, unpinned, covered);
+        var width = CpuVectorStressExecutor.Resolve("avx2") ?? CpuVectorStressExecutor.Resolve("sse"); var vector = width is { } vw ? CpuVectorStressExecutor.Reference(vw) : [];
+        var seed = CpuIntegerExecutor.Seed(); var wrongByWork = new long[WorkNames.Length];
+        string work = "work per visit: " + string.Join(", ", WorkNames.Select((n, k) => k == 1 ? width switch { CpuVectorStressExecutor.Width.Avx2 => "AVX2 + FMA", CpuVectorStressExecutor.Width.Sse => "SSE2", _ => null } : n).OfType<string>());
+        string Describe() => this.Describe(request, started, slice, variable, atOnce, Interlocked.Read(ref multiplies), visits, errorsByCore, unpinned, covered, work, wrongByWork);
 
         // One place for one slice, on a thread of its own: the pin to a core outlives each work item, which must never happen to a pool thread.
         void Visit(Slot slot)
@@ -85,14 +94,18 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
             pinned = pinned && CpuTopology.IsOn(slot.Group, slot.Mask);   // Windows accepted the pin and the thread is really there
             if (!pinned) lock (unpinned) { if (!unpinned.Contains(core.Index)) unpinned.Add(core.Index); }
             string kind = hybrid ? core.EfficiencyClass > 0 ? " (P)" : " (E)" : "";
-            if (pinned) request.Note("Log_Core_Visit", $"SetThreadGroupAffinity(group {slot.Group}, mask 0x{slot.Mask:X})   C = A·B, 64×64, checksum == expected", core.Index, kind, slice);
+            if (pinned) request.Note("Log_Core_Visit", $"SetThreadGroupAffinity(group {slot.Group}, mask 0x{slot.Mask:X})   a third each: C = A·B, 64×64, checksum == expected;  x ← fma(x, s, o), every lane == scalar reference;  integer block, FNV-1a == expected", core.Index, kind, slice);
             else request.NoteWarning("Log_Core_NotPinned", $"SetThreadGroupAffinity(group {slot.Group}, mask 0x{slot.Mask:X})", core.Index);
-            long wrong = 0, done = 0;
+            long wrong = 0, done = 0, worked = 0; var ints = new ulong[CpuIntegerExecutor.Elements]; Span<double> lanes = stackalloc double[8]; lanes = lanes[..vector.Length];
             var step = Stopwatch.StartNew(); var burst = Stopwatch.StartNew(); double burstLength = NextBurst(pause, variable);
             while (step.Elapsed.TotalSeconds < slice && total.Elapsed < duration && !ct.IsCancellationRequested)
             {
-                CpuMatrixStressExecutor.Multiply(a, b, c); done++;
-                if (CpuMatrixStressExecutor.Checksum(c) != reference) wrong++;
+                int kindOfWork = Math.Min(WorkNames.Length - 1, (int)(step.Elapsed.TotalSeconds / slice * WorkNames.Length)); bool right;
+                if (kindOfWork == 1 && width is { } vec) { CpuVectorStressExecutor.Block(vec, lanes); right = CpuVectorStressExecutor.WrongLanes(lanes, vector) == 0; }
+                else if (kindOfWork == 2) right = CpuIntegerExecutor.Block(ints, seed) == CpuIntegerExecutor.Expected;
+                else { CpuMatrixStressExecutor.Multiply(a, b, c); done++; right = CpuMatrixStressExecutor.Checksum(c) == reference; }
+                worked++;
+                if (!right) { wrong++; Interlocked.Increment(ref wrongByWork[kindOfWork]); }
                 if (variable && burst.Elapsed.TotalMilliseconds > burstLength)
                 {
                     Thread.Sleep(pause.Next(2, 40));   // an idle gap: the core leaves boost and must come back to it
@@ -100,7 +113,7 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
                 }
             }
             Interlocked.Add(ref multiplies, done); Interlocked.Add(ref errorsByCore[core.Index], wrong);
-            if (pinned && done > 0) covered[core.Index] = true;
+            if (pinned && worked > 0) covered[core.Index] = true;
             if (wrong > 0) request.NoteError("Log_Core_Wrong", null, core.Index, wrong);
         }
 
@@ -129,14 +142,18 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
     /// <summary>How long the thread works before the next idle gap: 30 ms to 1.5 s, so boost is entered and left at many different moments.</summary>
     private static double NextBurst(Random r, bool variable) => variable ? 30 + r.NextDouble() * 1470 : double.MaxValue;
 
-    private string Describe(TestExecutionRequest request, DateTimeOffset started, double slice, bool variable, int atOnce, long multiplies, long visits, long[] errorsByCore, List<int> unpinned, bool[] covered)
+    /// <summary>The kinds of work in a visit, in order (the second is named by the vector width the CPU has).</summary>
+    private static readonly string[] WorkNames = ["matrix", "vector", "integer"];
+
+    private string Describe(TestExecutionRequest request, DateTimeOffset started, double slice, bool variable, int atOnce, long multiplies, long visits, long[] errorsByCore, List<int> unpinned, bool[] covered, string work, long[] wrongByWork)
     {
         var finished = request.Clock.UtcNow;
         bool hybrid = _cores.Select(c => c.EfficiencyClass).Distinct().Count() > 1;
         var bad = errorsByCore.Select((e, i) => (e, i)).Where(x => x.e > 0).Select(x => $"core {x.i}{(hybrid ? _cores[x.i].EfficiencyClass > 0 ? " (P)" : " (E)" : "")}: {x.e}");
         return SensorEvidence.Join($"single-core cycling over {_cores.Count} physical cores, {slice:F1} s each, {(variable ? "variable" : "steady")} load, matrix {N}x{N}" + (atOnce > 1 ? $", {atOnce} at a time" : ""),
-            $"core visits={visits}", $"multiplies={multiplies}",
+            work, $"core visits={visits}", $"multiplies={multiplies}",
             errorsByCore.Any(e => e > 0) ? "wrong results on " + string.Join(", ", bad) : null,
+            wrongByWork.Any(e => e > 0) ? "wrong results by work: " + string.Join(", ", WorkNames.Select((n, k) => $"{n} {wrongByWork[k]}")) : null,
             unpinned.Count > 0 ? $"Windows refused pinning to core(s) {string.Join(", ", unpinned)}" : null,
             covered.Any(x => !x) ? $"not tested: core(s) {string.Join(", ", covered.Select((x, i) => (x, i)).Where(y => !y.x).Select(y => y.i))} - the result covers only the others" : $"every core tested",
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished) is { } clock ? $"peak core clock {clock.Max:F0} MHz" : null,

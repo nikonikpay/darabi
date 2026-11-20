@@ -5,14 +5,14 @@
 // page is a part of the app that is not a page (the assistant, the tray) and sits under the help section.
 import { t } from "../i18n.js";
 import { h, icon } from "../ui.js";
-import { FAMILIES, TAB_ICON, go } from "../app.js";
+import { FAMILIES, TAB_ICON, go, boot } from "../app.js";
 import { norm, mark } from "../search.js";
 
 const TOPICS = [
   ["dashboard", null, "Nav_Dashboard"],
   ["monitoring", null, "Nav_Monitoring"], ["system", null, "Nav_SystemInfo"], ["cpu", null, "Nav_Cpu"], ["gpu", null, "Nav_Gpu"], ["ram", null, "Dashboard_Ram"],
   ["storage", null, "Nav_Storage"], ["storage", "bitlocker", "BitLocker_Title"], ["network", null, "Nav_Network"],
-  ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["benchmarks", "bench.cpu.render.multi", "Bench_Render_Multi"], ["benchmarks", "bench.gpu.fur", "Bench_Gpu_Fur"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"], ["checks", "send", "Checks_Send_Title"],
+  ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["benchmarks", "bench.cpu.render.multi", "Bench_Render_Multi"], ["benchmarks", "bench.gpu.fur", "Bench_Gpu_Fur"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"], ["checks", "send", "Checks_Send_Title"], ["checks", "usb", "Checks_Usb"],
   ["apps", null, "Nav_Apps"], ["ai", null, "Nav_Ai"],
   ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"], ["play", "gameboost", "GameBoost_Title"], ["games", null, "Nav_Games"], ["overlay", null, "Nav_Overlay"],
   ["tuning", null, "Nav_Tuning"], ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "fancurve", "Tuning_FanCurve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"],
@@ -37,7 +37,7 @@ export function mount(el) {
   const none = h("p", { class: "caption", hidden: true }, t("Nav_Search_None"));
   const helpFamily = FAMILIES.find((f) => f.pages.includes("help"));
   const sections = FAMILIES.map((f) => {
-    const topics = TOPICS.filter(([page]) => (page ? f.pages.includes(page) : f === helpFamily)).map(([page, target, key]) => {
+    const topics = TOPICS.filter(([page, target]) => (page ? f.pages.includes(page) : f === helpFamily) && (target !== "send" || boot.staff)).map(([page, target, key]) => {
       const steps = t(`HelpHow_${key}`).split("|");
       const node = h("details", { class: "help-topic" },
         h("summary", {}, h("span", { class: "help-ti" }, icon((target && BOX_ICON[target]) || LOOSE_ICON[key] || TAB_ICON[page] || f.icon)),

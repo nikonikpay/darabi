@@ -135,10 +135,16 @@ public sealed partial class WebBridge
             bool stopped = j.Trip is { } tr && PartOf(tr.Sensor switch { Mazesta.Core.Health.ThermalSensor.Drive => "storage.", Mazesta.Core.Health.ThermalSensor.CpuPackage or Mazesta.Core.Health.ThermalSensor.CpuHottestCore => "cpu.", _ => "gpu." }) == g.Key;
             string level = failed > 0 || stopped || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Problem) ? "Problem"
                 : unsure || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Attention) ? "Attention" : "Good";
+            // Only too little time (nothing failed, no finding to look at): say so in plain words and how long a full run takes, instead of "needs review".
+            bool partial = level == "Attention" && failed == 0 && !findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Attention)
+                && g.All(r => r.Outcome is TestOutcome.Passed or TestOutcome.Inconclusive);
+            var timeNotes = partial ? g.Where(r => r.Outcome == TestOutcome.Inconclusive && j.Queue.Any(q => q.Definition.Id == r.Id)).Select(r =>
+                Loc.Format("Done_NeedTime", Name(r.Id), Math.Ceiling(j.Queue.First(q => q.Definition.Id == r.Id).Definition.DefaultDurationSeconds / 60.0), Math.Max(1, Math.Round(((r.FinishedAt - r.StartedAt)?.TotalMinutes ?? 0))))).ToList() : null;
             return new
             {
+                partial, timeNotes,
                 // The sentence about heat and clocks only when the monitor's record of them was judged (a run too short, or no sensors: only the tests' word).
-                part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed, failed, total = g.Count(), errors = g.Sum(r => r.ErrorCount),
+                part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed = partial ? passed + g.Count(r => r.Outcome == TestOutcome.Inconclusive) : passed, failed, total = g.Count(),   // (the window calls a clean run too short to finish a pass, with the warning; the saved report keeps "Inconclusive") errors = g.Sum(r => r.ErrorCount),
                 tempMax = judged?.TempMaxC, load = judged?.LoadPercent, fps = g.Key == "Gpu" ? FramesPerSecond(g.Select(r => r.Detail)) : null, temps = judged?.Temps?.Select(x => new { key = x.Key, value = x.C }),
                 tests = g.Select(r => new { name = Name(r.Id), outcome = r.Outcome.ToString(), outcomeText = Loc.Get("Test_Outcome_" + r.Outcome) }),
                 findings = findings.Select(FindingJson),
@@ -149,6 +155,7 @@ public sealed partial class WebBridge
             sensor = "Thermal_" + t.Sensor, value = Math.Round(t.ValueC), limit = Math.Round(t.LimitC), sustained = t.Sustained, minutes = Math.Max(1, _config.TrayHoldMinutes),
             tests = (j.TripTests ?? []).Select(Name),
         } : null;
-        return new { trip, parts, level = trip is not null || parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good" };
+        string overall = trip is not null || parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good";
+        return new { trip, parts, level = overall, onlyPartial = overall == "Attention" && parts.Where(p => p.level == "Attention").All(p => p.partial) };
     }
 }

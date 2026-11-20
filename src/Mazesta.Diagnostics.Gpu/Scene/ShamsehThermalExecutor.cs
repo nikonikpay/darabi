@@ -57,7 +57,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
         long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0;
-        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0; bool afterCheck = false; var recent = new Queue<double>();
+        var readout = new FurReadout(scene, request.Engine, gpu, card); var stats = new FurStats(); double checkTime = 0, lastFps = 0, minFps = double.MaxValue, maxFps = 0; bool afterCheck = false; var recent = new Queue<double>();
         try
         {
             while (total.Elapsed < duration)
@@ -81,6 +81,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
                     // (and the half second after it: the card is still getting back to its clock)
                     if ((checkTime == 0 && !afterCheck) || lastFps == 0) lastFps = updateFrames / updateClock.Elapsed.TotalSeconds;
                     afterCheck = checkTime > 0;
+                    if (total.Elapsed.TotalSeconds > 2 && lastFps > 0) { minFps = Math.Min(minFps, lastFps); maxFps = Math.Max(maxFps, lastFps); }   // the start-up moments are not the card's pace
                     // the shown figure is the last two seconds averaged: the clock's dither at the power limit does not make it jump
                     recent.Enqueue(lastFps); if (recent.Count > 4) recent.Dequeue(); double fps = recent.Average(); updateFrames = 0; updateClock.Restart(); checkTime = 0;
                     window.Title = $"Mazesta — GPU temperature — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
@@ -101,7 +102,7 @@ public sealed class ShamsehThermalExecutor : ITestExecutor, ITestAvailability
             var finished = request.Clock.UtcNow; var node = GpuDevices.SensorNode(request.Engine, session.AdapterName);
             var c = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, node, null); var hs = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, node, null);
             return SensorEvidence.Join($"GPU temperature scene drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}, the gate of {scene.Triangles:N0} triangles into a float frame",
-                $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", $"check frames={checks}", firstError.Length > 0 ? firstError : null,
+                $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, maxFps > 0 ? $"{maxFps:F1} FPS highest half-second" : null, $"check frames={checks}", firstError.Length > 0 ? firstError : null,
                 SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
                 c?.Format("GPU core", "°C", includeMax: true), hs?.Format("GPU hot spot", "°C", includeMax: true),
                 c is { } cc && hs is { } hh ? $"hot spot above core at the peak {hh.Max - cc.Max:F1}°C, on average {hh.Average - cc.Average:F1}°C" : null,

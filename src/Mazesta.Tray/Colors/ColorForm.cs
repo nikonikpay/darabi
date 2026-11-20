@@ -9,7 +9,7 @@ namespace Mazesta.Tray.Colors;
 internal sealed class ColorForm : Form
 {
     private const int Keep = 20;
-    private static readonly Color Back = Color.FromArgb(28, 28, 32), Line = Color.FromArgb(48, 48, 54), Text1 = Color.FromArgb(235, 235, 240), Dim = Color.FromArgb(150, 150, 160);
+    private static readonly Color Back = Theme.Ink2, Line = Theme.Ink4, Text1 = Theme.Paper, Dim = Theme.Paper2;
     private readonly string _file; private readonly Panel _swatch = new() { Dock = DockStyle.Left, Width = 120 };
     private readonly TableLayoutPanel _codes = new() { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 3, Padding = new Padding(12, 0, 0, 0) };
     private readonly FlowLayoutPanel _shades = new() { Dock = DockStyle.Top, Height = 40, Padding = new Padding(0, 8, 0, 0), WrapContents = false };
@@ -20,9 +20,9 @@ internal sealed class ColorForm : Form
     {
         _file = file; _history = Read(file);
         Text = TrayText.Color; FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual; KeyPreview = true;
-        AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 10f); BackColor = Back; ForeColor = Text1; Padding = new Padding(14, 10, 14, 12);
+        AutoScaleMode = AutoScaleMode.Dpi; Font = Theme.Reg(10f); BackColor = Back; ForeColor = Text1; Padding = new Padding(14, 10, 14, 12);
         var head = new Panel { Dock = DockStyle.Top, Height = 34 };
-        head.Controls.Add(new Label { Text = TrayText.Color, Dock = DockStyle.Fill, Font = new Font("Segoe UI Semibold", 11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft });   // "left" is the reading start in a right-to-left label
+        head.Controls.Add(new Label { Text = TrayText.Color, Dock = DockStyle.Fill, Font = Theme.Semi(11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft });   // "left" is the reading start in a right-to-left label
         head.Controls.Add(Button(TrayText.ColorAgain, again, DockStyle.Left));
         var body = new Panel { Dock = DockStyle.Top, Height = 120 };
         body.Controls.Add(_codes); body.Controls.Add(_swatch);

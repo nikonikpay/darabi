@@ -13,12 +13,14 @@ public sealed class ReportText
         VerdictPassed, VerdictFailed, VerdictIncomplete, OutcomePassed, OutcomeFailed, OutcomeCancelled, OutcomeUnsupported, OutcomeNotRun, OutcomeError, OutcomeInconclusive,
         CompareTitle, Before, After, Change, NotMeasured, ServiceNumber, StageBefore, StageAfter,
         Device, Laptop, WorkDone,
-        Checkup, CheckupNote, LevelGood, LevelNote, LevelAttention, LevelProblem, MakerFigures;
+        Checkup, CheckupNote, LevelGood, LevelNote, LevelAttention, LevelProblem, MakerFigures,
+        KindTemp, KindFps, KindLoad, KindClock, KindPower, KindFan, KindVolt, KindOther, PeakIn, KindScore, KindMem, AxisTime, ChartHint, Steady, IdleZero;
 
     public string LevelName(string level) => level switch { "Good" => LevelGood, "Attention" => LevelAttention, "Problem" => LevelProblem, _ => LevelNote };
 
     public string TitleOf(ReportKind kind) => kind == ReportKind.Benchmark ? BenchmarkTitle : Title;
     public string VerdictName(ReportVerdict v) => v switch { ReportVerdict.Passed => VerdictPassed, ReportVerdict.Failed => VerdictFailed, _ => VerdictIncomplete };
+    public string ShortRun(string ran, string full) => IsRtl ? $"ایرادی دیده نشد، اما این اجرا ({ran}) برای کامل‌شدن آزمون کوتاه بود؛ برای نتیجهٔ کامل حدود {full} آزمون کنید." : $"No fault was seen, but this run ({ran}) was too short to finish the test; run about {full} for a full result.";
     public string OutcomeName(ReportOutcome o) => o switch
     {
         ReportOutcome.Passed => OutcomePassed, ReportOutcome.Failed => OutcomeFailed, ReportOutcome.Cancelled => OutcomeCancelled, ReportOutcome.Unsupported => OutcomeUnsupported,
@@ -41,7 +43,8 @@ public sealed class ReportText
         OutcomePassed = "موفق", OutcomeFailed = "ناموفق", OutcomeCancelled = "لغو شد", OutcomeUnsupported = "پشتیبانی نمی‌شود", OutcomeNotRun = "اجرا نشده", OutcomeError = "خطای اجرای آزمون (نه خرابی قطعه)", OutcomeInconclusive = "نامعین (پوشش ناقص)",
         CompareTitle = "مقایسه‌ی قبل و بعد از سرویس", Before = "قبل", After = "بعد", Change = "تغییر", NotMeasured = "اندازه‌گیری نشده", ServiceNumber = "شماره‌ی سرویس", StageBefore = "گزارش قبل از سرویس", StageAfter = "گزارش بعد از سرویس",
         Checkup = "عیب‌یابی هوشمند", CheckupNote = "از روی اندازه‌گیری‌های همین سیستم و آنچه خود قطعه‌ها اعلام می‌کنند؛ مواردی که بررسی نشدند نیامده‌اند.",
-        LevelGood = "درست", LevelNote = "توضیح", LevelAttention = "نیاز به بررسی", LevelProblem = "مشکل", MakerFigures = "اعداد سازنده"
+        LevelGood = "درست", LevelNote = "توضیح", LevelAttention = "نیاز به بررسی", LevelProblem = "مشکل", MakerFigures = "اعداد سازنده",
+        KindTemp = "دما", KindFps = "نرخ فریم (FPS)", KindLoad = "بار پردازش", KindClock = "فرکانس", KindPower = "توان مصرفی", KindFan = "فن", KindVolt = "ولتاژ", KindOther = "سایر", PeakIn = "اوج مقدار در", AxisTime = "زمان از شروع (ثانیه)", ChartHint = "کلیک روی هر رنگ: نمایش/پنهان · دوبار کلیک: فقط همان", Steady = "ثابت", IdleZero = "صفر در تمام آزمون", KindScore = "نتیجه / امتیاز", KindMem = "حافظه و حجم"
     };
 
     public static readonly ReportText English = new()
@@ -58,6 +61,7 @@ public sealed class ReportText
         OutcomePassed = "Passed", OutcomeFailed = "Failed", OutcomeCancelled = "Cancelled", OutcomeUnsupported = "Not supported", OutcomeNotRun = "Not run", OutcomeError = "Test error (not a hardware fault)", OutcomeInconclusive = "Inconclusive (partial coverage)",
         CompareTitle = "Before and after service", Before = "Before", After = "After", Change = "Change", NotMeasured = "not measured", ServiceNumber = "Service number", StageBefore = "Before service", StageAfter = "After service",
         Checkup = "Checkup", CheckupNote = "From this machine's own measurements and what its parts report themselves; what was not checked is left out.",
-        LevelGood = "Fine", LevelNote = "Note", LevelAttention = "Needs a look", LevelProblem = "Problem", MakerFigures = "Maker's figures"
+        LevelGood = "Fine", LevelNote = "Note", LevelAttention = "Needs a look", LevelProblem = "Problem", MakerFigures = "Maker's figures",
+        KindTemp = "Temperature", KindFps = "Frame rate (FPS)", KindLoad = "Load", KindClock = "Frequency", KindPower = "Power draw", KindFan = "Fan", KindVolt = "Voltage", KindOther = "Other", PeakIn = "Peaked in", AxisTime = "Time since start (s)", ChartHint = "Click a colour to show/hide it · double-click to isolate", Steady = "Steady", IdleZero = "Zero throughout", KindScore = "Result / score", KindMem = "Memory and size"
     };
 }

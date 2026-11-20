@@ -190,3 +190,52 @@ public class ReportSummaryTests
         Assert.True(f.Single(x => x.Key == "b:bench.gpu.fur:Bench_Fur_Fps").Higher); Assert.DoesNotContain(f, x => x.Key.EndsWith("TempMax"));   // a reading of the conditions is not a result
     }
 }
+
+public class CleanButShortTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 11, 18, 10, 0, 0, TimeSpan.Zero);
+    private static SessionReport Report(long errors, double? full) =>
+        SessionReport.Create("x", "1", T0, [new TestEntry("memory.bitfade", "Bit Fade", ReportOutcome.Inconclusive, T0, T0.AddSeconds(20), 20, errors, null, new Dictionary<string, string>(), null, full)], [], HardwareInventory.Empty);
+
+    [Fact] public void A_clean_run_shorter_than_the_test_shows_passed_with_the_time_a_full_result_needs()
+    {
+        string html = ReportHtml.Write(Report(0, 300));
+        Assert.Contains("badge Passed", html); Assert.DoesNotContain("badge Inconclusive", html); Assert.Contains("برای نتیجهٔ کامل حدود", html);
+        Assert.Contains("class=\"sr\"", SummaryHtml.Write(ReportSummary.Of(Report(0, 300))));
+    }
+
+    [Fact] public void A_run_with_errors_or_no_known_full_length_keeps_its_inconclusive_outcome()
+    {
+        Assert.Contains("badge Inconclusive", ReportHtml.Write(Report(2, 300)));
+        Assert.Contains("badge Inconclusive", ReportHtml.Write(Report(0, null)));
+    }
+}
+
+public class SummaryClockTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 11, 18, 10, 0, 0, TimeSpan.Zero);
+    private static SensorSummary Clk(string role, double max) => new(role + "#1", "CPU", role, "Clock", "MHz", max - 100, max - 50, max, 5, [], role);
+
+    [Fact] public void Clocks_name_the_test_they_were_reached_in_and_the_board_model_has_its_card()
+    {
+        var tests = new[] { new TestEntry("cpu.stress", "CPU stress", ReportOutcome.Passed, T0, T0.AddSeconds(30), 30, 0, null, new Dictionary<string, string>()), new TestEntry("gpu.thermal", "GPU thermal", ReportOutcome.Passed, T0.AddMinutes(1), T0.AddMinutes(2), 60, 0, null, new Dictionary<string, string>()) };
+        var machine = HardwareInventory.Empty with { Motherboard = new MotherboardInfo("ASUSTeK", "PRIME B550M-A", null, null) };
+        var r = SessionReport.Create("x", "1", T0, tests, [], machine) with { TestSensors = [new("cpu.stress", [Clk("CpuPCoreClock", 5200), Clk("CpuECoreClock", 4100)]), new("gpu.thermal", [Clk("GpuCoreClock", 2800)])] };
+        var s = ReportSummary.Of(r);
+        Assert.Equal(5200, s.Clocks.Single(c => c.Role == "CpuPCoreClock").MaxMhz); Assert.Equal("CPU stress", s.Clocks.Single(c => c.Role == "CpuECoreClock").During); Assert.Equal("GPU thermal", s.Clocks.Single(c => c.Role == "GpuCoreClock").During);
+        string html = SummaryHtml.Write(s, wording: SummaryText.English);
+        Assert.Contains("P-core clock", html); Assert.Contains("E-core clock", html); Assert.Contains("5200 MHz", html); Assert.Contains("<div class=\"cn\"><bdi class=\"lt\">ASUSTeK PRIME B550M-A", html);
+    }
+
+    [Fact] public void The_graphics_clocks_are_one_plain_line_not_boxes()
+    {
+        var tests = new[] { new TestEntry("gpu.thermal", "GPU thermal", ReportOutcome.Passed, T0, T0.AddSeconds(60), 60, 0, null, new Dictionary<string, string>()) };
+        var r = SessionReport.Create("x", "1", T0, tests, [], HardwareInventory.Empty) with { TestSensors = [new("gpu.thermal", [Clk("GpuCoreClock", 1935), Clk("GpuMemoryClock", 9752), Clk("CpuPCoreClock", 4200)])] };
+        string html = SummaryHtml.Write(ReportSummary.Of(r), wording: SummaryText.English);
+        int line = html.IndexOf("class=\"clkline\"", StringComparison.Ordinal); Assert.True(line > 0);
+        string text = html[line..html.IndexOf("</div>", line, StringComparison.Ordinal)];
+        Assert.Contains("GPU clock", text); Assert.Contains("1935 MHz", text); Assert.Contains("GPU memory clock", text); Assert.Contains("9752 MHz", text); Assert.DoesNotContain("CPU clock", text);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "tile clk"));   // only the CPU's clock keeps a box
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) File.WriteAllText(Path.Combine(dir, "summary-gpuclk.html"), html);
+    }
+}

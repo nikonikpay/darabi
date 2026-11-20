@@ -248,7 +248,7 @@ export function mount(el) {
     try { show(await call(method, params)); } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); } finally { start.disabled = false; }
   }
 
-  const allBox = box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] });
+  const allBox = box({ cls: "p-lights-all", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] });
   // The controls as one bar across the top; the set's panel, the hint and the devices' cards follow in columns, so no panel leaves a hole beside it.
   const bar = h("section", { class: "rgb-bar" },
     h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))),

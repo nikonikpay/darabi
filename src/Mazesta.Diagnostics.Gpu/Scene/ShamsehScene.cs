@@ -89,8 +89,10 @@ internal sealed unsafe class ShamsehScene : IDisposable
             SampleMask = uint.MaxValue, DepthStencilState = depth, DepthStencilFormat = depth.DepthEnable ? Format.D32_Float : Format.Unknown, RenderTargetFormats = [target], SampleDescription = new SampleDescription(samples == 0 ? _samples : samples, 0)
         }));
         _solid = Pipeline(solidVs, "ShamsehSolidPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.LessEqual), LightFormat);
-        _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, under, LightFormat);
-        _sky = Pipeline(D3D12Session.Shader("ShamsehSkyVS"), "ShamsehSkyPS", BlendDescription.Opaque, under, LightFormat);   // at the far plane: only where nothing is drawn
+        _ground = Pipeline(D3D12Session.Shader("ShamsehGroundVS"), "ShamsehGroundPS", layered, DepthStencilDescription.None, LightFormat);   // no depth test: it is drawn right after the sky and the gate then covers it, so no edge sample's colour depends on the depth buffer
+        // Drawn first, over everything (it always passes the depth test), and the gate and the lawn then cover it. (Drawn last with a depth test "only where
+        // nothing is", the card left silhouette samples unpainted - black dashes round the gate - once the garden had run in the same process, and the check frames differed.)
+        _sky = Pipeline(D3D12Session.Shader("ShamsehSkyVS"), "ShamsehSkyPS", BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.Always), LightFormat);   // and it writes the far depth itself: a clear alone left stale depth at silhouette samples
         _fur = Pipeline(D3D12Session.Shader("ShamsehFurVS"), "ShamsehFurPS", layered, under, LightFormat);
         _lens = Pipeline(D3D12Session.Shader("ShamsehLensVS"), "ShamsehLensPS", BlendDescription.Opaque, DepthStencilDescription.None, Format.R8G8B8A8_UNorm, 1);   // the lens reads the samples and writes one pixel
     }
@@ -137,7 +139,26 @@ internal sealed unsafe class ShamsehScene : IDisposable
         int disc = Round * 3; uint rim = first + 1 + Round;
         for (int j = 0; j < Round; j++) { float a = j * MathF.Tau / Round, c = MathF.Cos(a), s = MathF.Sin(a); Add(c * TurfRadius, 0, s * TurfRadius, c, 0, s); Add(c * TurfRadius, -SkirtDepth, s * TurfRadius, c, 0, s); }
         for (int j = 0; j < Round; j++) { uint a = rim + (uint)(2 * j), b = rim + (uint)(2 * ((j + 1) % Round)); ix.AddRange([a, b, a + 1, b, b + 1, a + 1]); }
+        var (lv, li) = LogoMesh(); uint at = (uint)(v.Count / 9); v.AddRange(lv); ix.AddRange(li.Select(i => i + at));   // the gilt logo, drawn solid with the lawn's soil
         return ([.. v], [.. ix], disc);
+    }
+
+    /// <summary>The garden's gilt logo (baked from it into Scene/logo.mzlogo by LogoBakeTests: x y z and normal a vertex, width 1, facing +z) standing in the gate's passage, its foot sunk in the grass (the blades are 0.07 high), facing the camera:
+    /// material 2, <see cref="LogoWidth"/> wide, centred on x = 0, z = <see cref="LogoZ"/> in the gate's own space (it sways with the gate).</summary>
+    private const float LogoWidth = 0.4f, LogoZ = 0.1f, LogoFoot = 0.01f;
+    private static (float[] Vertices, uint[] Indices) LogoMesh()
+    {
+        using var raw = typeof(ShamsehScene).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.logo.mzlogo") ?? throw new InvalidDataException("The logo is not in this build.");
+        using var r = new BinaryReader(raw); int n = r.ReadInt32(), ni = r.ReadInt32(); var v = new float[n * 9]; float low = 0;
+        for (int i = 0; i < n; i++)
+        {
+            float x = r.ReadSingle(), y = r.ReadSingle(), z = r.ReadSingle(), nx = r.ReadSingle(), ny = r.ReadSingle(), nz = r.ReadSingle(); low = Math.Min(low, y);
+            float[] w = [x * LogoWidth, y * LogoWidth, LogoZ + z * LogoWidth, nx, ny, nz, 0, 0, 2];
+            Array.Copy(w, 0, v, i * 9, 9);
+        }
+        for (int i = 0; i < n; i++) v[i * 9 + 1] += LogoFoot - low * LogoWidth;   // its foot in the grass
+        var ix = new uint[ni]; for (int i = 0; i < ni; i++) ix[i] = r.ReadUInt32();
+        return (v, ix);
     }
 
     /// <summary>A picture's mip chain (BC3, <paramref name="size"/> down to 4, largest first) as a texture: staged at 512-byte boundaries, rows 256-byte aligned, as buffer-to-texture copies require.</summary>
@@ -184,9 +205,9 @@ internal sealed unsafe class ShamsehScene : IDisposable
         l.SetGraphicsRootSignature(_root); l.SetDescriptorHeaps(1, [_views]);
         l.SetGraphicsRoot32BitConstants(0, k, 0); l.SetGraphicsRootShaderResourceView(1, _vertices.GPUVirtualAddress); l.SetGraphicsRootDescriptorTable(2, _views.GetGPUDescriptorHandleForHeapStart());
         l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList); l.IASetIndexBuffer(new IndexBufferView(_indices.GPUVirtualAddress, (_gateIndices + _lawnIndices) * 4, Format.R32_UInt));
-        l.SetPipelineState(_solid); l.DrawIndexedInstanced(_gateIndices + _lawnIndices, 1, 0, 0, 0);   // the gate, and the soil under the grass
         l.SetPipelineState(_sky); l.DrawInstanced(3, 1, 0, 0);   // the dusk gradient behind the gate
-        if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the sky behind them: the depth test keeps the aurora off them
+        if (WithSky) { l.SetPipelineState(_ground); l.DrawInstanced(3, Layers, 0, 0); }   // the aurora over the dusk, behind everything: the gate and the lawn are drawn over it
+        l.SetPipelineState(_solid); l.DrawIndexedInstanced(_gateIndices + _lawnIndices, 1, 0, 0, 0);   // the gate, and the soil under the grass
         if (WithLawn) { l.SetPipelineState(_fur); l.DrawIndexedInstanced(_discIndices, FurLayers, _gateIndices, 0, 0); }   // the grass, its layers in instance order: the inner ones first
         l.ResourceBarrierTransition(_light, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
         l.ResourceBarrierTransition(target, state, ResourceStates.RenderTarget);

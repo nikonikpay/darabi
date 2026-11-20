@@ -25,7 +25,7 @@ const WIDE = { Backspace: 2, Tab: 1.5, Backslash: 1.5, CapsLock: 1.8, Enter: 2.2
 // Full-screen colours for dead or stuck pixels, then a gradient for banding and a fine checkerboard for pixel response.
 const SCREENS = ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#808080", "linear-gradient(90deg, #000, #fff)", "repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 2px 2px"];
 
-const CHECK_TARGET = { Display: "display", Touch: "touch", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Webcam: "webcam", Battery: "battery" };
+const CHECK_TARGET = { Display: "display", Touch: "touch", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Webcam: "webcam", Battery: "battery", Usb: "usb" };
 // The technician's calls are kept (they were lost on leaving the page), so what was checked stays marked.
 const VERDICTS = "mazesta.checks";
 const verdicts = () => { try { return JSON.parse(localStorage.getItem(VERDICTS)) || {}; } catch { return {}; } };
@@ -160,15 +160,17 @@ function speakers(cleanup) {
   // Which side should be sounding, in words and in two lamps: a technician who hears nothing, or both sides, sees what was expected.
   const lamps = { l: h("span", { class: "kb-key lat" }, "L"), r: h("span", { class: "kb-key lat" }, "R") }, note = h("p", { class: "caption" });
   const show = (left, right) => { lamps.l.classList.toggle("hit", left); lamps.r.classList.toggle("hit", right); };
-  // A 440 Hz tone sent to one output channel of the stereo pair, or both, through a channel merger (the left tone is wired to channel 0 and the right to channel 1, whatever
-  // a panner would do on a mono device); the sweep runs 20 Hz to 20 kHz to find a rattle or a dead range. `steps` plays the pair in turn: left, a gap, right.
+  // A 440 Hz tone (or a 20 Hz - 20 kHz sweep, for a rattle or a dead range) written sample by sample into a two-channel buffer whose other channel is silence: a channel
+  // merger fed one side was mixed into both speakers on the owner's laptop and PC, a buffer with real zeros in one channel cannot be.
   function tone(left, right, sweep = false, start = 0, len = sweep ? 10 : 1.5) {
-    const a = audio(), osc = a.createOscillator(), gain = a.createGain(), merger = a.createChannelMerger(2), now = a.currentTime + start;
-    osc.type = "sine";
-    if (sweep) { osc.frequency.setValueAtTime(20, now); osc.frequency.exponentialRampToValueAtTime(20000, now + len); } else osc.frequency.value = 440;
-    gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.25, now + 0.05); gain.gain.setValueAtTime(0.25, now + len - 0.1); gain.gain.linearRampToValueAtTime(0, now + len);
-    osc.connect(gain); if (left) gain.connect(merger, 0, 0); if (right) gain.connect(merger, 0, 1);
-    merger.connect(a.destination); osc.start(now); osc.stop(now + len);
+    const a = audio(), rate = a.sampleRate, n = Math.round(len * rate), buf = a.createBuffer(2, n, rate), wave = new Float32Array(n), now = a.currentTime + start;
+    for (let i = 0, ph = 0; i < n; i++) {
+      const s = i / rate, f = sweep ? 20 * Math.pow(1000, s / len) : 440;
+      ph += (2 * Math.PI * f) / rate;
+      wave[i] = 0.25 * Math.min(1, s / 0.05, (len - s) / 0.1) * Math.sin(ph);
+    }
+    if (left) buf.copyToChannel(wave, 0); if (right) buf.copyToChannel(wave, 1);
+    const osc = a.createBufferSource(); osc.buffer = buf; osc.connect(a.destination); osc.start(now);
     const mono = a.destination.maxChannelCount < 2;
     note.textContent = mono ? t("Checks_Speakers_Mono") : t("Checks_Speakers_Channels", a.destination.maxChannelCount);
     return osc;
@@ -185,6 +187,35 @@ function speakers(cleanup) {
       h("button", { class: "btn", onclick: () => play(false, true) }, t("Checks_Right")), h("button", { class: "btn go", onclick: inTurn }, icon("play"), t("Checks_InTurn")),
       h("button", { class: "btn", onclick: () => play(true, true, true) }, t("Checks_Sweep")),
       h("button", { class: "btn quiet", onclick: () => { stop(); show(false, false); } }, icon("stop"), t("Checks_Stop")), h("span", { class: "grow" }), lamps.l, lamps.r), note));
+}
+
+// The USB ports: each port holding a device Windows recognises is ticked, what is plugged in now and what is plugged in while the check runs.
+// Read every two seconds while the check runs, never otherwise.
+function usb(cleanup) {
+  const list = h("div", { class: "chk-usb" }), status = h("p", { class: "caption" });
+  const ports = new Map();   // "hub:port" (or the device id when Windows gives no port) -> its row
+  const seen = new Set(); let timer = 0;
+  const end = () => { clearInterval(timer); timer = 0; start.hidden = false; stop.hidden = true; };
+  async function read() {
+    let all; try { all = await call("usb.read"); } catch (e) { status.textContent = String(e.message || e); end(); return; }
+    // Every device Windows recognises proves its port, plugged before Start or after; a flash drive keeps its id from port to port, so it counts by id and place.
+    const place = (d) => (d.port != null ? `${d.hub}:${d.port}` : d.id), key = (d) => `${d.id}@${place(d)}`;
+    for (const d of all) {
+      if (seen.has(key(d))) continue;
+      seen.add(key(d));
+      const at = place(d);
+      const row = h("div", { class: `chk-usb-row ${d.ok ? "ok" : "bad"}` }, icon(d.ok ? "check" : "alert"),
+        h("b", { class: "fa" }, d.port != null ? t("Checks_Usb_Port", d.port, d.hub) : t("Checks_Usb_NoPort")), h("span", {}, d.name || d.id),
+        d.ok ? null : h("span", { class: "caption" }, t("Checks_Usb_Error")));
+      ports.get(at)?.remove(); ports.set(at, row); list.append(row);
+    }
+    const good = [...ports.values()].filter((r) => r.classList.contains("ok")).length;
+    status.textContent = ports.size ? t("Checks_Usb_Count", good) : t("Checks_Usb_Waiting");
+  }
+  const start = h("button", { class: "btn go", onclick: () => { seen.clear(); ports.clear(); list.replaceChildren(); start.hidden = true; stop.hidden = false; status.textContent = t("Checks_Usb_Waiting"); read(); timer = setInterval(read, 2000); } }, icon("play"), t("Checks_Usb_Start"));
+  const stop = h("button", { class: "btn quiet", hidden: true, onclick: end }, icon("stop"), t("Checks_Stop"));
+  cleanup.push(end);
+  return card("Usb", "drive", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Usb_Text")), h("div", { class: "btn-row" }, start, stop), list, status));
 }
 
 // The camera: a live picture from the chosen device, with what it delivers (size and frames per second). The picture stays on this page and is never saved or sent.
@@ -309,7 +340,7 @@ function battery(cleanup) {
 }
 
 // Parts the page cannot exercise but a laptop's or a case's service still has to note, judged by the technician.
-const MORE = ["Wifi", "Bluetooth", "Usb", "VideoOut", "Lan", "Body"];
+const MORE = ["Wifi", "Bluetooth", "VideoOut", "Lan", "Body"];
 // The calls above (and the parts the page cannot exercise), with a note each, sent into the service form before or after the work.
 function sendBox(cleanup) {
   const keys = [...Object.keys(CHECK_TARGET), ...MORE];
@@ -341,6 +372,6 @@ function sendBox(cleanup) {
 export function mount(el) {
   const cleanup = pageCleanup;
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checks")), h("p", { class: "page-lede" }, t("Checks_Lede")))),
-    h("div", { class: "chk-grid" }, display(), touch(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup), boot.staff ? sendBox(cleanup) : null);
+    h("div", { class: "chk-grid" }, display(), touch(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup), usb(cleanup)), keyboard(cleanup), boot.staff ? sendBox(cleanup) : null);
   return () => { cleanup.forEach((f) => f()); cleanup.length = 0; };
 }

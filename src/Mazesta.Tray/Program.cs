@@ -23,6 +23,9 @@ internal static class Program
         var paths = AppPaths.Detect();
         var intervals = TrayIntervals.Read(paths.ConfigFile);
         ApplicationConfiguration.Initialize();
+        // a late callback into a window that has just closed must not show the system's error box in a tray program: it goes to a log
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (_, e) => { try { File.AppendAllText(Path.Combine(paths.DataRoot, "logs", "tray-errors.log"), $"{DateTime.Now:s} {e.Exception}\r\n\r\n"); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { } };
         Application.Run(new TrayContext(intervals, TrayCheckLog.FileIn(paths), paths));
     }
 }

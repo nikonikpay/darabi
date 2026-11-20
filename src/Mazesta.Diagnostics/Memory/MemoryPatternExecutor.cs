@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Evidence;
 namespace Mazesta.Diagnostics.Memory;
 
 /// <summary>
@@ -7,7 +7,9 @@ namespace Mazesta.Diagnostics.Memory;
 /// counted error, not an exception - the run keeps going so the technician sees how bad it is. Memory the OS
 /// needs to stay alive is never taken: the reserve is the larger of 1.5 GiB and a 24th of installed RAM. Before it measures what is free,
 /// the other programs' working sets are trimmed (<see cref="IMemoryProbe.FreeUp"/>): their pages go to the page file, nothing is closed.
-/// A clean run passes only when every pattern was verified and every algorithm ran; a run too short for that is Inconclusive.
+/// A clean run passes only when every pattern was verified and every algorithm ran; a run too short for that is Inconclusive. So is one that,
+/// left to size itself, reached less than half of the installed RAM (<see cref="MinShare"/>): the untested half may hold the fault.
+/// The blocks are locked in RAM (<see cref="RamLock"/>), so what is checked is the RAM and never the page file.
 /// </summary>
 public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
 {
@@ -17,6 +19,19 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     TestDefinition ITestExecutor.Definition => Definition;
 
     internal const int BlockBytes = 64 << 20;
+    /// <summary>The share of the installed RAM an automatic run must reach for a clean result to be a pass.</summary>
+    public const double MinShare = 0.5;
+
+    /// <summary>Whether a clean run covered enough to pass. A size the technician set is their choice and is only reported.</summary>
+    internal static bool Enough(long tested, long total, bool automatic) => !automatic || total <= 0 || tested >= total * MinShare;
+
+    /// <summary>How much of the installed RAM the test held, and what to do when that is too little to call the RAM good.</summary>
+    internal static string? Coverage(long tested, long total, bool automatic) => total <= 0 ? null
+        : $"{tested * 100 / total}% of the {total >> 20} MiB installed RAM tested" + (Enough(tested, total, automatic) ? "" : " - under the half a result needs: close other programs and run it again, or test the whole RAM from boot");
+
+    /// <summary>The blocks Windows agreed to keep in RAM, in the words the bit-fade test uses.</summary>
+    internal static string Locks(int locked, int blocks) => $"{locked} of {blocks} blocks locked in RAM"
+        + (locked < blocks ? " - Windows would not lock the rest, so they may have been paged out while waiting and their result says nothing about the RAM" : "");
 
     /// <summary>What the test may take: the free RAM above the OS reserve, or less if the technician asked for less.</summary>
     internal static long Budget(MemoryStatus status, int requestedMb)
@@ -33,16 +48,20 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
-        long budget = Budget(probe.FreeUp(), (request.Options ?? TestOptions.None(Definition)).GetInt(SizeOption));
+        var status = probe.FreeUp(); int asked = (request.Options ?? TestOptions.None(Definition)).GetInt(SizeOption);
+        long budget = Budget(status, asked);
         if (budget < BlockBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of free RAM is available above the OS reserve; at least {BlockBytes >> 20} MiB is needed."));
-        return Task.Run(() => Run(request, budget, started, ct), CancellationToken.None);
+        return Task.Run(() => Run(request, budget, status.TotalBytes, asked <= 0, started, ct), CancellationToken.None);
     }
 
-    private TestRunResult Run(TestExecutionRequest request, long budget, DateTimeOffset started, CancellationToken ct)
+    private TestRunResult Run(TestExecutionRequest request, long budget, long total, bool automatic, DateTimeOffset started, CancellationToken ct)
     {
-        var blocks = new List<NativeBlock>();
+        var blocks = new List<NativeBlock>(); RamLock? held = null;
         long errors = 0, passes = 0, bytesTouched = 0; string firstError = ""; var algorithmsRun = new int[3];
         var timed = new Stopwatch();
+        string Detail() => SensorEvidence.Join(Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun),
+            Coverage((long)blocks.Count * BlockBytes, total, automatic), held is null ? null : Locks(held.Locked, blocks.Count),
+            SensorEvidence.Read(request.Engine, HardwareKind.Memory, SensorRole.DimmTemp, started, request.Clock.UtcNow)?.Format("RAM temperature", "°C", includeMax: true));
         try
         {
             for (long allocated = 0; allocated + BlockBytes <= budget; allocated += BlockBytes)
@@ -52,6 +71,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                 MemoryPatterns.Fill(block.Span, 0, blocks.Count - 1);   // commits the pages before anything is timed
                 request.Progress?.Invoke(new TestProgress(0, "Test_Status_Allocating"));
             }
+            held = new RamLock(blocks);
             request.Note("Log_Mem_Allocated", "other programs' working sets trimmed;  reserve = max(1.5 GiB, RAM / 24);  budget = free RAM − reserve", (long)blocks.Count * BlockBytes >> 20, blocks.Count);
             var duration = TimeSpan.FromSeconds(request.DurationSeconds);
             timed.Restart();
@@ -66,6 +86,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                 {
                     var span = blocks[i].Span;
                     long bad = MemoryPatterns.CountMismatches(span, pass - 1, i);
+                    string word = bad > 0 && firstError.Length == 0 ? "; " + MemoryPatterns.DescribeWord(MemoryPatterns.FirstMismatch(span, pass - 1, i)) : "";   // before the block is written over
                     if (algorithm is { } a)
                     {
                         long wrong = a switch
@@ -78,7 +99,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                         Interlocked.Add(ref bytesTouched, 3L * span.Length);
                     }
                     MemoryPatterns.Fill(span, pass, i);
-                    if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) while verifying '{MemoryPatterns.Name(pass - 1)}'"; }
+                    if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) while verifying '{MemoryPatterns.Name(pass - 1)}'{word}"; }
                     Interlocked.Add(ref bytesTouched, 2L * span.Length);
                 });
                 passes++;
@@ -94,15 +115,16 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
             while (timed.Elapsed < duration);
             // One last verification, so the final pass's own pattern is checked too.
             Parallel.For(0, blocks.Count, new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount },
-                i => { long bad = MemoryPatterns.CountMismatches(blocks[i].Span, (int)passes, i); if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) in the last verification of '{MemoryPatterns.Name((int)passes)}'"; } });
+                i => { long bad = MemoryPatterns.CountMismatches(blocks[i].Span, (int)passes, i); if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) in the last verification of '{MemoryPatterns.Name((int)passes)}'; {MemoryPatterns.DescribeWord(MemoryPatterns.FirstMismatch(blocks[i].Span, (int)passes, i))}"; } });
         }
         catch (OperationCanceledException)
         {
-            return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
+            return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Detail());
         }
-        finally { foreach (var b in blocks) b.Dispose(); }
+        finally { foreach (var b in blocks) b.Dispose(); held?.Dispose(); }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : Complete(passes, algorithmsRun) ? TestOutcome.Passed : TestOutcome.Inconclusive, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
+        bool clean = Complete(passes, algorithmsRun) && Enough((long)blocks.Count * BlockBytes, total, automatic);
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : clean ? TestOutcome.Passed : TestOutcome.Inconclusive, started, request.Clock.UtcNow, errors, Detail());
     }
 
     /// <summary>Every pattern verified (pattern 0 is written at allocation, the last one by the final verification) and every algorithm run.</summary>

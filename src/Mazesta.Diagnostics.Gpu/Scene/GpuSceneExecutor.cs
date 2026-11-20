@@ -122,7 +122,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         renderer.Overlay.Visible = options.Get(OverlayOption) != "off";
         using var pace0 = new SceneSensorPace(request.Engine, renderer.Overlay.Visible);
 
-        long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
+        long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue, maxFps = 0;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0; var pace = new FramePace(); long lastShown = Stopwatch.GetTimestamp();
         int refreshing = 0;   // 1 while the readout is being laid out on another thread
@@ -146,7 +146,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                 if (updateClock.Elapsed.TotalSeconds >= 0.5)
                 {
                     double fps = updateFrames / updateClock.Elapsed.TotalSeconds;
-                    if (total.Elapsed.TotalSeconds > 2) minFps = Math.Min(minFps, fps);   // the first moments include start-up, not the card's pace
+                    if (total.Elapsed.TotalSeconds > 2) { minFps = Math.Min(minFps, fps); maxFps = Math.Max(maxFps, fps); }   // the first moments include start-up, not the card's pace
                     window.Title = $"Mazesta — {mode} — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
                     pace.Sample(fps); ShowReadout(fps, background: true);
                     updateFrames = 0; updateClock.Restart();
@@ -180,7 +180,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
             var finished = request.Clock.UtcNow;
             return SensorEvidence.Join($"{mode} Persian garden drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}; {model.Triangles:N0} triangles in {model.Instances.Length:N0} objects, centre model '{model.ModelName}'",
                 $"load level {load}: {work}",
-                $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, $"check frames={checks}",
+                $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, maxFps > 0 ? $"{maxFps:F1} FPS highest half-second" : null, $"check frames={checks}",
                 firstError.Length > 0 ? firstError : null, model.ModelProblem,
                 SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU power", " W", includeMax: true),

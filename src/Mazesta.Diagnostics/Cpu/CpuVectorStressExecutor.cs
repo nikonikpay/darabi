@@ -11,7 +11,8 @@ namespace Mazesta.Diagnostics.Cpu;
 /// multiply and add for SSE2) - not with the vector unit's own first answer, which could itself be the wrong one. A lane that differs, or
 /// that is not a finite number, is counted and named. The chosen width is Unsupported (not failed) when the CPU lacks it.
 /// </summary>
-public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
+/// <param name="priority">Below normal when the load runs beside another test (the power test): the card's feeding threads must always get a core.</param>
+public sealed class CpuVectorStressExecutor(ThreadPriority priority = ThreadPriority.Normal) : ITestExecutor, ITestAvailability
 {
     public const string WidthOption = "width";
     public static readonly TestDefinition Definition = new(new TestId("cpu.vector"), "Test_Cpu_Vector", 300,
@@ -83,7 +84,7 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
         switch (width) { case Width.Avx512: Block512(lanes); break; case Width.Avx2: Block256(lanes); break; default: Block128(lanes); break; }
     }
 
-    private static TestRunResult Run(TestExecutionRequest request, Width width, DateTimeOffset started, CancellationToken ct)
+    private TestRunResult Run(TestExecutionRequest request, Width width, DateTimeOffset started, CancellationToken ct)
     {
         int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; var laneErrors = new long[LanesOf(width)]; string firstError = ""; var coverage = new CpuCoverage();
         var expected = Reference(width);
@@ -93,6 +94,7 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds); var pacer = new LogPacer();
         void Worker(int index)
         {
+            Thread.CurrentThread.Priority = priority;   // a thread of the worker's own (LongRunning), gone when it ends
             Span<double> got = stackalloc double[8];
             got = got[..expected.Length];
             while (!ct.IsCancellationRequested && total.Elapsed < duration)

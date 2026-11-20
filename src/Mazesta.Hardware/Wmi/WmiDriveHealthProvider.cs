@@ -20,10 +20,10 @@ public sealed class WmiDriveHealthProvider(IWmiQuery query) : IDriveHealthProvid
             int? used = d.WearPercent;
             if (d.BusType == "NVMe" && rows[i].Row.GetValueOrDefault("DeviceId") is { } id && int.TryParse(Convert.ToString(id, System.Globalization.CultureInfo.InvariantCulture), out int number)
                 && NvmeHealthReader.ReadLog(number) is { } log) used = log.PercentageUsed;
-            int? sectors = null;
+            int? sectors = null; long? bad = null;
             for (int k = 0; k < smart.Count && sectors is null; k++)
-                if (!taken.Contains(k) && WmiDriveHealthParser.Same(smart[k].Prod, d.Name)) { taken.Add(k); sectors = SmartHealth.FromAttributes(smart[k].Raw); }
-            return d with { WearPercent = SmartHealth.Wear(used, sectors), Letters = rows[i].Row.GetValueOrDefault("DeviceId") is { } did && letters.TryGetValue(Convert.ToString(did, System.Globalization.CultureInfo.InvariantCulture) ?? "", out var l) ? l : null };
+                if (!taken.Contains(k) && WmiDriveHealthParser.Same(smart[k].Prod, d.Name)) { taken.Add(k); sectors = SmartHealth.FromAttributes(smart[k].Raw); bad = SmartHealth.BadSectors(smart[k].Raw); }
+            return d with { WearPercent = SmartHealth.Wear(used, sectors), BadSectors = bad, Letters = rows[i].Row.GetValueOrDefault("DeviceId") is { } did && letters.TryGetValue(Convert.ToString(did, System.Globalization.CultureInfo.InvariantCulture) ?? "", out var l) ? l : null };
         })];
     }
 
