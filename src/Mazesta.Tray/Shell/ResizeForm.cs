@@ -20,7 +20,7 @@ internal sealed class ResizeForm : Form
         _custom = new TextBox { Width = 90, Visible = false, PlaceholderText = "1600", Margin = new Padding(4, 6, 12, 0) }; Theme.Field(_custom);
         _size.SelectedIndexChanged += (_, _) => _custom.Visible = _size.SelectedIndex == _size.Items.Count - 1;
         _quality = new ComboBox { Width = 170, Margin = new Padding(4, 4, 12, 0) }; Theme.Combo(_quality); _quality.Items.AddRange(TrayText.ResizeQualities); _quality.SelectedIndex = 1;
-        _run = Theme.Button(TrayText.ResizeRun, true); _run.Click += (_, _) => Run();
+        _run = Theme.Button(TrayText.ResizeRun, true, ""); _run.Click += (_, _) => Run();
         opts.Controls.AddRange([Label(TrayText.ResizeSize), _size, _custom, Label(TrayText.ResizeQuality), _quality, _run]);
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false };
         _list.Columns.Add(TrayText.ResizeFile, 300); _list.Columns.Add(TrayText.ResizeResult, 560); Theme.List(_list); Theme.DarkScroll(_list);

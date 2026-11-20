@@ -23,15 +23,15 @@ internal sealed class LockForm : Form
         _list.Columns.Add(TrayText.LockName, 180); _list.Columns.Add(TrayText.LockKind, 110); _list.Columns.Add("PID", 70); _list.Columns.Add(TrayText.LockState, 150); _list.Columns.Add(TrayText.LockPath, 330);
         Theme.List(_list); Theme.DarkScroll(_list); _list.SelectedIndexChanged += (_, _) => Sync();
         var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
-        _closeOne = Btn(TrayText.LockCloseOne, CloseOne, true); _closeAll = Btn(TrayText.LockCloseAll, CloseAll, false); _again = Btn(TrayText.LockAgain, Find, false);
+        _closeOne = Btn(TrayText.LockCloseOne, "", CloseOne, true); _closeAll = Btn(TrayText.LockCloseAll, "", CloseAll, false); _again = Btn(TrayText.LockAgain, "", Find, false);
         bar.Controls.AddRange([_closeOne, _closeAll, _again]);
         Controls.Add(_list); Controls.Add(_status); Controls.Add(what); Controls.Add(Theme.Banner(Theme.Lock, Theme.Warn, TrayText.LockTitle, TrayText.LockSub)); Controls.Add(bar);
         Shown += (_, _) => { Activate(); Find(); };
     }
 
-    private static Button Btn(string text, Action click, bool primary)
+    private static Button Btn(string text, string glyph, Action click, bool primary)
     {
-        var b = Theme.Button(text, primary); b.Enabled = false; b.Click += (_, _) => click(); return b;
+        var b = Theme.Button(text, primary, glyph); b.Enabled = false; b.Click += (_, _) => click(); return b;
     }
 
     private async void Find()

@@ -92,18 +92,18 @@ internal static class Theme
         }
     }
 
-    public static Button Button(string text, bool primary = false) => new RoundButton(text, primary);
+    public static Button Button(string text, bool primary = false, string glyph = "") => new RoundButton(text, primary, glyph);
 
-    /// <summary>A button with round corners, drawn here (the flat system button is square and its text sits wherever the system puts it).</summary>
+    /// <summary>A button with round corners, drawn here (the flat system button is square and its text sits wherever the system puts it); an icon beside the text when given.</summary>
     private sealed class RoundButton : Button
     {
-        private readonly bool _primary; private bool _hot;
-        public RoundButton(string text, bool primary)
+        private readonly bool _primary, _hasIcon; private readonly string _glyph; private bool _hot; private static readonly Font IconFont = new("Segoe MDL2 Assets", 11f);
+        public RoundButton(string text, bool primary, string glyph)
         {
-            _primary = primary; Text = text; AutoSize = true; MinimumSize = new Size(0, 36); Cursor = Cursors.Hand; Margin = new Padding(4); Font = Theme.Semi(10f);
+            _primary = primary; _glyph = glyph; _hasIcon = glyph.Length > 0; Text = text; AutoSize = true; MinimumSize = new Size(0, 36); Cursor = Cursors.Hand; Margin = new Padding(4); Font = Theme.Semi(10f);
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
         }
-        public override Size GetPreferredSize(Size proposed) => new(TextRenderer.MeasureText(Text, Font, new Size(int.MaxValue, 40), TextFormatFlags.NoPrefix).Width + 34, 36);
+        public override Size GetPreferredSize(Size proposed) => new(TextRenderer.MeasureText(Text, Font, new Size(int.MaxValue, 40), TextFormatFlags.NoPrefix).Width + 34 + (_hasIcon ? 26 : 0), 36);
         protected override void OnMouseEnter(EventArgs e) { _hot = true; Invalidate(); base.OnMouseEnter(e); }
         protected override void OnMouseLeave(EventArgs e) { _hot = false; Invalidate(); base.OnMouseLeave(e); }
         protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
@@ -112,7 +112,9 @@ internal static class Theme
             var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
             Color fill = !Enabled ? Ink3 : _primary ? (_hot ? Color.FromArgb(0xFF, 0xE2, 0x4A) : Yellow) : (_hot ? Color.FromArgb(0x4A, 0x4A, 0x4A) : Ink4);
             using (var path = RoundRect(new Rectangle(0, 0, Width - 1, Height - 1), 9)) { using var b = new SolidBrush(fill); g.FillPath(b, path); if (Focused && ShowFocusCues) { using var pen = new Pen(Paper3); g.DrawPath(pen, path); } }
-            TextRenderer.DrawText(g, Text, Font, ClientRectangle, !Enabled ? Paper3 : _primary ? OnYellow : Paper, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
+            Color fore = !Enabled ? Paper3 : _primary ? OnYellow : Paper; bool rtl = RightToLeft == RightToLeft.Yes; int icon = _hasIcon ? 26 : 0;
+            if (_hasIcon) TextRenderer.DrawText(g, _glyph, IconFont, new Rectangle(rtl ? Width - 14 - 18 : 14, 0, 18, Height), fore, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, Text, Font, rtl ? new Rectangle(0, 0, Width - icon, Height) : new Rectangle(icon, 0, Width - icon, Height), fore, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis);
         }
     }
 
@@ -166,6 +168,52 @@ internal static class Theme
             var text = rtl ? Rectangle.FromLTRB(pad, 0, Width - pad - icon, Height) : Rectangle.FromLTRB(pad + icon, 0, Width - pad, Height);
             TextRenderer.DrawText(g, Text, Font, text, fore, TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix | (rtl ? TextFormatFlags.Right | TextFormatFlags.RightToLeft : TextFormatFlags.Left));
         }
+    }
+
+    /// <summary>
+    /// A caption for a group (<paramref name="strong"/>, yellow) or a field: its icon at the right edge, the text beside it reading from the right, and, when
+    /// <paramref name="help"/> is given, a round "?" at the left edge that opens the explanation in a small card.
+    /// </summary>
+    public static Control Caption(string glyph, string text, bool strong = false, string? help = null, int width = 370) => new CaptionBar(glyph, text, strong, help, width);
+
+    private sealed class CaptionBar : Control
+    {
+        private readonly string _glyph, _text; private readonly bool _strong; private readonly string? _help; private bool _hot;
+        private static readonly Font IconFont = new("Segoe MDL2 Assets", 11f);
+        private Rectangle Q => new(0, (Height - 24) / 2, 24, 24);
+        public CaptionBar(string glyph, string text, bool strong, string? help, int width)
+        {
+            _glyph = glyph; _text = text; _strong = strong; _help = help; Width = width; Height = strong ? 32 : 26; RightToLeft = RightToLeft.Yes;
+            Margin = strong ? new Padding(0, 8, 0, 2) : new Padding(0, 6, 0, 0); Font = strong ? Theme.Semi(10.5f) : Theme.Reg(9.5f);
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        }
+        protected override void OnMouseMove(MouseEventArgs e) { bool on = _help is not null && Q.Contains(e.Location); if (on != _hot) { _hot = on; Cursor = on ? Cursors.Hand : Cursors.Default; Invalidate(); } base.OnMouseMove(e); }
+        protected override void OnMouseLeave(EventArgs e) { _hot = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnMouseClick(MouseEventArgs e) { if (_help is not null && Q.Contains(e.Location)) ShowHelp(this, _text, _help); base.OnMouseClick(e); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
+            Color tone = _strong ? Yellow : Paper2;
+            TextRenderer.DrawText(g, _glyph, IconFont, new Rectangle(Width - 22, 0, 20, Height), _strong ? Yellow : Paper3, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, _text, Font, Rectangle.FromLTRB(_help is null ? 0 : 30, 0, Width - 28, Height), tone, TextFormatFlags.Right | TextFormatFlags.RightToLeft | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            if (_help is null) return;
+            using (var b = new SolidBrush(_hot ? Yellow : Ink4)) g.FillEllipse(b, Q);
+            TextRenderer.DrawText(g, "", IconFont, Q, _hot ? OnYellow : Paper, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        }
+    }
+
+    /// <summary>The explanation card under a caption's "?": a title and a few short lines, closing when anything else is clicked.</summary>
+    private static void ShowHelp(Control owner, string title, string text)
+    {
+        const int w = 360; var body = Theme.Reg(10f);
+        int h = TextRenderer.MeasureText(text, body, new Size(w - 32, 0), TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.RightToLeft).Height;
+        var card = new RoundPanel { Width = w, Height = h + 62, Fill = Ink3, Edge = Yellow, Radius = 10, Padding = new Padding(16, 10, 16, 12), RightToLeft = RightToLeft.Yes };
+        card.Controls.Add(new Label { Dock = DockStyle.Fill, Text = text, Font = body, ForeColor = Paper, BackColor = Ink3, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.TopLeft });
+        card.Controls.Add(new Label { Dock = DockStyle.Top, Height = 30, Text = title, Font = Theme.Semi(10.5f), ForeColor = Yellow, BackColor = Ink3, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft });
+        var drop = new ToolStripDropDown { AutoClose = true, Padding = Padding.Empty, BackColor = Ink, DropShadowEnabled = true };
+        drop.Items.Add(new ToolStripControlHost(card) { Margin = Padding.Empty, Padding = Padding.Empty, AutoSize = false, Size = card.Size });
+        drop.Closed += (_, _) => drop.Dispose();
+        drop.Show(owner, new Point(0, owner.Height));
     }
 
     public static void Field(TextBox t) { t.BorderStyle = BorderStyle.FixedSingle; t.BackColor = Ink3; t.ForeColor = Paper; }

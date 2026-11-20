@@ -12,7 +12,7 @@ internal sealed class RenameForm : Form
     private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2, Bad = Theme.Fail, Good = Theme.Pass;
     private const int ShowMax = 1000;
     private readonly string _log; private List<string> _paths; private IReadOnlyList<RenameItem> _items = []; private bool _ready;
-    private readonly FlowLayoutPanel _opts = new() { Dock = DockStyle.Right, Width = 410, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8, 4, 8, 8) };
+    private readonly FlowLayoutPanel _opts = new() { Dock = DockStyle.Right, Width = 410, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8, 4, 8, 8), RightToLeft = RightToLeft.Yes };
     private readonly TextBox _find, _replace, _prefix, _suffix, _base, _sep, _ext;
     private readonly CheckBox _regex, _matchCase, _first, _latin, _persian, _time, _shamsi, _extLower, _extChange;
     private readonly NumericUpDown _cutFirst, _cutLast, _start, _step, _digits;
@@ -24,21 +24,21 @@ internal sealed class RenameForm : Form
         _paths = paths; _log = undoLog;
         Theme.Window(this); Text = TrayText.RenameTitle; StartPosition = FormStartPosition.CenterScreen; MinimumSize = new Size(960, 600); Size = new Size(1240, 760);
 
-        Section(TrayText.RenameSecText);
-        _find = Txt(TrayText.RenameFind); _replace = Txt(TrayText.RenameReplace);
+        Section("", TrayText.RenameSecText, TrayText.RenameHelpText);
+        _find = Txt(TrayText.RenameFind, ""); _replace = Txt(TrayText.RenameReplace, "");
         _regex = Chk(TrayText.RenameRegex, ""); _matchCase = Chk(TrayText.RenameCase, ""); _first = Chk(TrayText.RenameFirst);
-        Section(TrayText.RenameSecAdd);
-        _prefix = Txt(TrayText.RenamePrefix); _suffix = Txt(TrayText.RenameSuffix); _cutFirst = Num(TrayText.RenameCutFirst, 0, 200, 0); _cutLast = Num(TrayText.RenameCutLast, 0, 200, 0);
-        Section(TrayText.RenameSecNumber);
-        _number = Combo(TrayText.RenameNumberModes); _base = Txt(TrayText.RenameBase); _start = Num(TrayText.RenameStart, 0, 99_999_999, 1); _step = Num(TrayText.RenameStep, 1, 9999, 1);
-        _digits = Num(TrayText.RenameDigits, 0, 12, 0); _sep = Txt(TrayText.RenameSep); _sep.Text = " ";
-        Section(TrayText.RenameSecStyle);
+        Section("", TrayText.RenameSecAdd, TrayText.RenameHelpAdd);
+        _prefix = Txt(TrayText.RenamePrefix, ""); _suffix = Txt(TrayText.RenameSuffix, ""); _cutFirst = Num(TrayText.RenameCutFirst, "", 0, 200, 0); _cutLast = Num(TrayText.RenameCutLast, "", 0, 200, 0);
+        Section("", TrayText.RenameSecNumber, TrayText.RenameHelpNumber);
+        _number = Combo(TrayText.RenameNumberModes); _base = Txt(TrayText.RenameBase, ""); _start = Num(TrayText.RenameStart, "", 0, 99_999_999, 1); _step = Num(TrayText.RenameStep, "", 1, 9999, 1);
+        _digits = Num(TrayText.RenameDigits, "", 0, 12, 0); _sep = Txt(TrayText.RenameSep, ""); _sep.Text = " ";
+        Section("", TrayText.RenameSecStyle, TrayText.RenameHelpStyle);
         _case = Combo(TrayText.RenameCases); _spaces = Combo(TrayText.RenameSpaces); _latin = Chk(TrayText.RenameLatin); _persian = Chk(TrayText.RenamePersian);
-        Section(TrayText.RenameSecDate);
+        Section("", TrayText.RenameSecDate, TrayText.RenameHelpDate);
         _date = Combo(TrayText.RenameDates); _time = Chk(TrayText.RenameTime, ""); _shamsi = Chk(TrayText.RenameShamsi, "");
-        Section(TrayText.RenameSecExt);
-        _extLower = Chk(TrayText.RenameExtLower); _extChange = Chk(TrayText.RenameExtNew, ""); _ext = Txt(null);
-        Section(null);
+        Section("", TrayText.RenameSecExt, TrayText.RenameHelpExt);
+        _extLower = Chk(TrayText.RenameExtLower, ""); _extChange = Chk(TrayText.RenameExtNew, ""); _ext = Txt(null, "");
+        Section("", TrayText.RenameSecOrder, TrayText.RenameHelpOrder);
         _order = Combo(TrayText.RenameOrders);
 
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false }; Theme.List(_list); Theme.DarkScroll(_list); Theme.DarkScroll(_opts);
@@ -46,8 +46,8 @@ internal sealed class RenameForm : Form
         _status = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };
         _result = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };
         var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
-        _apply = Btn(TrayText.RenameApply, Apply, true); _undo = Btn(TrayText.RenameUndo, Undo, false); _undo.Visible = false;
-        bar.Controls.AddRange([_apply, _undo, Btn(TrayText.RenameClose, Close, false)]);
+        _apply = Btn(TrayText.RenameApply, "", Apply, true); _undo = Btn(TrayText.RenameUndo, "", Undo, false); _undo.Visible = false;
+        bar.Controls.AddRange([_apply, _undo, Btn(TrayText.RenameClose, "", Close, false)]);
         // the list in a round card of its own, like PowerRename's
         var frame = new Theme.RoundPanel { Dock = DockStyle.Fill, Padding = new Padding(2), Fill = Theme.Well, Radius = 12 };
         frame.SizeChanged += (_, _) => { if (frame.Width < 8 || frame.Height < 8) return; using var p = Theme.RoundRect(new Rectangle(0, 0, frame.Width, frame.Height), 12); frame.Region = new Region(p); };
@@ -59,21 +59,20 @@ internal sealed class RenameForm : Form
     }
 
     // ——— the options column, built top to bottom ———
-    private void Section(string? title)
+    // a hairline between groups, then the group's caption: icon at the right, the title reading from the right, and a "?" that explains the group
+    private void Section(string glyph, string title, string help)
     {
-        if (title is null) return;
-        // a hairline between groups and a quiet caption (PowerRename's way), not a loud heading
         if (_opts.Controls.Count > 0) _opts.Controls.Add(new Panel { Width = 370, Height = 1, BackColor = Theme.Rule, Margin = new Padding(0, 16, 0, 0) });
-        _opts.Controls.Add(new Label { Text = title, AutoSize = true, Margin = new Padding(0, 10, 0, 2), Font = Theme.Semi(10.5f), ForeColor = Theme.Yellow, RightToLeft = RightToLeft.Yes });
+        _opts.Controls.Add(Theme.Caption(glyph, title, strong: true, help: help));
     }
-    private TextBox Txt(string? label)
+    private TextBox Txt(string? label, string glyph)
     {
-        if (label is not null) _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 0) });
-        var t = new TextBox(); t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(t, 370)); return t;
+        if (label is not null) _opts.Controls.Add(Theme.Caption(glyph, label));
+        var t = new TextBox { RightToLeft = RightToLeft.Yes }; t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(t, 370)); return t;
     }
-    private NumericUpDown Num(string label, int min, int max, int value)
+    private NumericUpDown Num(string label, string glyph, int min, int max, int value)
     {
-        _opts.Controls.Add(new Label { Text = label, AutoSize = true, ForeColor = Dim, RightToLeft = RightToLeft.Yes, Margin = new Padding(0, 6, 0, 0) });
+        _opts.Controls.Add(Theme.Caption(glyph, label));
         var n = new NumericUpDown { Minimum = min, Maximum = max, Value = value }; n.ValueChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(n, 140)); return n;
     }
     private CheckBox Chk(string label, string glyph = "")
@@ -85,9 +84,9 @@ internal sealed class RenameForm : Form
         var c = new ComboBox { Width = 370, Margin = new Padding(0, 6, 0, 2) }; Theme.Combo(c); c.ItemHeight = 28;
         c.Items.AddRange(items); c.SelectedIndex = 0; c.SelectedIndexChanged += (_, _) => Changed(); _opts.Controls.Add(c); return c;
     }
-    private static Button Btn(string text, Action click, bool primary)
+    private static Button Btn(string text, string glyph, Action click, bool primary)
     {
-        var b = Theme.Button(text, primary); b.Click += (_, _) => click(); return b;
+        var b = Theme.Button(text, primary, glyph); b.Click += (_, _) => click(); return b;
     }
 
     // ——— the rule from the controls, the plan from the rule ———
