@@ -285,6 +285,7 @@ internal static class Theme
             var g = e.Graphics; var item = e.Item!; bool chosen = item.Selected;
             Color back = chosen ? Select : e.ItemIndex % 2 == 0 ? Well : Stripe;
             using (var b = new SolidBrush(back)) g.FillRectangle(b, e.Bounds);
+            using (var p = new Pen(Rule)) g.DrawLine(p, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom);   // the cell fill covers the system's grid line, so each cell draws its own edge
             var r = e.Bounds; r.Inflate(-8, 0);
             if (e.ColumnIndex == 0)
             {
