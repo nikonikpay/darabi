@@ -3434,6 +3434,19 @@ Cancel: stop.</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>Fan control</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colour and effect of the memory, graphics card, board, fans and LED strips.</value></data>
   <data name="Rgb_Note" xml:space="preserve"><value>Press the button to find the lights. The makers' own lighting programs (Armoury Crate, MSI Center, iCUE and others) are disabled while the lights are Mazesta's and put back after. Your settings are kept and applied at every start.</value></data>
+  <data name="Rgb_Rescan" xml:space="preserve"><value>Search again from the start</value></data>
+  <data name="Rgb_Sep" xml:space="preserve"><value>, </value></data>
+  <data name="Rgb_Scan_Title" xml:space="preserve"><value>The search from the start ({0})</value></data>
+  <data name="Rgb_Scan_None" xml:space="preserve"><value>No part with lights was found.</value></data>
+  <data name="Rgb_Scan_MakersStopped" xml:space="preserve"><value>Lighting programs that were in the way and are now disabled (they come back when you let go): {0}</value></data>
+  <data name="Rgb_Scan_MakersRunning" xml:space="preserve"><value>Lighting programs still running because you chose to keep them; they can hide parts from this search: {0}</value></data>
+  <data name="Rgb_Scan_Monitors" xml:space="preserve"><value>Monitoring programs are open and read the same chips, so they can hide parts: {0}</value></data>
+  <data name="Rgb_Scan_MonitorsClosed" xml:space="preserve"><value>Monitoring programs closed for this search: {0}</value></data>
+  <data name="Rgb_Scan_CloseAndSearch" xml:space="preserve"><value>Close them and search again</value></data>
+  <data name="Rgb_Scan_Missing" xml:space="preserve"><value>Not found: {0}</value></data>
+  <data name="Rgb_Scan_MissingWhy" xml:space="preserve"><value>Not found does not mean broken: a board, memory or card without lights is never listed. If yours has lights, close the programs named above and search again, then check that the app runs as administrator.</value></data>
+  <data name="Rgb_Scan_Clear" xml:space="preserve"><value>Nothing was in the way.</value></data>
+  <data name="Rgb_Scan_Cards" xml:space="preserve"><value>Graphics cards Windows lists: {0}</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>Let go (give the lights back)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>Do not stop the makers&apos; programs</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>These are open and are closed while you use this page: {0}</value></data>
@@ -4060,7 +4073,7 @@ Cancel: stop.</value></data>
   <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>A profile applied by itself when a full-screen game or a program you list (Lumion, D5 Render, 3ds Max…) starts, and taken off when it ends. The background monitor does this.</value></data>
   <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>The main garden scene with its moving camera, to compare settings: apply a profile, run it, change the settings, run it again. Automatic undervolt and overclock find the card's own limits step by step under load.</value></data>
   <data name="Help_Tuning_Memory" xml:space="preserve"><value>Memory timings and XMP, DOCP or EXPO profiles are set in the BIOS; the button restarts the computer straight into BIOS setup.</value></data>
-  <data name="Help_Nav_Lights" xml:space="preserve"><value>Colours and effects of the RGB lights of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI and more), for all devices at once or one by one.</value></data>
+  <data name="Help_Nav_Lights" xml:space="preserve"><value>Colours and effects of the RGB lights of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI and more), for all devices at once or one by one. When a part is not found, "Search again from the start" looks for every part afresh and names the programs that stand in the way.</value></data>
   <data name="Help_Nav_Fans" xml:space="preserve"><value>The board's fan outputs: left to the board, a fixed speed, or a curve of temperature against speed that you draw. Ready profiles put one setting on every fan.</value></data>
   <data name="Help_Dns_Title" xml:space="preserve"><value>The DNS each adapter uses now. The test times every known DNS on this connection and can set the fastest; or pick one from the list.</value></data>
   <data name="Help_NetFix_Title" xml:space="preserve"><value>Finds where the internet stops (adapter, router, internet, DNS, a web page, proxy) without changing anything, then offers the usual repairs: clear the proxy, set the DNS, empty the DNS cache, reset the network.</value></data>

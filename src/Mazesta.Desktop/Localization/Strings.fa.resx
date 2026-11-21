@@ -3434,6 +3434,19 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Nav_Fans" xml:space="preserve"><value>کنترل فن</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>رنگ و افکت نور رم، کارت گرافیک، مادربرد، فن و نوار LED.</value></data>
   <data name="Rgb_Note" xml:space="preserve"><value>برای شروع دکمه را بزنید. برنامه‌های سازندهٔ نور (Armoury Crate، MSI Center، iCUE و …) تا وقتی نورها دست مازستاست غیرفعال می‌شوند و بعد برمی‌گردند. تنظیمات ذخیره می‌شود و با هر شروع برنامه اعمال می‌شود.</value></data>
+  <data name="Rgb_Rescan" xml:space="preserve"><value>جستجوی دوباره از اول</value></data>
+  <data name="Rgb_Sep" xml:space="preserve"><value>، </value></data>
+  <data name="Rgb_Scan_Title" xml:space="preserve"><value>نتیجهٔ جستجو از اول ({0})</value></data>
+  <data name="Rgb_Scan_None" xml:space="preserve"><value>هیچ قطعهٔ دارای نور پیدا نشد.</value></data>
+  <data name="Rgb_Scan_MakersStopped" xml:space="preserve"><value>برنامه‌های نورپردازی که مانع بودند و الان غیرفعال شده‌اند (با رها کردن برمی‌گردند): {0}</value></data>
+  <data name="Rgb_Scan_MakersRunning" xml:space="preserve"><value>برنامه‌های نورپردازی که چون نگه‌شان داشتید هنوز باز هستند و می‌توانند قطعه‌ها را از این جستجو پنهان کنند: {0}</value></data>
+  <data name="Rgb_Scan_Monitors" xml:space="preserve"><value>برنامه‌های پایش باز هستند و همان تراشه‌ها را می‌خوانند، پس می‌توانند قطعه‌ها را پنهان کنند: {0}</value></data>
+  <data name="Rgb_Scan_MonitorsClosed" xml:space="preserve"><value>برنامه‌های پایشی که برای این جستجو بسته شدند: {0}</value></data>
+  <data name="Rgb_Scan_CloseAndSearch" xml:space="preserve"><value>ببند و دوباره جستجو کن</value></data>
+  <data name="Rgb_Scan_Missing" xml:space="preserve"><value>پیدا نشد: {0}</value></data>
+  <data name="Rgb_Scan_MissingWhy" xml:space="preserve"><value>پیدا نشدن یعنی خراب بودن نیست: مادربرد، رم یا کارتی که نور ندارد هیچ‌وقت در فهرست نمی‌آید. اگر قطعهٔ شما نور دارد، برنامه‌های نام‌برده را ببندید و دوباره جستجو کنید و ببینید برنامه با دسترسی مدیر (Administrator) اجرا شده باشد.</value></data>
+  <data name="Rgb_Scan_Clear" xml:space="preserve"><value>چیزی سد راه نبود.</value></data>
+  <data name="Rgb_Scan_Cards" xml:space="preserve"><value>کارت‌های گرافیکی که ویندوز فهرست کرده: {0}</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>رها کردن (برگرداندن نور)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>برنامه‌های سازنده را نبند</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>این برنامه‌ها باز هستند و هنگام استفاده بسته می‌شوند: {0}</value></data>
@@ -4060,7 +4073,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>پروفایلی که وقتی یک بازی تمام‌صفحه یا برنامه‌ای که مشخص کرده‌اید (Lumion، D5 Render، 3ds Max و…) باز شود خودکار اعمال می‌شود و با بسته شدنش برمی‌گردد. این کار را پایشگر پس‌زمینه انجام می‌دهد.</value></data>
   <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>صحنه‌ی اصلی باغ با دوربین متحرک برای مقایسه‌ی تنظیمات: پروفایل را اعمال کنید، اجرا کنید، تنظیمات را عوض کنید و دوباره اجرا کنید. آندرولت و اورکلاک خودکار مرحله‌به‌مرحله زیر بار حد خود کارت را پیدا می‌کنند.</value></data>
   <data name="Help_Tuning_Memory" xml:space="preserve"><value>تایمینگ رم و پروفایل‌های XMP، DOCP یا EXPO در بایوس تنظیم می‌شوند؛ دکمه سیستم را مستقیم به تنظیمات بایوس ری‌استارت می‌کند.</value></data>
-  <data name="Help_Nav_Lights" xml:space="preserve"><value>رنگ و افکت نورهای RGB رم، کارت گرافیک، مادربرد، فن‌ها و نوارها (Corsair، ASUS، Gigabyte، MSI و…)، برای همه با هم یا هر کدام جدا.</value></data>
+  <data name="Help_Nav_Lights" xml:space="preserve"><value>رنگ و افکت نورهای RGB رم، کارت گرافیک، مادربرد، فن‌ها و نوارها (Corsair، ASUS، Gigabyte، MSI و…)، برای همه با هم یا هر کدام جدا. اگر قطعه‌ای پیدا نشد، «جستجوی دوباره از اول» همهٔ قطعه‌ها را از نو پیدا می‌کند و برنامه‌هایی را که سد راه‌اند نام می‌برد.</value></data>
   <data name="Help_Nav_Fans" xml:space="preserve"><value>خروجی‌های فن مادربرد: کنترل خود مادربرد، سرعت ثابت، یا منحنی دما به سرعت که خودتان می‌کشید. پروفایل‌های آماده یک تنظیم را روی همه‌ی فن‌ها می‌گذارند.</value></data>
   <data name="Help_Dns_Title" xml:space="preserve"><value>DNSی که هر کارت شبکه الان استفاده می‌کند. تست، همه‌ی DNSهای شناخته‌شده را روی همین اینترنت زمان‌سنجی می‌کند و می‌تواند سریع‌ترین را بگذارد؛ یا از فهرست یکی را انتخاب کنید.</value></data>
   <data name="Help_NetFix_Title" xml:space="preserve"><value>پیدا می‌کند اینترنت کجا قطع است (کارت شبکه، مودم، اینترنت، DNS، صفحه‌ی وب، پراکسی) بدون اینکه چیزی را تغییر دهد، بعد تعمیرهای رایج را پیشنهاد می‌کند: پاک کردن پراکسی، تنظیم DNS، خالی کردن کش DNS و ریست شبکه.</value></data>

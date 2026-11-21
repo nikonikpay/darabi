@@ -17,7 +17,7 @@ public sealed partial class WebBridge
     private void RegisterRgb()
     {
         var session = new RgbSession(AppContext.BaseDirectory, Path.Combine(_paths.DataRoot, "openrgb"), _log); var client = session.Client; var conflicts = session.Conflicts;
-        var scene = RgbSceneStore.Read(_paths); int busy = 0, starting = 0; object? report = null;   // busy: a call is being served; starting: the server is being brought up (not the same: a state call is busy too)
+        var scene = RgbSceneStore.Read(_paths); int busy = 0, starting = 0; object? report = null, scan = null;   // busy: a call is being served; starting: the server is being brought up (not the same: a state call is busy too)
         void Save() { try { RgbSceneStore.Write(_paths, scene); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the lights' scene"); } }
         static bool TrayRuns() { var p = Process.GetProcessesByName(OverlaySignals.TrayProcess); foreach (var x in p) x.Dispose(); return p.Length > 0; }
         _cleanup.Add(() => session.Release(leaveRunning: scene.Enabled && TrayRuns()));
@@ -37,7 +37,7 @@ public sealed partial class WebBridge
             makers = conflicts.StoppedNow,   // the makers' programs stopped for now, to be put back by "let go"
             running = client.Connected ? Array.Empty<string>() : conflicts.Running(),
             modeNames = client.Devices.SelectMany(d => d.Modes.Select(m => m.Name)).Where(n => !RgbEffects.Covered(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            scene = new { all = scene.All, devices = scene.Devices }, effects = RgbEffects.All, palettes = RgbPalettes.All.Select(p => new { id = p.Id, colors = p.Colors }), report = Interlocked.Exchange(ref report, null), simulated = session.Runner.Count,
+            scene = new { all = scene.All, devices = scene.Devices }, effects = RgbEffects.All, palettes = RgbPalettes.All.Select(p => new { id = p.Id, colors = p.Colors }), report = Interlocked.Exchange(ref report, null), scan = Interlocked.Exchange(ref scan, null), simulated = session.Runner.Count,
             devices = client.Devices.Select(d => new
             {
                 index = d.Index, key = RgbScene.DeviceKey(d.Vendor, d.Name, d.Location), kind = d.Kind.ToString(), name = d.Name, vendor = d.Vendor, location = d.Location, leds = d.LedCount, active = d.ActiveMode,
@@ -127,6 +127,33 @@ public sealed partial class WebBridge
             Own(); bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True;
             scene.Enabled = true; scene.StopMakers = !keep; Save();
             return Connect(true, !keep);
+        }));
+        // A search from the beginning: the server is ended and started again (it scans the buses afresh), the makers' programs are stopped as for any start, and, when the user asked,
+        // the monitoring programs that read the same chips are closed. What was found, what is missing and what stood in the way is kept for the page's report.
+        MethodAsync("rgb.rescan", p => Guard(async () =>
+        {
+            Own(); bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True, close = p.TryGetProperty("closeMonitors", out var c) && c.ValueKind == JsonValueKind.True;
+            scene.Enabled = true; scene.StopMakers = !keep; Save();
+            var makersBefore = conflicts.Running(); var monitorsBefore = conflicts.RunningMonitors(); var closed = close ? await Task.Run(conflicts.CloseMonitors).ConfigureAwait(true) : [];
+            RgbConnect result; Volatile.Write(ref starting, 1);
+            try
+            {
+                result = await session.RecoverAsync(scene, CancellationToken.None).ConfigureAwait(true);
+                if (result == RgbConnect.Connected) { if (session.ZonesDefaulted) Save(); await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true); }
+            }
+            finally { Volatile.Write(ref starting, 0); }
+            _log.LogInformation("RGB search from the beginning: {Result}; makers before {Makers}, monitors before {Monitors}, closed {Closed}", result, string.Join(", ", makersBefore), string.Join(", ", monitorsBefore), string.Join(", ", closed));
+            if (result == RgbConnect.NotFound) return State(Loc.Get("Rgb_NotFound"));
+            if (result == RgbConnect.NoServer) return State(Loc.Get("Rgb_NoServer"));
+            var cards = RgbSession.VideoCardNames();
+            scan = new
+            {
+                at = DateTime.Now.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+                found = client.Devices.Select(d => new { kind = d.Kind.ToString(), name = d.Name, vendor = d.Vendor, leds = d.LedCount }), cards,
+                missing = RgbScan.Missing(client.Devices.Select(d => d.Kind.ToString()), cards),
+                makersStopped = conflicts.StoppedNow, makersRunning = conflicts.Running(), monitors = conflicts.RunningMonitors(), monitorsClosed = closed,
+            };
+            return State();
         }));
         Method("rgb.release", _ => { scene.Enabled = false; Save(); session.Release(); return State(); });
         MethodAsync("rgb.set", p => Guard(async () =>

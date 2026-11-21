@@ -36,6 +36,28 @@ public sealed class RgbConflicts
     /// <param name="journal">Where the changed services are written down (null: not kept, as in tests).</param>
     public RgbConflicts(string? journal = null) { _journal = journal; }
 
+    // Not lighting software, but programs that read the same chips (the memory's bus, the board's controller) and can make a search find less while they run. They are the user's own
+    // tools: they are only named, and ended when the user asks for it (the page's "close them and search again"); nothing is put back.
+    private static readonly Maker[] Monitors =
+    [
+        new("HWiNFO", ["HWiNFO64", "HWiNFO32", "HWiNFO"], []), new("AIDA64", ["aida64"], []), new("CPU-Z", ["cpuz", "cpuz_x64"], []), new("HWMonitor", ["HWMonitor"], []),
+        new("MSI Afterburner", ["MSIAfterburner"], []), new("OpenHardwareMonitor", ["OpenHardwareMonitor"], []), new("LibreHardwareMonitor", ["LibreHardwareMonitor"], []), new("SIV", ["SIV64X", "SIV32X"], []), new("SpeedFan", ["speedfan"], []),
+    ];
+
+    /// <summary>The monitoring programs running now (their names); nothing is changed.</summary>
+    public IReadOnlyList<string> RunningMonitors() => [.. Monitors.Where(m => m.Processes.Any(p => Find(p).Length > 0)).Select(m => m.Name)];
+
+    /// <summary>Ends the monitoring programs that run; returns their names.</summary>
+    public IReadOnlyList<string> CloseMonitors()
+    {
+        var closed = new List<string>();
+        foreach (var m in Monitors)
+            foreach (var name in m.Processes)
+                foreach (var p in Find(name))
+                    using (p) { try { p.Kill(true); p.WaitForExit(3000); if (!closed.Contains(m.Name)) closed.Add(m.Name); } catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { } }
+        return closed;
+    }
+
     /// <summary>The makers' programs that are running now (their names), nothing is changed.</summary>
     public IReadOnlyList<string> Running() => [.. Makers.Where(m => m.Processes.Any(p => Find(p).Length > 0) || m.Services.Any(IsRunning)).Select(m => m.Name)];
 
