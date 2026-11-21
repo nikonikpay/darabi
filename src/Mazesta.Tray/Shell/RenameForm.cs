@@ -12,7 +12,7 @@ internal sealed class RenameForm : Form
     private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2, Bad = Theme.Fail, Good = Theme.Pass;
     private const int ShowMax = 1000;
     private readonly string _log; private List<string> _paths; private IReadOnlyList<RenameItem> _items = []; private bool _ready;
-    private readonly FlowLayoutPanel _opts = new() { Dock = DockStyle.Right, Width = 410, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8, 4, 8, 8), RightToLeft = RightToLeft.Yes };
+    private readonly FlowLayoutPanel _opts = new() { Dock = TrayText.Rtl ? DockStyle.Right : DockStyle.Left, Width = 410, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(8, 4, 8, 8), RightToLeft = TrayText.Dir };
     private readonly TextBox _find, _replace, _prefix, _suffix, _base, _sep, _ext;
     private readonly CheckBox _regex, _matchCase, _first, _latin, _persian, _time, _shamsi, _extLower, _extChange;
     private readonly NumericUpDown _cutFirst, _cutLast, _start, _step, _digits;
@@ -43,16 +43,16 @@ internal sealed class RenameForm : Form
 
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false }; Theme.List(_list); Theme.DarkScroll(_list); Theme.DarkScroll(_opts);
         _list.Columns.Add(TrayText.RenameOld, 260); _list.Columns.Add(TrayText.RenameNew, 260); _list.Columns.Add(TrayText.RenameStatus, 90);
-        _status = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };
-        _result = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
+        _status = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleLeft };
+        _result = new Label { Dock = DockStyle.Top, Height = 28, Padding = new Padding(8, 0, 8, 0), RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleLeft };
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = TrayText.Dir, BackColor = Theme.Ink2 };
         _apply = Btn(TrayText.RenameApply, "", Apply, true); _undo = Btn(TrayText.RenameUndo, "", Undo, false); _undo.Visible = false;
         bar.Controls.AddRange([_apply, _undo, Btn(TrayText.RenameClose, "", Close, false)]);
         // the list in a round card of its own, like PowerRename's
         var frame = new Theme.RoundPanel { Dock = DockStyle.Fill, Padding = new Padding(2), Fill = Theme.Well, Radius = 12 };
         frame.SizeChanged += (_, _) => { if (frame.Width < 8 || frame.Height < 8) return; using var p = Theme.RoundRect(new Rectangle(0, 0, frame.Width, frame.Height), 12); frame.Region = new Region(p); };
         frame.Controls.Add(_list);
-        var left = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 6, 4, 8) };
+        var left = new Panel { Dock = DockStyle.Fill, Padding = TrayText.Rtl ? new Padding(12, 6, 4, 8) : new Padding(4, 6, 12, 8) };
         left.Controls.Add(frame); left.Controls.Add(_result); left.Controls.Add(_status);
         Controls.Add(left); Controls.Add(_opts); Controls.Add(Theme.Banner(Theme.Edit, Theme.Cpu, TrayText.RenameTitle, TrayText.RenameSub)); Controls.Add(bar);
         Shown += (_, _) => { Activate(); _ready = true; Sync(); Preview(); RefreshUndo(); };
@@ -68,7 +68,7 @@ internal sealed class RenameForm : Form
     private TextBox Txt(string? label, string glyph)
     {
         if (label is not null) _opts.Controls.Add(Theme.Caption(glyph, label));
-        var t = new TextBox { RightToLeft = RightToLeft.Yes }; t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(t, 370)); return t;
+        var t = new TextBox { RightToLeft = TrayText.Dir }; t.TextChanged += (_, _) => Changed(); _opts.Controls.Add(Theme.Boxed(t, 370)); return t;
     }
     private NumericUpDown Num(string label, string glyph, int min, int max, int value)
     {
@@ -155,7 +155,7 @@ internal sealed class RenameForm : Form
         var failed = r.Failed.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
         // the files keep their new names for the next round of changes
         _paths = [.. items.Select(i => i.State == RenameState.Ready && !failed.Contains(i.Path) ? Path.Combine(Path.GetDirectoryName(i.Path)!, i.NewName) : i.Path)];
-        Say(_result, TrayText.RenameDone(r.Renamed) + (r.Failed.Count > 0 ? TrayText.RenameFailed(string.Join("، ", r.Failed.Select(f => Path.GetFileName(f.Path)))) : ""), r.Failed.Count > 0 ? Bad : Good);
+        Say(_result, TrayText.RenameDone(r.Renamed) + (r.Failed.Count > 0 ? TrayText.RenameFailed(string.Join(TrayText.Comma, r.Failed.Select(f => Path.GetFileName(f.Path)))) : ""), r.Failed.Count > 0 ? Bad : Good);
         RefreshUndo(); Preview();
     }
 
@@ -169,7 +169,7 @@ internal sealed class RenameForm : Form
         var back = steps.ToDictionary(s => s.To, s => s.From, StringComparer.OrdinalIgnoreCase);
         var failed = r.Failed.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
         _paths = [.. _paths.Select(p => back.TryGetValue(p, out var from) && !failed.Contains(p) ? from : p)];
-        Say(_result, TrayText.RenameUndone(r.Renamed) + (r.Failed.Count > 0 ? TrayText.RenameFailed(string.Join("، ", r.Failed.Select(f => Path.GetFileName(f.Path)))) : ""), r.Failed.Count > 0 ? Bad : Good);
+        Say(_result, TrayText.RenameUndone(r.Renamed) + (r.Failed.Count > 0 ? TrayText.RenameFailed(string.Join(TrayText.Comma, r.Failed.Select(f => Path.GetFileName(f.Path)))) : ""), r.Failed.Count > 0 ? Bad : Good);
         RefreshUndo(); Preview();
     }
 

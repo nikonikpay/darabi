@@ -22,7 +22,7 @@ internal sealed class SummaryForm : Form
     public SummaryForm(TrayContext tray)
     {
         _tray = tray;
-        Text = TrayText.SummaryTitle; RightToLeft = RightToLeft.Yes; RightToLeftLayout = true; BackColor = Ink; ForeColor = Paper;
+        Text = TrayText.SummaryTitle; RightToLeft = TrayText.Dir; RightToLeftLayout = TrayText.Rtl; BackColor = Ink; ForeColor = Paper;
         FormBorderStyle = FormBorderStyle.FixedSingle; MaximizeBox = false; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); AutoScaleMode = AutoScaleMode.None; ClientSize = new Size(S(500), S(640));
         var area = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1280, 720);
@@ -103,7 +103,7 @@ internal sealed class SummaryForm : Form
             string result = c.Error is { } e ? $"{TrayText.CheckFailed}: {e}" : c.Problems.Count > 0 ? string.Join(" ", c.Problems) : TrayText.AllGood;
             if (c.Error is null && c.Kind == "temps" && c.Problems.Count == 0)
                 result = $"CPU {(c.CpuTempC is { } ct ? TrayText.Num(ct, "0") + "°C" : "—")} · GPU {(c.GpuTempC is { } gt ? TrayText.Num(gt, "0") + "°C" : "—")}";
-            var size = TextRenderer.MeasureText(g, result, _small, new Size(textW, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.RightToLeft);
+            var size = TextRenderer.MeasureText(g, result, _small, new Size(textW, int.MaxValue), TextFormatFlags.WordBreak | (TrayText.Rtl ? TextFormatFlags.RightToLeft : 0));
             int rowH = Math.Max(smallH, size.Height) + S(6);
             if (y + rowH > bottom) break;
             Write(g, TrayText.Time(c.Time), _small, Paper3, new Rectangle(w - pad - timeW, y, timeW, smallH), latin: true);
@@ -115,8 +115,9 @@ internal sealed class SummaryForm : Form
 
     private void Tile(Graphics g, Rectangle r, Color hue, string label, double? value, DateTimeOffset? time, double? hotSpot)
     {
-        using (var back = new SolidBrush(Ink2)) g.FillRectangle(back, r);
-        using (var top = new SolidBrush(hue)) g.FillRectangle(top, r.X, r.Y, r.Width, S(3));
+        var flipped = M(r);
+        using (var back = new SolidBrush(Ink2)) g.FillRectangle(back, flipped);
+        using (var top = new SolidBrush(hue)) g.FillRectangle(top, flipped.X, r.Y, r.Width, S(3));
         int bodyH = Line(g, _body), bigH = Line(g, _big), smallH = Line(g, _small), inner = r.Width - S(24), y = r.Y + S(10);
         Write(g, label, _body, hue, new Rectangle(r.X + S(12), y, inner, bodyH)); y += bodyH;
         if (value is { } v) Write(g, TrayText.Num(v, "0") + " °C", _big, Paper, new Rectangle(r.X + S(12), y, inner, bigH), latin: true);
@@ -129,7 +130,7 @@ internal sealed class SummaryForm : Form
     private void Heading(Graphics g, string text, Color hue, DateTimeOffset? time, ref int y, int w, int pad)
     {
         int h = Line(g, _bold);
-        using (var mark = new SolidBrush(hue)) g.FillRectangle(mark, w - pad - S(4), y + h / 4, S(4), h / 2);
+        using (var mark = new SolidBrush(hue)) g.FillRectangle(mark, M(new Rectangle(w - pad - S(4), y + h / 4, S(4), h / 2)));
         Write(g, text, _bold, Paper, new Rectangle(pad, y, w - 2 * pad - S(12), h));
         if (time is { } t) Write(g, TrayText.Time(t), _small, Paper3, new Rectangle(pad, y, S(60), h), latin: true, alignFar: true);
         y += h + S(2);
@@ -137,12 +138,15 @@ internal sealed class SummaryForm : Form
         y += S(8);
     }
 
-    /// <summary>Right-aligned Persian text by default; <paramref name="latin"/> runs (names, numbers) are drawn left to right, flush right in the
-    /// right-to-left layout unless <paramref name="alignFar"/> puts them on the left. Text is centred in its row's height.</summary>
-    private static void Write(Graphics g, string s, Font font, Color color, Rectangle r, bool latin = false, bool alignFar = false, bool wrap = false)
+    /// <summary>The rectangle as laid out for Persian, turned into its mirror image for English.</summary>
+    private Rectangle M(Rectangle r) => TrayText.Rtl ? r : new Rectangle(_canvas.ClientSize.Width - r.Right, r.Y, r.Width, r.Height);
+
+    /// <summary>Text starts at the right in Persian and at the left in English; <paramref name="latin"/> runs (names, numbers) keep their own order; <paramref name="alignFar"/> puts text at the other edge. Centred in its row's height.</summary>
+    private void Write(Graphics g, string s, Font font, Color color, Rectangle r, bool latin = false, bool alignFar = false, bool wrap = false)
     {
+        bool fa = TrayText.Rtl; r = M(r); alignFar ^= !fa;   // in the mirror image "far" is the right edge
         var flags = TextFormatFlags.NoPrefix | (wrap ? TextFormatFlags.WordBreak : TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter)
-            | (alignFar ? TextFormatFlags.Left : TextFormatFlags.Right) | (latin ? 0 : TextFormatFlags.RightToLeft);
+            | (alignFar ? TextFormatFlags.Left : TextFormatFlags.Right) | (latin || !fa ? 0 : TextFormatFlags.RightToLeft);
         TextRenderer.DrawText(g, s, font, r, color, flags);
     }
 

@@ -16,13 +16,13 @@ internal sealed class LockForm : Form
     {
         _paths = paths;
         Theme.Window(this); Text = TrayText.LockTitle; StartPosition = FormStartPosition.CenterScreen; MinimumSize = new Size(700, 420); Size = new Size(880, 500);
-        var what = new Label { Dock = DockStyle.Top, Height = 40, Padding = new Padding(14, 8, 14, 0), RightToLeft = RightToLeft.Yes, ForeColor = Dim,
+        var what = new Label { Dock = DockStyle.Top, Height = 40, Padding = new Padding(14, 8, 14, 0), RightToLeft = TrayText.Dir, ForeColor = Dim,
             Text = $"{TrayText.LockPick}: {(paths.Count == 1 ? paths[0] : TrayText.Many(paths.Count))}", AutoEllipsis = true };
-        _status = new Label { Dock = DockStyle.Top, Height = 32, Padding = new Padding(14, 0, 14, 0), Font = Theme.Semi(10.5f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft };   // "left" is the reading start in a right-to-left label
+        _status = new Label { Dock = DockStyle.Top, Height = 32, Padding = new Padding(14, 0, 14, 0), Font = Theme.Semi(10.5f), RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleLeft };   // "left" is the reading start in a right-to-left label
         _list = new ListView { Dock = DockStyle.Fill, View = View.Details, HideSelection = false, MultiSelect = false };
         _list.Columns.Add(TrayText.LockName, 180); _list.Columns.Add(TrayText.LockKind, 110); _list.Columns.Add("PID", 70); _list.Columns.Add(TrayText.LockState, 150); _list.Columns.Add(TrayText.LockPath, 330);
         Theme.List(_list); Theme.DarkScroll(_list); _list.SelectedIndexChanged += (_, _) => Sync();
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, BackColor = Theme.Ink2 };
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(10, 8, 10, 6), RightToLeft = TrayText.Dir, BackColor = Theme.Ink2 };
         _closeOne = Btn(TrayText.LockCloseOne, "", CloseOne, true); _closeAll = Btn(TrayText.LockCloseAll, "", CloseAll, false); _again = Btn(TrayText.LockAgain, "", Find, false);
         bar.Controls.AddRange([_closeOne, _closeAll, _again]);
         Controls.Add(_list); Controls.Add(_status); Controls.Add(what); Controls.Add(Theme.Banner(Theme.Lock, Theme.Warn, TrayText.LockTitle, TrayText.LockSub)); Controls.Add(bar);
@@ -52,11 +52,11 @@ internal sealed class LockForm : Form
     }
 
     // Windows' "critical" flag is not shown: it also marks ordinary elevated programs, and what may not be closed is said in the state column
-    private static string Kind(FileLockKind k) => k switch { FileLockKind.Service => "سرویس", FileLockKind.Explorer => "Explorer", FileLockKind.Console => "کنسول", _ => "برنامه" };
+    private static string Kind(FileLockKind k) => k switch { FileLockKind.Service => TrayText.KindService, FileLockKind.Explorer => "Explorer", FileLockKind.Console => TrayText.KindConsole, _ => TrayText.KindApp };
 
     private void Sync() { _closeOne.Enabled = _list.SelectedIndices.Count == 1 && _holders[_list.SelectedIndices[0]].CanClose; _closeAll.Enabled = _holders.Any(h => h.CanClose); }
 
-    private bool Ask(string text) => MessageBox.Show(this, text, Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign) == DialogResult.Yes;
+    private bool Ask(string text) => MessageBox.Show(this, text, Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2, TrayText.MsgOpts) == DialogResult.Yes;
 
     private void CloseOne() { if (_list.SelectedIndices.Count == 1 && _holders[_list.SelectedIndices[0]] is { CanClose: true } h && Ask(TrayText.LockAsk(h.Name))) End([h]); }
     private void CloseAll() { var all = _holders.Where(h => h.CanClose).ToList(); if (all.Count > 0 && Ask(all.Count == 1 ? TrayText.LockAsk(all[0].Name) : TrayText.LockAskAll(all.Count))) End(all); }
@@ -71,7 +71,7 @@ internal sealed class LockForm : Form
         }
         if (IsDisposed) return;
         Find();
-        if (failed.Count > 0) MessageBox.Show(this, string.Join("\n", failed), Text, MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
+        if (failed.Count > 0) MessageBox.Show(this, string.Join("\n", failed), Text, MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1, TrayText.MsgOpts);
     }
 
 }

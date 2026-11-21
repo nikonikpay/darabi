@@ -21,7 +21,7 @@ internal sealed class SpaceForm : Form
     public SpaceForm()
     {
         Theme.Window(this); Text = TrayText.Space; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; MinimumSize = new Size(900, 520);
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(10, 8, 10, 6), RightToLeft = RightToLeft.Yes, WrapContents = true, BackColor = Theme.Ink2 };
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(10, 8, 10, 6), RightToLeft = TrayText.Dir, WrapContents = true, BackColor = Theme.Ink2 };
         _drive = new ComboBox { Width = 400, Margin = new Padding(4, 5, 4, 4), RightToLeft = RightToLeft.No }; Theme.Combo(_drive);
         _find = new TextBox { Width = 300, PlaceholderText = TrayText.SpaceFind, Margin = new Padding(4, 7, 4, 4), RightToLeft = RightToLeft.No }; Theme.Field(_find);
         _treeMode = Toggle(TrayText.SpaceTree, () => Mode(false)); _filesMode = Toggle(TrayText.SpaceBiggest, () => Mode(true));
@@ -30,9 +30,9 @@ internal sealed class SpaceForm : Form
         _list.Columns.Add(TrayText.SearchName, 420); _list.Columns.Add(TrayText.SearchSize, 100, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SpaceShare, 80, HorizontalAlignment.Right);
         _list.Columns.Add(TrayText.SpaceFiles, 90, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchFolder, 420);
         Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), Resort); Theme.DarkScroll(_list);
-        _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(12, 0, 12, 0) };
+        _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = TrayText.Dir, Padding = new Padding(12, 0, 12, 0) };
         Controls.Add(_list); Controls.Add(_status); Controls.Add(bar); Controls.Add(Theme.Banner(Theme.Drive, Theme.Storage, TrayText.Space, TrayText.SpaceSub));
-        var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
+        var menu = new ContextMenuStrip { RightToLeft = TrayText.Dir, ShowImageMargin = false };
         menu.Items.Add(TrayText.SearchOpenFolder, null, (_, _) => Reveal()); menu.Items.Add(TrayText.SearchCopyPath, null, (_, _) => CopyPath());
         _list.ContextMenuStrip = menu;
 

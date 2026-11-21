@@ -17,7 +17,7 @@ internal sealed class VolumeForm : Form
     {
         Text = TrayText.Mixer; FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual; KeyPreview = true;
         AutoScaleMode = AutoScaleMode.Dpi; Font = Theme.Reg(9.5f); BackColor = Back; ForeColor = Text1; Padding = new Padding(12, 10, 12, 10);
-        var title = new Label { Text = TrayText.Mixer, Dock = DockStyle.Top, Height = 26, Font = Theme.Semi(11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleRight };
+        var title = new Label { Text = TrayText.Mixer, Dock = DockStyle.Top, Height = 26, Font = Theme.Semi(11f), RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleLeft };
         _device = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Line, ForeColor = Text1 };
         _rows = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(0, 6, 0, 0) };
         Controls.Add(_rows); Controls.Add(_device); Controls.Add(title);
@@ -84,7 +84,7 @@ internal sealed class VolumeForm : Form
     private void Fit() { foreach (Control c in _rows.Controls) c.Width = _rows.ClientSize.Width - (_rows.VerticalScroll.Visible ? SystemInformation.VerticalScrollBarWidth : 0) - 2; }
     protected override void OnResize(EventArgs e) { base.OnResize(e); if (_rows is not null) Fit(); }
 
-    private static Label Note(string text) => new() { Text = text, AutoSize = false, Height = 40, Width = 340, ForeColor = Dim, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleCenter };
+    private static Label Note(string text) => new() { Text = text, AutoSize = false, Height = 40, Width = 340, ForeColor = Dim, RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleCenter };
     private static void Try(Action a) { try { a(); } catch (Exception e) when (e is COMException or InvalidOperationException) { } }   // a program that ended between reading and setting
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keys) { if (keys == Keys.Escape) { Hide(); return true; } return base.ProcessCmdKey(ref msg, keys); }
@@ -115,7 +115,14 @@ internal sealed class VolumeForm : Form
             _slider.Changed += v => { _value.Text = $"{(int)Math.Round(v * 100)}"; set(v); };
             _mute.Click += (_, _) => { _muted = !_muted; Glyph(); mute(_muted); };
             Controls.AddRange([pic, _name, _value, _slider, _mute]);
-            Resize += (_, _) => { _mute.Left = Width - 36; _value.Left = Width - 84; _slider.Width = Math.Max(40, Width - 32 - 92); _name.Width = Math.Max(40, Width - 32 - 42); };
+            // laid out left to right, then mirrored for Persian: icon and name at the right, the mute button at the left
+            _name.RightToLeft = TrayText.Dir;
+            Resize += (_, _) =>
+            {
+                _slider.Width = Math.Max(40, Width - 32 - 92); _name.Width = Math.Max(40, Width - 32 - 42);
+                if (!TrayText.Rtl) { pic.Left = 6; _name.Left = 32; _slider.Left = 32; _value.Left = Width - 84; _mute.Left = Width - 36; _value.TextAlign = ContentAlignment.MiddleRight; return; }
+                pic.Left = Width - 26; _name.Left = Width - 32 - _name.Width; _slider.Left = Width - 32 - _slider.Width; _value.Left = 40; _mute.Left = 6; _value.TextAlign = ContentAlignment.MiddleLeft;
+            };
         }
 
         public void Set(float volume, bool muted, bool playing = true)

@@ -22,13 +22,13 @@ internal sealed class ColorForm : Form
         Text = TrayText.Color; FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; StartPosition = FormStartPosition.Manual; KeyPreview = true;
         AutoScaleMode = AutoScaleMode.Dpi; Font = Theme.Reg(10f); BackColor = Back; ForeColor = Text1; Padding = new Padding(14, 10, 14, 12);
         var head = new Panel { Dock = DockStyle.Top, Height = 34 };
-        head.Controls.Add(new Label { Text = TrayText.Color, Dock = DockStyle.Fill, Font = Theme.Semi(11f), RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft });   // "left" is the reading start in a right-to-left label
-        head.Controls.Add(Button(TrayText.ColorAgain, again, DockStyle.Left));
+        head.Controls.Add(new Label { Text = TrayText.Color, Dock = DockStyle.Fill, Font = Theme.Semi(11f), RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleLeft });   // "left" is the reading start in a right-to-left label
+        head.Controls.Add(Button(TrayText.ColorAgain, again, TrayText.Rtl ? DockStyle.Left : DockStyle.Right));
         var body = new Panel { Dock = DockStyle.Top, Height = 120 };
         body.Controls.Add(_codes); body.Controls.Add(_swatch);
         _codes.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); _codes.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         for (int i = 0; i < 3; i++) _codes.RowStyles.Add(new RowStyle(SizeType.Percent, 33.3f));
-        var recentTitle = new Label { Text = TrayText.ColorRecent, Dock = DockStyle.Top, Height = 26, ForeColor = Dim, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.BottomLeft };
+        var recentTitle = new Label { Text = TrayText.ColorRecent, Dock = DockStyle.Top, Height = 26, ForeColor = Dim, RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.BottomLeft };
         Controls.Add(_recent); Controls.Add(recentTitle); Controls.Add(_shades); Controls.Add(body); Controls.Add(head);
         // the picker's closing hands the front back to the window it took it from, a moment after this one is shown: that is not a click elsewhere
         Deactivate += (_, _) => { if (Environment.TickCount64 - _shown > 700) Hide(); };

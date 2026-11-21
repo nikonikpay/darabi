@@ -77,18 +77,19 @@ internal static class Theme
             using (var back = new LinearGradientBrush(ClientRectangle, Yellow, Color.FromArgb(0xF0, 0xC4, 0x00), LinearGradientMode.Horizontal)) g.FillRectangle(back, ClientRectangle);
             using (var line = new SolidBrush(Color.FromArgb(0xB8, 0x92, 0x00))) g.FillRectangle(line, 0, Height - 3, Width, 3);
             // right: the Mazesta logo on a dark disc; beside it the tool's own symbol
-            int d = Height - 24, x = Width - 16 - d, y = 10, d2 = d - 8, x2 = x - 10 - d2, y2 = y + 4;
+            bool fa = TrayText.Rtl;   // Persian: the logo at the right, text reading from the right; English: the mirror image
+            int d = Height - 24, x = fa ? Width - 16 - d : 16, y = 10, d2 = d - 8, x2 = fa ? x - 10 - d2 : x + d + 10, y2 = y + 4;
             using (var disc = new SolidBrush(Ink)) g.FillEllipse(disc, x2, y2, d2, d2);
             if (Logo is not null) g.DrawImage(Logo, x, y, d, d);   // the logo as it is: a dark ring round it read as a grey border
             using (var gf = new Font("Segoe MDL2 Assets", d2 * 0.46f, FontStyle.Regular, GraphicsUnit.Pixel)) using (var tint = new SolidBrush(_accent))
             {
                 var sz = g.MeasureString(_glyph, gf); g.DrawString(_glyph, gf, tint, x2 + (d2 - sz.Width) / 2 + 1, y2 + (d2 - sz.Height) / 2 + 1);
             }
-            int room = x2 - 28; if (room < 20) return;
-            using var rtl = new StringFormat(StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap) { Alignment = StringAlignment.Near, Trimming = StringTrimming.EllipsisCharacter };
+            int left = fa ? 16 : x2 + d2 + 14, room = fa ? x2 - 28 : Width - left - 16; if (room < 20) return;
+            using var rtl = new StringFormat(fa ? StringFormatFlags.DirectionRightToLeft | StringFormatFlags.NoWrap : StringFormatFlags.NoWrap) { Alignment = StringAlignment.Near, Trimming = StringTrimming.EllipsisCharacter };
             using var tf = Theme.Semi(15f, GraphicsUnit.Point); using var sf = Theme.Reg(9.5f, GraphicsUnit.Point);
-            using (var p = new SolidBrush(OnYellow)) g.DrawString(_title, tf, p, new RectangleF(16, 10, room, 30), rtl);
-            using (var p2 = new SolidBrush(Color.FromArgb(0x4A, 0x3C, 0x00))) g.DrawString(_sub, sf, p2, new RectangleF(16, 40, room, 24), rtl);
+            using (var p = new SolidBrush(OnYellow)) g.DrawString(_title, tf, p, new RectangleF(left, 10, room, 30), rtl);
+            using (var p2 = new SolidBrush(Color.FromArgb(0x4A, 0x3C, 0x00))) g.DrawString(_sub, sf, p2, new RectangleF(left, 40, room, 24), rtl);
         }
     }
 
@@ -180,10 +181,11 @@ internal static class Theme
     {
         private readonly string _glyph, _text; private readonly bool _strong; private readonly string? _help; private bool _hot;
         private static readonly Font IconFont = new("Segoe MDL2 Assets", 11f);
-        private Rectangle Q => new(0, (Height - 24) / 2, 24, 24);
+        private bool Rtl => RightToLeft == RightToLeft.Yes;
+        private Rectangle Q => new(Rtl ? 0 : Width - 24, (Height - 24) / 2, 24, 24);
         public CaptionBar(string glyph, string text, bool strong, string? help, int width)
         {
-            _glyph = glyph; _text = text; _strong = strong; _help = help; Width = width; Height = strong ? 32 : 26; RightToLeft = RightToLeft.Yes;
+            _glyph = glyph; _text = text; _strong = strong; _help = help; Width = width; Height = strong ? 32 : 26; RightToLeft = TrayText.Dir;
             Margin = strong ? new Padding(0, 8, 0, 2) : new Padding(0, 6, 0, 0); Font = strong ? Theme.Semi(10.5f) : Theme.Reg(9.5f);
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         }
@@ -194,8 +196,10 @@ internal static class Theme
         {
             var g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; g.Clear(Parent?.BackColor ?? Ink);
             Color tone = _strong ? Yellow : Paper2;
-            TextRenderer.DrawText(g, _glyph, IconFont, new Rectangle(Width - 22, 0, 20, Height), _strong ? Yellow : Paper3, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
-            TextRenderer.DrawText(g, _text, Font, Rectangle.FromLTRB(_help is null ? 0 : 30, 0, Width - 28, Height), tone, TextFormatFlags.Right | TextFormatFlags.RightToLeft | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            bool rtl = Rtl; int helpRoom = _help is null ? 0 : 30;
+            TextRenderer.DrawText(g, _glyph, IconFont, new Rectangle(rtl ? Width - 22 : 2, 0, 20, Height), _strong ? Yellow : Paper3, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, _text, Font, rtl ? Rectangle.FromLTRB(helpRoom, 0, Width - 28, Height) : Rectangle.FromLTRB(28, 0, Width - helpRoom, Height), tone,
+                (rtl ? TextFormatFlags.Right | TextFormatFlags.RightToLeft : TextFormatFlags.Left) | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
             if (_help is null) return;
             using (var b = new SolidBrush(_hot ? Yellow : Ink4)) g.FillEllipse(b, Q);
             TextRenderer.DrawText(g, "", IconFont, Q, _hot ? OnYellow : Paper, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
@@ -206,14 +210,14 @@ internal static class Theme
     private static void ShowHelp(Control owner, string title, string text)
     {
         const int w = 360; var body = Theme.Reg(10f);
-        int h = TextRenderer.MeasureText(text, body, new Size(w - 32, 0), TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.RightToLeft).Height;
-        var card = new RoundPanel { Width = w, Height = h + 62, Fill = Ink3, Edge = Yellow, Radius = 10, Padding = new Padding(16, 10, 16, 12), RightToLeft = RightToLeft.Yes };
-        card.Controls.Add(new Label { Dock = DockStyle.Fill, Text = text, Font = body, ForeColor = Paper, BackColor = Ink3, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.TopLeft });
-        card.Controls.Add(new Label { Dock = DockStyle.Top, Height = 30, Text = title, Font = Theme.Semi(10.5f), ForeColor = Yellow, BackColor = Ink3, RightToLeft = RightToLeft.Yes, TextAlign = ContentAlignment.MiddleLeft });
+        int h = TextRenderer.MeasureText(text, body, new Size(w - 32, 0), TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | (TrayText.Rtl ? TextFormatFlags.RightToLeft : 0)).Height;
+        var card = new RoundPanel { Width = w, Height = h + 62, Fill = Ink3, Edge = Yellow, Radius = 10, Padding = new Padding(16, 10, 16, 12), RightToLeft = TrayText.Dir };
+        card.Controls.Add(new Label { Dock = DockStyle.Fill, Text = text, Font = body, ForeColor = Paper, BackColor = Ink3, RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.TopLeft });
+        card.Controls.Add(new Label { Dock = DockStyle.Top, Height = 30, Text = title, Font = Theme.Semi(10.5f), ForeColor = Yellow, BackColor = Ink3, RightToLeft = TrayText.Dir, TextAlign = ContentAlignment.MiddleLeft });
         var drop = new ToolStripDropDown { AutoClose = true, Padding = Padding.Empty, BackColor = Ink, DropShadowEnabled = true };
         drop.Items.Add(new ToolStripControlHost(card) { Margin = Padding.Empty, Padding = Padding.Empty, AutoSize = false, Size = card.Size });
         drop.Closed += (_, _) => drop.Dispose();
-        drop.Show(owner, new Point(0, owner.Height));
+        drop.Show(owner, new Point(TrayText.Rtl ? 0 : owner.Width - w, owner.Height));   // under the "?", which sits at the far side from the text's start
     }
 
     public static void Field(TextBox t) { t.BorderStyle = BorderStyle.FixedSingle; t.BackColor = Ink3; t.ForeColor = Paper; }

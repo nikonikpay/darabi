@@ -30,6 +30,9 @@ internal sealed class TrayContext : ApplicationContext
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
     public bool IsChecking => _checking;
     public event Action? Changed;
+    /// <summary>The language in the app changed since this menu was built; <see cref="Program"/> builds a new tray.</summary>
+    public bool Restart { get; private set; }
+    private readonly bool _fa = TrayText.Fa;
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
@@ -38,7 +41,7 @@ internal sealed class TrayContext : ApplicationContext
         _memory = new(intervals.RamAlertPercent, TimeSpan.FromMinutes(intervals.RamHoldMinutes)); _ramFile = Path.Combine(Path.GetDirectoryName(logFile) ?? "", "ram-alert.txt");
         try { if (DateTimeOffset.TryParse(File.ReadAllText(_ramFile), null, System.Globalization.DateTimeStyles.RoundtripKind, out var last)) _memory.LastFired = last; } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         Checks = TrayCheckLog.Read(logFile);
-        var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
+        var menu = new ContextMenuStrip { RightToLeft = TrayText.Dir, ShowImageMargin = false };
         var open = new ToolStripMenuItem(TrayText.OpenApp, null, (_, _) => OpenApp()) { Font = new Font(menu.Font, FontStyle.Bold) };
         _checkNow = new ToolStripMenuItem(TrayText.CheckNow, null, async (_, _) => await CheckAllAsync());
         _overlay = new ToolStripMenuItem(TrayText.Overlay, null, (_, _) => ToggleOverlay());
@@ -58,7 +61,7 @@ internal sealed class TrayContext : ApplicationContext
         _mixerWait = ThreadPool.RegisterWaitForSingleObject(_mixerSignal, (_, _) => { try { _ui.BeginInvoke(ShowMixer); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
         menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, _search, new ToolStripMenuItem(TrayText.Space, null, (_, _) => ShowSpace()), new ToolStripMenuItem(TrayText.Mixer, null, (_, _) => ShowMixer()), _color, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
             _status, new ToolStripSeparator(), new ToolStripMenuItem(TrayText.Exit, null, (_, _) => ExitThread())]);
-        menu.Opening += (_, _) => { _overlay.Checked = OverlayShown(); _search.Visible = _files?.On == true; _search.Text = TrayText.SearchMenu(_files?.Shortcut); _color.Text = TrayText.ColorMenu(_colors.Shortcut); };
+        menu.Opening += (_, e) => { if (TrayText.Fa != _fa) { e.Cancel = true; Restart = true; _ui.BeginInvoke(ExitThread); return; } _overlay.Checked = OverlayShown(); _search.Visible = _files?.On == true; _search.Text = TrayText.SearchMenu(_files?.Shortcut); _color.Text = TrayText.ColorMenu(_colors.Shortcut); };
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
         _icon.DoubleClick += (_, _) => ShowSummary();
         _icon.BalloonTipClicked += (_, _) => { if (_link is { } l) OpenLink(l); else ShowSummary(); };

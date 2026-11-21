@@ -20,12 +20,19 @@ internal static class Program
         using var single = new Mutex(true, @"Local\MazestaTray", out bool first);
         if (!first) return;
         // Same appconfig.json the Desktop app writes; read-only (see TrayIntervals), so a corrupt or missing file just means the defaults.
-        var paths = AppPaths.Detect();
+        var paths = AppPaths.Detect(); TrayText.Watch(paths.ConfigFile);
         var intervals = TrayIntervals.Read(paths.ConfigFile);
         ApplicationConfiguration.Initialize();
         // a late callback into a window that has just closed must not show the system's error box in a tray program: it goes to a log
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         Application.ThreadException += (_, e) => { try { File.AppendAllText(Path.Combine(paths.DataRoot, "logs", "tray-errors.log"), $"{DateTime.Now:s} {e.Exception}\r\n\r\n"); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { } };
-        Application.Run(new TrayContext(intervals, TrayCheckLog.FileIn(paths), paths));
+        // a language change in the app is noticed when the menu is opened: the tray then starts over, so its menu and windows speak the new language
+        while (true)
+        {
+            var tray = new TrayContext(intervals, TrayCheckLog.FileIn(paths), paths);
+            Application.Run(tray);
+            bool again = tray.Restart; tray.Dispose();
+            if (!again) break;
+        }
     }
 }

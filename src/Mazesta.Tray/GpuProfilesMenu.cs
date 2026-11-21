@@ -94,5 +94,5 @@ internal sealed class GpuProfilesMenu
         }
     }
 
-    private static string Problems(TuningApplyResult r) => string.Join("، ", r.Steps.Where(s => !s.Ok).Select(s => s.Error ?? s.SettingKey));
+    private static string Problems(TuningApplyResult r) => string.Join(TrayText.Comma, r.Steps.Where(s => !s.Ok).Select(s => s.Error ?? s.SettingKey));
 }

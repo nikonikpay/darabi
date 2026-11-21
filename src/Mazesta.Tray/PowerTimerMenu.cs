@@ -42,7 +42,7 @@ internal sealed class PowerTimerMenu : IDisposable
 
     private void Ask(PowerAction action)
     {
-        using var form = new Form { Text = TrayText.PowerAfter(action), RightToLeft = RightToLeft.Yes, RightToLeftLayout = true, FormBorderStyle = FormBorderStyle.FixedDialog, StartPosition = FormStartPosition.CenterScreen,
+        using var form = new Form { Text = TrayText.PowerAfter(action), RightToLeft = TrayText.Dir, RightToLeftLayout = TrayText.Rtl, FormBorderStyle = FormBorderStyle.FixedDialog, StartPosition = FormStartPosition.CenterScreen,
             MinimizeBox = false, MaximizeBox = false, ClientSize = new Size(380, 150), TopMost = true };
         var label = new Label { Text = TrayText.PowerCustomHelp, Left = 14, Top = 14, Width = 352, Height = 44 };
         var box = new TextBox { Left = 14, Top = 62, Width = 352, TextAlign = HorizontalAlignment.Left, RightToLeft = RightToLeft.No, Text = "60" };
@@ -52,7 +52,7 @@ internal sealed class PowerTimerMenu : IDisposable
         while (form.ShowDialog() == DialogResult.OK)
         {
             if (PowerSchedule.ParseWait(box.Text) is { } wait) { Set(action, wait); return; }
-            MessageBox.Show(TrayText.PowerBadWait, TrayText.Title, MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
+            MessageBox.Show(TrayText.PowerBadWait, TrayText.Title, MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, TrayText.MsgOpts);
         }
     }
 
