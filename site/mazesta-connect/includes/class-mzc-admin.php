@@ -10,6 +10,15 @@ final class MZC_Admin
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
 
+    /** The top bar: a few groups, each opening its first page; the pages of the open group show in a second row. Every page of $pages is in exactly one group. */
+    private static $groups = array(
+        'نمای کلی' => array('mzc-overview'),
+        'سیستم‌ها' => array('mzc-systems', 'mzc-installs', 'mzc-problems', 'mzc-logkinds', 'mzc-events', 'mzc-tuning', 'mazesta-connect'),
+        'مشتریان' => array('mzc-customers', 'mzc-messages', 'mzc-access', 'mzc-builds', 'mzc-jobs', 'mzc-ships'),
+        'مالی و انبار' => array('mzc-acc', 'mzc-report', 'mzc-stock', 'mzc-purchases'),
+        'مدیریت' => array('mzc-staff', 'mzc-settings'),
+    );
+
     public static function boot()
     {
         add_action('admin_menu', array(__CLASS__, 'menu'));
@@ -51,8 +60,17 @@ final class MZC_Admin
     public static function open($slug, $title)
     {
         echo '<div class="mzc"><div class="mzc-head"><span class="mark">M</span><div><h1>Mazesta Connect</h1><div class="sub">سیستم‌ها، آمار، مشتریان و سرویس‌ها</div></div><span class="ver lat">v' . esc_html(MZC_VERSION) . '</span></div><nav class="mzc-nav">';
-        foreach (self::$pages as $s => $p) { echo '<a class="' . ($s === $slug ? 'on' : '') . '" href="' . esc_url(admin_url('admin.php?page=' . $s)) . '">' . esc_html($p[0]) . '</a>'; }
+        $cur = '';
+        foreach (self::$groups as $g => $slugs) {
+            $on = in_array($slug, $slugs, true); if ($on) { $cur = $g; }
+            echo '<a class="' . ($on ? 'on' : '') . '" href="' . esc_url(admin_url('admin.php?page=' . $slugs[0])) . '">' . esc_html($g) . '</a>';
+        }
         echo '</nav>';
+        if (count(self::$groups[$cur] ?? array()) > 1) {
+            echo '<nav class="mzc-sub">';
+            foreach (self::$groups[$cur] as $s) { echo '<a class="' . ($s === $slug ? 'on' : '') . '" href="' . esc_url(admin_url('admin.php?page=' . $s)) . '">' . esc_html(self::$pages[$s][0]) . '</a>'; }
+            echo '</nav>';
+        }
         if (!empty($_GET['mzc_msg'])) {
             $m = sanitize_text_field(wp_unslash($_GET['mzc_msg']));
             $kind = strpos($m, 'err:') === 0 ? 'err' : 'ok';

@@ -12,6 +12,11 @@
 .mzc-head h1 { color: #fff; font-size: 17px; font-weight: 700; } .mzc-head .sub { color: #aab2c0; font-size: 12px; }
 .mzc-head .ver { margin-inline-start: auto; color: #aab2c0; font-size: 12px; }
 .mzc-nav { display: flex; gap: 2px; flex-wrap: wrap; background: #1d2330; padding: 0 12px; border-radius: 0 0 12px 12px; margin-bottom: 18px; }
+.mzc-nav:has(+ .mzc-sub) { border-radius: 0; margin-bottom: 0; }
+.mzc-sub { display: flex; gap: 2px; flex-wrap: wrap; background: #2a3245; padding: 0 12px; border-radius: 0 0 12px 12px; margin-bottom: 18px; }
+.mzc-sub a { color: #c9cfdb; padding: 8px 12px; font-weight: 500; font-size: 13px; border-bottom: 3px solid transparent; text-decoration: none; }
+.mzc-sub a:hover { color: #fff; background: #333c52; text-decoration: none; }
+.mzc-sub a.on { color: #fff; border-bottom-color: var(--brand); }
 .mzc-nav a { color: #c9cfdb; padding: 11px 14px; font-weight: 600; border-bottom: 3px solid transparent; text-decoration: none; }
 .mzc-nav a:hover { color: #fff; background: #262d3d; text-decoration: none; }
 .mzc-nav a.on { color: #fff; border-bottom-color: var(--brand); }
