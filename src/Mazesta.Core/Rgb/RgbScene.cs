@@ -28,7 +28,7 @@ public sealed class RgbScene
 
     /// <summary>What an addressable header is given when nobody has said how long the strip on it is: a plausible length, so the lights work at once and
     /// no question is asked (OpenRGB's own window asks it, with 0 as the answer to give up).</summary>
-    public const int DefaultLeds = 30;
+    public const int DefaultLeds = 70;
 
     public static string DeviceKey(string vendor, string name, string location) => $"{vendor}|{name}|{location}";
     public static string ZoneKey(string vendor, string name, string location, string zone) => $"{vendor}|{name}|{location}|{zone}";

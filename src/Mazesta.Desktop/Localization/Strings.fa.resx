@@ -3479,7 +3479,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>تعداد LED</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>تا {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>اعمال</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>طول پیش‌فرض هر خروجی ۳۰ LED است؛ اگر نوار شما تعداد دیگری دارد همان را بنویسید.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>طول پیش‌فرض هر خروجی ۷۰ LED است؛ اگر نوار شما تعداد دیگری دارد همان را بنویسید.</value></data>
   <data name="Rgb_Connecting" xml:space="preserve"><value>در حال راه‌اندازی نورها… اولین جست‌وجو کمی طول می‌کشد.</value></data>
   <data name="Rgb_Dark_Off" xml:space="preserve"><value>خاموش کردن همه (تنظیمات می‌ماند)</value></data>
   <data name="Rgb_Dark_On" xml:space="preserve"><value>برگرداندن نورها</value></data>

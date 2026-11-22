@@ -62,10 +62,10 @@ export function mount(el) {
   // What the lights do at sleep and shutdown (the background monitor carries it out).
   const powerEnd = h("select", { class: "field", "aria-label": t("Rgb_PowerEnd"), onchange: (e) => run("rgb.powerEnd", { value: e.target.value }) }, ...["leave", "off", "on"].map((v) => h("option", { value: v }, t("Rgb_PowerEnd_" + v))));
   const start = h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.start", { keepMakers: keep.checked }) }, icon("bolt"), t("Rgb_Connect"));
-  const release = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("stop"), t("Rgb_Release"));
-  const dark = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("stop"), t("Rgb_Dark_Off"));
+  const release = h("button", { class: "btn tint t-release", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("swap"), t("Rgb_Release"));
+  const dark = h("button", { class: "btn tint t-dark", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("bulb"), t("Rgb_Dark_Off"));
   // A search from the beginning: the lights' server is started afresh and every part looked for again; the report below says what was found, what was not, and what stood in the way.
-  const rescan = h("button", { class: "btn", type: "button", onclick: () => run("rgb.rescan", { keepMakers: keep.checked }) }, icon("refresh"), t("Rgb_Rescan"));
+  const rescan = h("button", { class: "btn tint t-scan", type: "button", onclick: () => run("rgb.rescan", { keepMakers: keep.checked }) }, icon("search"), t("Rgb_Rescan"));
   const scanBox = h("section", { class: "rgb-scan", hidden: true, "aria-live": "polite" });
   const list = h("div", { class: "rgb-cards" });
   let alive = true, poll = 0;
@@ -255,7 +255,7 @@ export function mount(el) {
           h("button", { class: "btn", type: "button", onclick: () => { probes.delete(pk); run("rgb.zone", { device: d.index, zone: z.index, leds: pr.orig }); } }, t("Rgb_Cancel"))));
     }
     const n = h("input", { type: "number", class: "field num", min: z.min, max: z.max, value: z.leds, inputmode: "numeric", "aria-label": `${z.name}: ${t("Rgb_Zone_Count")}` });
-    const detect = () => { const p = { lo: Math.max(z.min, 1), hi: z.max, n: 0, orig: z.leds || Math.min(30, z.max) }; probes.set(pk, p); p.n = Math.ceil((p.lo + p.hi) / 2); run("rgb.probe", { device: d.index, zone: z.index, leds: p.n }); };
+    const detect = () => { const p = { lo: Math.max(z.min, 1), hi: z.max, n: 0, orig: z.leds || Math.min(70, z.max) }; probes.set(pk, p); p.n = Math.ceil((p.lo + p.hi) / 2); run("rgb.probe", { device: d.index, zone: z.index, leds: p.n }); };
     return h("div", { class: "rgb-hdr" }, name, n, h("small", {}, t("Rgb_Zone_Max", z.max)),
       h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.zone", { device: d.index, zone: z.index, leds: Number(n.value) }) }, t("Rgb_Zone_Set")), h("button", { class: "btn", type: "button", onclick: detect }, t("Rgb_Detect"))));
   }

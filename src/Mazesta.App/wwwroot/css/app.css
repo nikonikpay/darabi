@@ -202,6 +202,7 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 /* A tinted button: its own hue for the border, the text and a faint fill, so neighbours read as different things. */
 .btn.tint { --tint: var(--paper-2); border-color: color-mix(in oklab, var(--tint) 55%, transparent); background: color-mix(in oklab, var(--tint) 13%, var(--ink-3)); color: var(--tint); }
 .btn.tint:hover:not(:disabled) { border-color: var(--tint); background: color-mix(in oklab, var(--tint) 24%, var(--ink-3)); }
+.btn.t-scan { --tint: #5ba8ff; } .btn.t-dark { --tint: #b79cff; } .btn.t-release { --tint: #ff9a4d; }
 .btn.t-share { --tint: var(--c-cpu); } .btn.t-send { --tint: var(--pass); } .btn.t-chart { --tint: var(--c-ram); }
 .btn.quiet.pick { border-color: var(--rule-2); background: var(--ink-2); color: var(--paper); }
 .btn.quiet.pick:hover:not(:disabled) { border-color: var(--paper-3); background: var(--ink-4); }

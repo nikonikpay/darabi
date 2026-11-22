@@ -3479,7 +3479,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>number of LEDs</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>up to {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>Set</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>Each output starts at 30 LEDs; if your strip has another number, enter it.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>Each output starts at 70 LEDs; if your strip has another number, enter it.</value></data>
   <data name="Rgb_Connecting" xml:space="preserve"><value>Starting the lights... the first search takes a little while.</value></data>
   <data name="Rgb_Dark_Off" xml:space="preserve"><value>Switch all off (the scene is kept)</value></data>
   <data name="Rgb_Dark_On" xml:space="preserve"><value>Switch the scene back on</value></data>

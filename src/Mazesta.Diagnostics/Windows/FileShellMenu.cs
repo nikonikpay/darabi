@@ -27,6 +27,19 @@ public static class FileShellMenu
             key.SetValue("MultiSelectModel", "Player");   // shown for any number of files, not only up to 15
             using var command = key.CreateSubKey("command"); command.SetValue("", Command(trayExe, tool));
         }
+        WriteMenuFile(trayExe, label);
+    }
+
+    /// <summary>What Windows 11's top-level entries (tools/win11-menu) show and start: their titles in the app's language and the tray program's path.</summary>
+    private static void WriteMenuFile(string trayExe, Func<string, string> label)
+    {
+        try
+        {
+            // beside the entries' DLL (tools/win11-menu/build.ps1 puts it there); without it the Windows 11 entries are not set up
+            string dir = Path.Combine(Path.GetDirectoryName(trayExe) ?? "", "ShellMenu"); if (!Directory.Exists(dir)) return;
+            File.WriteAllLines(Path.Combine(dir, "menu.txt"), [.. ShellFiles.Tools.Select(t => $"{t}={label(t)}"), $"tray={trayExe}"], new System.Text.UTF8Encoding(false));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     /// <summary>The command each entry starts now, or null where there is none.</summary>
