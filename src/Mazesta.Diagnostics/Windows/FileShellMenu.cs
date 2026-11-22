@@ -26,7 +26,7 @@ public static class FileShellMenu
         {
             using var key = Registry.CurrentUser.CreateSubKey(path);
             key.SetValue("", label(tool)); key.SetValue("Icon", $"\"{trayExe}\",0");
-            key.SetValue("MultiSelectModel", "Player");   // shown for any number of files, not only up to 15
+            key.SetValue("MultiSelectModel", tool == ShellFiles.Lock ? "Single" : "Player");   // "what holds it open" checks one file, so only for one; the others show for any number, not only up to 15
             using var command = key.CreateSubKey("command"); command.SetValue("", Command(trayExe, tool));
         }
         WriteMenuFile(trayExe, label);

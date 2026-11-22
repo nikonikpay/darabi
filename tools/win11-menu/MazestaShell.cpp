@@ -79,6 +79,7 @@ public:
     STDMETHODIMP GetCanonicalName(GUID* g) override { *g = GUID_NULL; return S_OK; }
     STDMETHODIMP GetState(IShellItemArray* items, BOOL, EXPCMDSTATE* state) override {
         *state = ECS_ENABLED;
+        if (_tool == L"lock") { DWORD n = 0; if (!items || FAILED(items->GetCount(&n)) || n != 1) *state = ECS_HIDDEN; }   // it checks one file, not a selection
         if (_tool == L"resize") { bool any = false; for (auto& p : Paths(items)) if (IsImage(p)) any = true; if (!any) *state = ECS_HIDDEN; }
         return S_OK;
     }
