@@ -20,6 +20,8 @@ public static class FileShellMenu
     /// <summary>The entries made (or made again) for this tray program and these labels; a moved copy or another language is put right at the next start.</summary>
     public static void Set(string trayExe, Func<string, string> label)
     {
+        // where the Windows 11 package is set up its entries show in the classic menu too, so the registry ones would be a second copy
+        if (File.Exists(Path.Combine(Path.GetDirectoryName(trayExe) ?? "", "ShellMenu", "MazestaShell.dll"))) { RemoveAll(); WriteMenuFile(trayExe, label); return; }
         foreach (var (path, tool) in Entries)
         {
             using var key = Registry.CurrentUser.CreateSubKey(path);
