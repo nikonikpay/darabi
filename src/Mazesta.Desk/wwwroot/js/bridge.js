@@ -29,6 +29,9 @@
     logout: async () => { if (wv) return send({ op: 'logout' }); await devCall('POST', 'staff/logout', '{}'); sessionStorage.removeItem('mzt'); return { status: 200 }; },
     session: async () => wv ? send({ op: 'session' }) : { status: 200, data: { server: dev || '', signedIn: !!sessionStorage.getItem('mzt'), machine: 'browser' } },
     setServer: async server => wv ? send({ op: 'server', server }) : { status: 200, data: { server: dev || server } },
+    queue: async () => wv ? send({ op: 'queue' }) : { status: 200, data: { pending: 0, refused: [] } },
+    flush: async () => wv ? send({ op: 'flush' }) : { status: 200, data: { sent: 0, refused: 0, stopped: false, pending: 0 } },
+    discard: async queueId => wv ? send({ op: 'discard', queueId }) : { status: 200 },
     print: async () => wv ? send({ op: 'print' }) : (window.print(), { status: 200 }),
   };
 })();

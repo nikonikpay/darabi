@@ -4,6 +4,7 @@ class ApiError extends Error { constructor(msg, status, data) { super(msg); this
 
 async function api(method, path, body) {
   const r = await bridge.api(method, path, body);
+  if (r.status === 202 && r.data && r.data.queued) toast('اتصال به سایت نیست؛ در صف ماند و با وصل شدن خودکار فرستاده می‌شود.');
   if (r.status >= 200 && r.status < 300 && r.data) return r.data;
   if (r.status === 401 && S.me) { S.me = null; showLogin('نشست شما تمام شد؛ دوباره وارد شوید.'); }
   throw new ApiError((r.data && r.data.error) || r.error || 'خطای ناشناخته', r.status, r.data);

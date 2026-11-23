@@ -65,6 +65,9 @@ internal sealed class MainForm : Form
             switch (Str("op"))
             {
                 case "api": reply = Pack(await _site.CallAsync(Str("method"), Str("path"), Str("body"), _closing.Token)); break;
+                case "queue": reply = new { status = 200, data = new { pending = _site.Queue.Pending, refused = _site.Queue.Refused.Select(q => new { q.Id, q.Path, q.Error, at = q.At.ToString("yyyy-MM-dd HH:mm") }) } }; break;
+                case "flush": { var f = await _site.FlushAsync(_closing.Token); reply = new { status = 200, data = new { f.Sent, f.Refused, f.Stopped, pending = _site.Queue.Pending } }; break; }
+                case "discard": _site.Queue.Discard(Str("queueId")); reply = new { status = 200 }; break;
                 case "login": reply = Pack(await _site.LoginAsync(Str("username"), Str("password"), _closing.Token)); break;
                 case "logout": await _site.LogoutAsync(_closing.Token); reply = new { status = 200 }; break;
                 case "session": reply = new { status = 200, data = new { server = _site.Server.GetLeftPart(UriPartial.Authority), signedIn = _site.SignedIn, machine = Environment.MachineName } }; break;
