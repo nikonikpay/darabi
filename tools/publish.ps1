@@ -147,3 +147,11 @@ if ($Only -ne "Client") {
         Write-Host "Ready (flash): $(Join-Path $flash 'Mazesta-Admin.exe') - copy the whole folder to the drive"
     }
 }
+
+# Windows 11's top-level right-click entries for the file tools (tools/win11-menu): rebuilt and registered for Mazesta's own folder, as the folder was just wiped.
+# Needs an elevated shell (the package's certificate is trusted machine-wide); otherwise the classic menu entries (Show more options) still work.
+if ($Only -ne "Client") {
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($isAdmin) { try { & (Join-Path $repo "tools/win11-menu/build.ps1") -AppDir ([IO.Path]::GetFullPath((Join-Path $repo $Output))) | Select-Object -Last 1 } catch { Write-Warning "Windows 11 menu entries were not set up: $($_.Exception.Message)" } }
+    else { Write-Warning "Not elevated: the Windows 11 top-level menu entries were not set up (run tools/win11-menu/build.ps1 -AppDir <folder> elevated)." }
+}

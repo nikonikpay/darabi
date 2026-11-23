@@ -18,6 +18,16 @@ public class FileIndexTests
         return [.. best.OrderBy(b => b.Key).ThenBy(b => b.Entry).Select(b => x.Name(b.Entry))];
     }
 
+    [Fact] public void Files_only_folders_only_and_one_kind_of_file()
+    {
+        var (x, _, _, _) = Sample(); var best = new List<(long Key, int Entry)>();
+        int Count(Action<FileQuery> set) { var q = FileQuery.Parse("report")!; set(q); best.Clear(); return x.Search(q, 100, best); }
+        Assert.Equal(3, Count(_ => { }));
+        Assert.Equal(2, Count(q => q.Dirs = false)); Assert.Equal(1, Count(q => q.Dirs = true));
+        Assert.Equal(1, Count(q => q.Extensions = new(["PDF"], StringComparer.OrdinalIgnoreCase)));   // a folder never matches a kind of file
+        Assert.Equal(0, Count(q => { q.Dirs = true; q.Extensions = new(["pdf"], StringComparer.OrdinalIgnoreCase); }));
+    }
+
     [Fact] public void Paths_are_the_chain_of_parents()
     {
         var (x, users, report, _) = Sample();

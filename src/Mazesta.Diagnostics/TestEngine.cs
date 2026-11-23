@@ -73,6 +73,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         if (queue.Count == 0) throw new ArgumentException("Queue is empty.", nameof(queue));
         if (State == TestEngineState.Running) throw new InvalidOperationException("A queue is already running.");
         using var lease = gate is null ? null : gate.TryEnter(Workload.Tests) ?? throw new WorkloadBusyException(gate.Holder ?? Workload.Tests);
+        using var awake = new KeepAwake("Mazesta Test: hardware tests running");
         var checkpoint = new TestSessionCheckpoint { SessionId = Guid.NewGuid().ToString("N"), QueueTestIds = [.. queue.Select(q => q.Definition.Id.Value)], StartedAt = clock.UtcNow, LastUpdatedAt = clock.UtcNow };
         _cts = CancellationTokenSource.CreateLinkedTokenSource(external);   // before Running, so a Cancel that follows the state change always finds it
         var ct = _cts.Token;

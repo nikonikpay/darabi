@@ -85,7 +85,7 @@ public sealed class ReportService
             var peaks = SensorSummarizer.Peaks(_polling, sensors, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.StartedAt, t.FinishedAt)));
             var findings = await Setup().ConfigureAwait(false);
             findings.AddRange(_checkup.Runs().SelectMany(c => c.All).Select(CheckupText.Entry));
-            Save(SessionReport.Create(Brand, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
+            Save(SessionReport.Create(Brand, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null, TestSensors = SensorSummarizer.PerTest(_polling, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Id, t.StartedAt, t.FinishedAt)).Concat(benchmarks.Select(x => (ReportHtml.BenchKey(x), x.StartedAt ?? x.FinishedAt, x.FinishedAt)))) });
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
@@ -99,7 +99,8 @@ public sealed class ReportService
             var peaks = SensorSummarizer.Peaks(_polling, sensors, runs.Select(r => (r.Result.StartedAt, r.Result.FinishedAt)));
             var findings = await Setup().ConfigureAwait(false);
             foreach (var run in runs) findings.AddRange((await _checkup.ForRunAsync(run).ConfigureAwait(false)).Select(CheckupText.Entry));
-            Save(SessionReport.CreateBenchmark(Brand, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
+            var entries = runs.Select(ToEntry).ToList();
+            Save(SessionReport.CreateBenchmark(Brand, AppVersion, _clock.UtcNow, entries, sensors, machine, _config.ServiceNumber) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null, TestSensors = SensorSummarizer.PerTest(_polling, entries.Select(x => (ReportHtml.BenchKey(x), x.StartedAt ?? x.FinishedAt, x.FinishedAt))) });
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }
@@ -183,7 +184,7 @@ public sealed class ReportService
         var finished = r.FinishedAt ?? r.StartedAt;
         return new(q.Definition.Id.Value, name, r.Outcome switch { TestOutcome.Passed => ReportOutcome.Passed, TestOutcome.Failed => ReportOutcome.Failed, TestOutcome.Cancelled => ReportOutcome.Cancelled, TestOutcome.Unsupported => ReportOutcome.Unsupported,
             TestOutcome.Error => ReportOutcome.Error, TestOutcome.Inconclusive => ReportOutcome.Inconclusive, _ => ReportOutcome.NotRun },
-            r.StartedAt, finished, (finished - r.StartedAt).TotalSeconds, r.ErrorCount, r.Detail, options, ViewModels.TestAdvice.For(q.Definition.Id.Value, r.Outcome));
+            r.StartedAt, finished, (finished - r.StartedAt).TotalSeconds, r.ErrorCount, r.Detail, options, ViewModels.TestAdvice.For(q.Definition.Id.Value, r.Outcome), q.Definition.DefaultDurationSeconds);
     }
 
     // Read once: a report is now saved after every benchmark run, not only after a test session.

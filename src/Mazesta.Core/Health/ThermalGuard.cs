@@ -19,10 +19,12 @@ public sealed record ThermalTrip(ThermalSensor Sensor, double ValueC, double Lim
 public sealed class ThermalGuard(ThermalLimits limits)
 {
     public const double CpuCeilingC = 105, GpuCeilingC = 105, VramCeilingC = 110, DriveCeilingC = 85;
+    /// <summary>The hottest point of the die, not its edge: Radeon cards are built to run it up to 110 °C, so stopping at the core's 105 °C ended the test of a healthy one.</summary>
+    public const double GpuHotSpotCeilingC = 110;
     private readonly Dictionary<ThermalSensor, DateTimeOffset> _since = [];
     private readonly Dictionary<ThermalSensor, DateTimeOffset> _last = [];
 
-    public static double Ceiling(ThermalSensor s) => s switch { ThermalSensor.GpuVram => VramCeilingC, ThermalSensor.Drive => DriveCeilingC, ThermalSensor.GpuCore or ThermalSensor.GpuHotSpot => GpuCeilingC, _ => CpuCeilingC };
+    public static double Ceiling(ThermalSensor s) => s switch { ThermalSensor.GpuVram => VramCeilingC, ThermalSensor.Drive => DriveCeilingC, ThermalSensor.GpuHotSpot => GpuHotSpotCeilingC, ThermalSensor.GpuCore => GpuCeilingC, _ => CpuCeilingC };
     public double Limit(ThermalSensor s) => s switch
     {
         ThermalSensor.GpuCore => limits.GpuC, ThermalSensor.GpuHotSpot => limits.GpuHotSpotC, ThermalSensor.GpuVram => limits.GpuVramC, ThermalSensor.Drive => limits.DriveC, _ => limits.CpuC,

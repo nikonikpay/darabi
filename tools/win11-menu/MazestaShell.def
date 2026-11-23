@@ -1,0 +1,4 @@
+LIBRARY MazestaShell
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE

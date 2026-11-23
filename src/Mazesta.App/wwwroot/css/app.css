@@ -202,6 +202,7 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 /* A tinted button: its own hue for the border, the text and a faint fill, so neighbours read as different things. */
 .btn.tint { --tint: var(--paper-2); border-color: color-mix(in oklab, var(--tint) 55%, transparent); background: color-mix(in oklab, var(--tint) 13%, var(--ink-3)); color: var(--tint); }
 .btn.tint:hover:not(:disabled) { border-color: var(--tint); background: color-mix(in oklab, var(--tint) 24%, var(--ink-3)); }
+.btn.t-scan { --tint: #5ba8ff; } .btn.t-dark { --tint: #b79cff; } .btn.t-release { --tint: #ff9a4d; }
 .btn.t-share { --tint: var(--c-cpu); } .btn.t-send { --tint: var(--pass); } .btn.t-chart { --tint: var(--c-ram); }
 .btn.quiet.pick { border-color: var(--rule-2); background: var(--ink-2); color: var(--paper); }
 .btn.quiet.pick:hover:not(:disabled) { border-color: var(--paper-3); background: var(--ink-4); }
@@ -1886,7 +1887,19 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rgb-bar { display: grid; gap: 10px; padding: 14px 18px; margin-bottom: 14px; border: 1px solid var(--rule); border-radius: var(--r-ctl); background: var(--ink-3); }
 .rgb-bar-head { display: flex; align-items: center; gap: 12px; } .rgb-bar-head > svg { inline-size: 28px; block-size: 28px; stroke: var(--yellow); flex: none; } .rgb-bar-head h2 { margin: 0; font-size: 17px; } .rgb-bar-head p { margin: 0; }
 .rgb-bar-ctl { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; } .rgb-field.inline { display: flex; align-items: center; gap: 8px; margin: 0; }
+.rgb-scan { border: 1px solid var(--rule); border-radius: 12px; padding: 12px 16px; margin: 10px 0 4px; background: var(--ink-2); }
+.rgb-scan .h3 { margin: 0 0 8px; } .rgb-scan .note { margin: 8px 0 0; } .rgb-scan .note.ok { color: var(--pass); } .rgb-scan .note.warn { color: var(--warn); }
+.rgb-scan-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rgb-scan-list li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .rgb-scan-list svg { width: 18px; height: 18px; flex: none; color: var(--paper-2); } .rgb-scan-list li small { color: var(--paper-3); } .rgb-scan-list li.none { color: var(--paper-3); }
 .rgb-more summary { cursor: pointer; color: var(--paper-3); font-size: 12.5px; } .rgb-more .note { margin: 6px 0 0; }
+/* "All devices": the master box of the page. A green of its own (no part uses it), a tinted plate, a heavier frame with a glow and a bar across the top, so it reads as the one control above the device cards. */
+.p-lights-all { --hue: #3ddc84; border: 2px solid var(--hue); padding-top: 18px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hue) 14%, var(--ink-2)) 0%, var(--ink-2) 60%);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--hue) 12%, transparent), 0 14px 36px -18px var(--hue); }
+.p-lights-all::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 5px; border-radius: calc(var(--r-panel) - 2px) calc(var(--r-panel) - 2px) 0 0; background: linear-gradient(90deg, #3ddc84, #35d0e0, #b38bff, #ff78b9, #ff9a4d, #fdd400); }
+.p-lights-all .panel-head .ico { width: 36px; height: 36px; border-radius: 8px; }
+.p-lights-all .panel-title { font-size: 17px; color: var(--hue); }
+.p-lights-all .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--ink); }
 .rgb-grid { column-width: 400px; column-gap: 14px; } .rgb-grid > *, .rgb-cards > * { break-inside: avoid; margin: 0 0 14px; } .rgb-cards { display: contents; }
 .rgb-tip { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--yellow) 45%, var(--rule)); border-radius: var(--r-ctl); background: color-mix(in srgb, var(--yellow) 8%, var(--ink-3)); font-size: 12.5px; line-height: 1.8; }
 .rgb-tip svg { inline-size: 18px; block-size: 18px; flex: none; margin-top: 3px; stroke: var(--yellow); }
@@ -1951,3 +1964,10 @@ div.findings { max-height: none; overflow: visible; }
 .dash-page .panel-head .ico { width: 36px; height: 36px; border-radius: 11px; color: var(--on-yellow); background: linear-gradient(135deg, var(--hue), color-mix(in oklab, var(--hue) 55%, #fff)); box-shadow: 0 6px 16px -7px var(--hue); }
 .dash-page .panel-head .ico svg { width: 19px; height: 19px; animation: pop 640ms var(--ease) both; animation-delay: calc(200ms + var(--i, 0) * 45ms); }
 .dash-page .panel:hover .panel-head .ico svg { animation: wiggle 620ms var(--ease); }
+
+/* Hands-on USB check: one row per port proven by a newly plugged device. */
+.chk-usb { display: grid; gap: 6px; margin: 10px 0 4px; }
+.chk-usb-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: color-mix(in oklab, var(--pass) 12%, transparent); }
+.chk-usb-row.bad { background: color-mix(in oklab, var(--fail) 14%, transparent); }
+.chk-usb-row svg { width: 18px; height: 18px; flex: none; stroke: var(--pass); }
+.chk-usb-row.bad svg { stroke: var(--fail); }

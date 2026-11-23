@@ -25,7 +25,21 @@ public static class PawnIoDriver
     {
         using var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
         using var uninstall = hklm.OpenSubKey(UninstallKey); using var service = hklm.OpenSubKey(ServiceKey);
-        return uninstall?.GetValue("DisplayVersion") is string || service is not null;
+        // A removal that stopped half way leaves the registry keys without the driver file: that is not an installed driver, and counting it
+        // as one is why a reinstall of the app never put PawnIO back.
+        if (service is not null) return DriverFileExists(service.GetValue("ImagePath") as string);
+        return uninstall?.GetValue("DisplayVersion") is string;
+    }
+
+    /// <summary>The service's <c>ImagePath</c> (<c>\SystemRoot\System32\…</c>, <c>\??\C:\…</c> or a plain path) names a file that is there; a path in a form not recognised counts as there.</summary>
+    public static bool DriverFileExists(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath)) return true;
+        string p = imagePath.Trim().Trim('"');
+        if (p.StartsWith(@"\??\", StringComparison.Ordinal)) p = p[4..];
+        else if (p.StartsWith(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase)) p = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), p[12..]);
+        else if (!Path.IsPathRooted(p)) return true;
+        return File.Exists(p);
     }
 
     public static PawnIoInstallResult EnsureInstalled(bool elevated, ILogger log, string? setupPath = null)
@@ -37,11 +51,24 @@ public static class PawnIoDriver
         string hash; using (var fs = File.OpenRead(setupPath)) hash = Convert.ToHexString(SHA256.HashData(fs));
         if (!hash.Equals(SetupSha256, StringComparison.OrdinalIgnoreCase)) { log.LogError("{Setup} has hash {Hash}, not the official {Expected}; not running it", setupPath, hash, SetupSha256); return PawnIoInstallResult.SetupTampered; }
         // A setup that Windows blocks (the driver blocklist, Smart App Control) fails the same way every time: it is tried once a day, not at every start and every tray check.
-        string marker = Path.Combine(Path.GetTempPath(), "mazesta-pawnio-failed");
+        // The note sits beside the setup file in Redist, so installing or updating the app (which replaces that folder) clears it and tries again at once.
+        string marker = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(setupPath))!, "pawnio-failed.flag");
         if (File.Exists(marker) && DateTime.UtcNow - File.GetLastWriteTimeUtc(marker) < TimeSpan.FromDays(1)) { log.LogWarning("PawnIO setup failed less than a day ago; not retried yet"); return PawnIoInstallResult.Failed; }
         var result = Install(setupPath, log);
         try { if (result == PawnIoInstallResult.Installed) File.Delete(marker); else File.WriteAllText(marker, DateTime.UtcNow.ToString("O")); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         return result;
+    }
+
+    /// <summary>The banner's "install by hand": opens the carried official setup with its own window (its Install button), after the same hash check; true when it was opened.
+    /// Works where the silent install fails, which is what running the file from the program's folder by hand showed.</summary>
+    public static bool LaunchSetup(ILogger log, string? setupPath = null)
+    {
+        setupPath ??= SetupPath;
+        if (!File.Exists(setupPath)) { log.LogWarning("{Setup} is missing", setupPath); return false; }
+        string hash; using (var fs = File.OpenRead(setupPath)) hash = Convert.ToHexString(SHA256.HashData(fs));
+        if (!hash.Equals(SetupSha256, StringComparison.OrdinalIgnoreCase)) { log.LogError("{Setup} has hash {Hash}, not the official one; not running it", setupPath, hash); return false; }
+        try { using var p = Process.Start(new ProcessStartInfo(setupPath) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(Path.GetFullPath(setupPath))! }); return p is not null; }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { log.LogError(e, "The PawnIO setup could not be opened"); return false; }
     }
 
     /// <summary>Programs that read the same CPU registers or the Ryzen's SMU through a driver of their own and can leave them unreadable for a second reader (or crash holding them); named in the log when the CPU sensors come back empty.</summary>

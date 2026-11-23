@@ -7,9 +7,9 @@ namespace Mazesta.Core.Health;
 /// (a healthy Plextor M7V reads 46), so they are reported as evidence only; NVMe's error count is defined by the standard.</summary>
 public static class DriveAttention
 {
-    public const int WatchBelow = 80, FailBelow = 50;
+    public const int WatchBelow = 80, FailBelow = 60;
 
-    /// <summary>Windows' verdict, made stricter by the life left: below 80 % a healthy drive reads «Warning», below 50 % «Unhealthy» (Windows keeps saying «Healthy» for an SSD whose wear counter is spent).</summary>
+    /// <summary>Windows' verdict, made stricter by the life left: below 80 % a healthy drive reads «Warning» (orange), below 60 % «Unhealthy» (red) (Windows keeps saying «Healthy» for an SSD whose wear counter is spent).</summary>
     public static string? Verdict(string? status, int? wearPercent) => HealthPercent(wearPercent) switch
     {
         < FailBelow => "Unhealthy",
@@ -17,7 +17,8 @@ public static class DriveAttention
         _ => status,
     };
 
-    public static bool Needs(DriveHealth d) => d.Status is "Warning" or "Unhealthy" || (d.BusType == "NVMe" && (d.ReadErrorsUncorrected > 0 || d.WriteErrorsUncorrected > 0));
+    public static bool Needs(DriveHealth d) => d.Status is "Warning" or "Unhealthy" || (d.BusType == "NVMe" && (d.ReadErrorsUncorrected > 0 || d.WriteErrorsUncorrected > 0))
+        || (d.Media == "HDD" && d.BadSectors > 0);   // Windows goes on calling a hard disk with replaced or unreadable sectors «Healthy»; an SSD retires blocks as it wears, so there they are evidence only
 
     /// <summary>Life left, from the drive's own wear counter (100 − used); null for a drive without one (an HDD), never guessed.</summary>
     public static int? HealthPercent(int? wearPercent) => wearPercent is { } w ? Math.Clamp(100 - w, 0, 100) : null;

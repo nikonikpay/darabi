@@ -760,7 +760,12 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             }
             Mark(l, "depth prepass (MSAA)");
             l.ResourceBarrierTransition(_depth, ResourceStates.DepthWrite, ResourceStates.ResolveSource);
-            l.ResourceBarrierTransition(_sceneDepth, ResourceStates.PixelShaderResource, ResourceStates.ResolveDest);
+            // The glass and water listing (LayerPS) depth-tests against this picture, and a resolve alone does not leave it as a depth buffer that was drawn or cleared: on an RTX 50 card the depth-test
+            // state it kept from the frame before made the listing, and so the picture, depend on that frame (the check frame drawn after a run differed from the one before it). Cleared first, as the
+            // frame without MSAA draws it, the same moment is the same picture.
+            l.ResourceBarrierTransition(_sceneDepth, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
+            l.ClearDepthStencilView(Dsv(5), ClearFlags.Depth, 0, 0);
+            l.ResourceBarrierTransition(_sceneDepth, ResourceStates.DepthWrite, ResourceStates.ResolveDest);
             l.ResolveSubresourceRegion(_sceneDepth, 0, 0, 0, _depth, 0, new Vortice.RawRect(0, 0, Width, Height), Format.R32_Float, ResolveMode.Max);   // (depth is reversed: the greatest is the nearest)
             l.ResourceBarrierTransition(_sceneDepth, ResourceStates.ResolveDest, ResourceStates.PixelShaderResource);
             l.ResourceBarrierTransition(_depth, ResourceStates.ResolveSource, ResourceStates.DepthWrite);

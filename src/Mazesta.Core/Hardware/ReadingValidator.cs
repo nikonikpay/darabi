@@ -5,6 +5,12 @@ public static class ReadingValidator
     /// <summary>A drive reporting this or more is not reporting a temperature (a Samsung 990 Pro answers 255 for "unknown").</summary>
     public const double MaxDriveCelsius = 150;
 
+    /// <summary>A board or chipset sensor reading more than this is an unwired Super I/O input (they float to 110-127 °C), not a temperature: real boards throttle or shut down long before.</summary>
+    public const double MaxBoardCelsius = 100;
+
+    public static DataQuality Validate(SensorKind kind, double? value, SensorRole role)
+        => role is SensorRole.BoardTemp or SensorRole.ChipsetTemp && value > MaxBoardCelsius ? DataQuality.Invalid : Validate(kind, value);
+
     public static DataQuality Validate(SensorKind kind, double? value)
     {
         if (value is null) return DataQuality.Missing;

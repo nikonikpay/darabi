@@ -118,7 +118,7 @@ public class CpuStressTests
     {
         var cores = CpuTopology.Cores.Take(2).ToList();
         var r = await new CpuCoreCycleExecutor(cores).RunAsync(new(2, new FakeClock(T0), null, null), CancellationToken.None);
-        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains($"{cores.Count} physical cores", r.Detail);
+        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains($"{cores.Count} physical cores", r.Detail); Assert.Contains("work per visit: matrix, ", r.Detail); Assert.Contains(", integer", r.Detail);   // the three kinds of work, each with its own reference
     }
 
     [Fact] public void Single_core_groups_cover_every_core_whatever_the_number_at_a_time()

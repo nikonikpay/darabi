@@ -42,7 +42,8 @@ internal static class SetupText
     public static string Shortcuts => T("ساخت میان‌بر…", "Creating shortcuts…");
     public static string Registering => T("ثبت در برنامه‌های نصب‌شده‌ی ویندوز…", "Registering in Installed apps…");
     public static string Done => T("نصب انجام شد.", "Installation is complete.");
-    public static string WebView => T("نصب WebView2 مایکروسافت (صفحه‌ی برنامه با آن نمایش داده می‌شود)… ممکن است چند دقیقه طول بکشد.", "Installing Microsoft WebView2 (the program's window is drawn with it)… this can take a few minutes.");
+    public static string Driver => T("بررسی و نصب درایور سنسورها (PawnIO)…", "Checking and installing the sensor driver (PawnIO)…");
+    public static string WebView =>T("نصب WebView2 مایکروسافت (صفحه‌ی برنامه با آن نمایش داده می‌شود)… ممکن است چند دقیقه طول بکشد.", "Installing Microsoft WebView2 (the program's window is drawn with it)… this can take a few minutes.");
     public static string DoneNoWebView => T("برنامه نصب شد، اما WebView2 مایکروسافت نصب نشد (اینترنت در دسترس نبود یا دانلود انجام نشد). فایل MicrosoftEdgeWebView2RuntimeInstallerX64.exe را کنار همین فایل نصب بگذارید و نصب را دوباره بزنید، یا از سایت مایکروسافت نصبش کنید.",
         "The program is installed, but Microsoft WebView2 is not (no internet, or the download failed). Put MicrosoftEdgeWebView2RuntimeInstallerX64.exe beside this installer and run it again, or install it from Microsoft's site.");
     public static string Failed(string why) => T("نصب انجام نشد: ", "Installation failed: ") + why;

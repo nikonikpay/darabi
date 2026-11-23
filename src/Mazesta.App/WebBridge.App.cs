@@ -56,6 +56,8 @@ public sealed partial class WebBridge
         Method("app.setLanguage", p => { string v = Str(p, "value"); if (v is not ("fa" or "en")) throw new ArgumentException("language"); _config.Language = v; _store.Save(_config); Desktop.Localization.Loc.SetLanguage(v); return null; });
         Method("app.togglePause", _ => { if (engine.State == EngineState.Paused) engine.Resume(); else engine.Pause(); return engine.State == EngineState.Paused; });
         Method("app.openLink", p => { if (Links.TryGetValue(Str(p, "key"), out var url)) Open(url); return null; });
+        // The banner's "install by hand": the carried PawnIO setup opens with its own Install button; false when it could not be opened.
+        Method("app.installPawnIo", _ => global::Mazesta.Hardware.Lhm.PawnIoDriver.LaunchSetup(Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
         Method("app.toggleOverlay", _ => { var o = _sp.GetRequiredService<Desktop.Services.OverlayService>(); o.Toggle(); return o.IsVisible; });
         Method("app.navReady", _ => engine.Provider.Status.State is ProviderState.Ready or ProviderState.Degraded or ProviderState.Failed);
 

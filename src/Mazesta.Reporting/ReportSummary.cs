@@ -18,6 +18,9 @@ public sealed record SummaryRow(string Name, ReportOutcome? Outcome, double Dura
     public string Id { get; init; } = "";
 }
 
+/// <summary>A clock's highest reading over the report (Role: CpuPCoreClock, CpuECoreClock, CpuFastCoreClock, CpuCoreClockAverage, GpuCoreClock, GpuMemoryClock) and the test it was reached in.</summary>
+public sealed record PartClock(string Role, double MaxMhz, string? During);
+
 /// <summary>What the power test drew: the CPU package and the GPU, each its highest reading while the test ran (null when the machine did not report it). The total is their sum, so
 /// it is the draw of those two parts only - the board, drives and fans are not counted.</summary>
 public sealed record PowerDraw(double? CpuW, double? GpuW)
@@ -37,6 +40,9 @@ public sealed record SummaryFigure(string Name, double Value, string Unit);
 public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak> Peaks, IReadOnlyList<SummaryRow> Rows, IReadOnlyList<HeatPart> Columns, bool FromTrace)
 {
     public PowerDraw? Power { get; init; }
+    /// <summary>The highest clocks (CPU performance/efficiency/fastest core, GPU core and memory) with the test each was reached in; a clock with no reading is absent.</summary>
+    public IReadOnlyList<PartClock> Clocks { get; init; } = [];
+    private static readonly string[] ClockRoles = ["CpuPCoreClock", "CpuECoreClock", "CpuFastCoreClock", "CpuCoreClockAverage", "GpuCoreClock", "GpuMemoryClock"];
     private static readonly Dictionary<string, HeatPart> Roles = new()
     {
         ["CpuPackageTemp"] = HeatPart.Cpu, ["CpuTctlTdie"] = HeatPart.Cpu, ["GpuCoreTemp"] = HeatPart.Gpu, ["GpuHotSpotTemp"] = HeatPart.GpuHotSpot,
@@ -74,7 +80,7 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             .ToDictionary(g => g.Key, g => g.Key == HeatPart.Cpu && g.Any(x => x.Sensor.Role == "CpuPackageTemp" || x.Sensor.Name == "CPU Package")
                 ? g.Where(x => x.Sensor.Role == "CpuPackageTemp" || x.Sensor.Name == "CPU Package").Select(x => x.Sensor).ToList() : g.Select(x => x.Sensor).ToList());
 
-        var runs = r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Id, t.Name, (ReportOutcome?)t.Outcome, From: t.StartedAt, To: t.FinishedAt, t.DurationSeconds, Figures: (IReadOnlyList<SummaryFigure>)[]))
+        var runs = r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Id, t.Name, (ReportOutcome?)(t.CleanButShort ? ReportOutcome.Passed : t.Outcome), From: t.StartedAt, To: t.FinishedAt, t.DurationSeconds, Figures: (IReadOnlyList<SummaryFigure>)[]))
             .Concat((r.Benchmarks ?? []).Select(b => (b.Id, b.Name, (ReportOutcome?)null, From: b.StartedAt ?? b.FinishedAt, To: b.FinishedAt, Math.Max(0, (b.FinishedAt - (b.StartedAt ?? b.FinishedAt)).TotalSeconds), Figures: FiguresOf(b))))
             .OrderBy(x => x.From).ToList();
         bool fromTrace = r.Peaks is null;
@@ -109,7 +115,17 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             power = new PowerDraw(Side("CpuPackagePower"), Side("GpuPower"));
             if (power.Total is null) power = null;
         }
-        return new(r, peaks, rows, [.. shown.Where(byPart.ContainsKey)], fromTrace) { Power = power };
+        string? NameOf(string key) => r.Tests.FirstOrDefault(t => t.Id == key)?.Name ?? (r.Benchmarks ?? []).FirstOrDefault(x => ReportHtml.BenchKey(x) == key)?.Name;
+        var clocks = new List<PartClock>();
+        foreach (var role in ClockRoles)
+        {
+            double max = double.NaN; string? key = null;
+            foreach (var ts in r.TestSensors ?? []) foreach (var x in ts.Sensors) if (x.Role == role && !(x.Max <= max)) { max = x.Max; key = ts.TestId; }
+            if (key is null) foreach (var x in r.Sensors) if (x.Role == role && !(x.Max <= max)) max = x.Max;   // a report without per-test sensors: the session's peak, no test to name
+            if (!double.IsNaN(max) && max > 0) clocks.Add(new(role, max, key is null ? null : NameOf(key)));
+        }
+        if (clocks.Any(c => c.Role is "CpuPCoreClock" or "CpuFastCoreClock")) clocks.RemoveAll(c => c.Role == "CpuCoreClockAverage");   // the fastest core is the figure; the average only stands in for old reports
+        return new(r, peaks, rows, [.. shown.Where(byPart.ContainsKey)], fromTrace) { Power = power, Clocks = clocks };
     }
 }
 
@@ -132,6 +148,13 @@ public sealed class SummaryText
     public string Capacity => IsRtl ? "ظرفیت کل" : "Total capacity";
     public string PassedLabel => IsRtl ? "آزمون موفق" : "tests passed";
     public string AllPassed => IsRtl ? "همه‌ی آزمون‌های اجراشده موفق بودند." : "Every test that ran passed.";
+    public string NeedsMoreTime => IsRtl ? "برای نتیجهٔ کامل بعضی آزمون‌ها زمان بیشتری لازم است" : "Some tests need more time for a full result";
+    public string ClockName(string role) => role switch
+    {
+        "CpuPCoreClock" => IsRtl ? "فرکانس هسته‌های P" : "P-core clock", "CpuECoreClock" => IsRtl ? "فرکانس هسته‌های E" : "E-core clock",
+        "GpuCoreClock" => IsRtl ? "فرکانس گرافیک" : "GPU clock", "GpuMemoryClock" => IsRtl ? "فرکانس حافظهٔ گرافیک" : "GPU memory clock",
+        _ => IsRtl ? "فرکانس پردازنده" : "CPU clock",
+    };
     public string NeedsAttention => IsRtl ? "نیازمند بررسی یا تکمیل" : "Needs attention";
     public string InstalledTitle => IsRtl ? "گزارش کامل در نرم‌افزار" : "Full report in the app";
     public string NotTested => IsRtl ? "تست نشده" : "Not tested";
@@ -222,9 +245,10 @@ public static class SummaryHtml
 
         // The verdict, with the counts behind it and what is left open; a benchmark report has no verdict.
         var open = s.Rows.Where(x => x.Outcome is { } o && o != ReportOutcome.Passed).Select(x => Short(x.Name)).ToList();
+        var shortRuns = r.Tests.Where(t => t.CleanButShort).ToList();   // shown as passed, with the time a full result needs
         if (r.Verdict is { } verdict)
             b.Append("<div class=\"verdict ").Append(verdict).Append("\"><div class=\"vt\"><b>").Append(E(rw.VerdictName(verdict))).Append("</b><span>")
-             .Append(E(open.Count > 0 ? $"{w.NeedsAttention}: {string.Join(w.IsRtl ? "، " : ", ", open)}" : "")).Append("</span></div><div class=\"vn\"><b>")
+             .Append(E(open.Count > 0 ? $"{w.NeedsAttention}: {string.Join(w.IsRtl ? "، " : ", ", open)}" : shortRuns.Count > 0 ? w.NeedsMoreTime : "")).Append("</span></div><div class=\"vn\"><b>")
              .Append(Lt($"{r.Counts.Passed} / {r.Counts.Total}")).Append("</b><small>").Append(E(w.PassedLabel)).Append("</small></div></div>");
         else b.Append("<div class=\"verdict Benchmark\"><div class=\"vt\"><b>").Append(E(w.Benchmark)).Append("</b></div></div>");
 
@@ -249,8 +273,12 @@ public static class SummaryHtml
         PartPeak? Peak(HeatPart p) => s.Peaks.FirstOrDefault(x => x.Part == p);
 
         string Tile(string label, PartPeak? p)
-            => p is null ? $"<div class=\"tile\"><div class=\"tl\">{E(label)}</div><div class=\"tv\">{na}</div></div>"
-             : $"<div class=\"tile {Level(p.Part, p.MaxC)}\"><div class=\"tl\">{E(label)}</div><div class=\"tv\">{Lt($"{p.MaxC.ToString("F0", Inv)} °C")}</div>" + (p.During is { } d ? $"<div class=\"td\">{E(w.During)} {E(Short(d))}</div>" : "") + "</div>";
+            => p is null ? $"<div class=\"tile\"><div class=\"tl\">{ReportHtml.Ico("temp")}{E(label)}</div><div class=\"tv\">{na}</div></div>"
+             : $"<div class=\"tile {Level(p.Part, p.MaxC)}\"><div class=\"tl\">{ReportHtml.Ico("temp")}{E(label)}</div><div class=\"tv\">{Lt($"{p.MaxC.ToString("F0", Inv)} °C")}</div>" + (p.During is { } d ? $"<div class=\"td\">{E(w.During)} {E(Short(d))}</div>" : "") + "</div>";
+        // The highest clocks of one part, a tile each with the test it was reached in (the same small line the temperatures carry).
+        string Clocks(string prefix) => string.Concat(s.Clocks.Where(c => c.Role.StartsWith(prefix, StringComparison.Ordinal)).Select(c
+            => $"<div class=\"tile clk\"><div class=\"tl\">{ReportHtml.Ico("clock")}{E(w.ClockName(c.Role))}</div><div class=\"tv\">{Lt($"{c.MaxMhz.ToString("F0", Inv)} MHz")}</div>"
+             + (c.During is { } d ? $"<div class=\"td\">{E(w.During)} {E(Short(d))}</div>" : "") + "</div>"));
         string Status(IReadOnlyList<SummaryRow> rows)
         {
             var tested = rows.Where(x => x.Outcome is not null).ToList();
@@ -264,18 +292,25 @@ public static class SummaryHtml
             b.Append("<table class=\"res\"><tbody>");
             foreach (var row in rows)
             {
-                b.Append("<tr><td class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"figs\">");
-                foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
-                b.Append("</td><td class=\"end\">");
+                // The title (and result) on top, its figures in one wrapping line beneath: a long list of benchmarks stays short.
+                b.Append("<tr><td colspan=\"2\" class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"end\">");
                 if (row.Outcome is { } o) b.Append("<span class=\"badge ").Append(Cls(o)).Append("\">").Append(E(rw.OutcomeName(o))).Append("</span>");
                 b.Append("</td></tr>");
+                if (row.Figures.Count > 0)
+                {
+                    b.Append("<tr><td colspan=\"3\" class=\"figs\">");
+                    foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
+                    b.Append("</td></tr>");
+                }
+                if (r.Tests.FirstOrDefault(t => t.Id == row.Id && t.CleanButShort) is { } sh) b.Append("<tr><td colspan=\"3\" class=\"srr\"><span class=\"sr\">").Append(E(rw.ShortRun(ReportFormat.Duration(sh.DurationSeconds), ReportFormat.Duration(sh.FullSeconds!.Value)))).Append("</span></td></tr>");
             }
             b.Append("</tbody></table>");
         }
         int cardNo = 0;
         void Card(string title, string status, string? name, string? facts, string tiles, IReadOnlyList<SummaryRow> rows, string? extra = null, int span = 6)
         {
-            b.Append("<article class=\"card\" style=\"grid-column:span ").Append(span).Append("\"><div class=\"ch\"><h3>").Append(E(title)).Append("</h3><i class=\"no\">").Append(Lt((++cardNo).ToString("00", Inv))).Append("</i>").Append(status).Append("</div>");
+            var (icon, color) = title == rw.Cpu ? ("cpu", "#7048e8") : title == w.Gpu ? ("gpu", "#2f9e44") : title == w.Ram ? ("memory", "#099268") : title == w.Drives ? ("storage", "#1c7ed6") : title == w.PsuTitle ? ("power", "#b58105") : title == w.PartName(HeatPart.Board) ? ("temp", "#d9480f") : ("check", "#5b6675");
+            b.Append("<article class=\"card\" style=\"--c:").Append(color).Append(";grid-column:span ").Append(span).Append("\"><div class=\"ch\"><span class=\"ci\">").Append(ReportHtml.Ico(icon)).Append("</span><h3>").Append(E(title)).Append("</h3><i class=\"no\">").Append(Lt((++cardNo).ToString("00", Inv))).Append("</i>").Append(status).Append("</div>");
             if (!string.IsNullOrWhiteSpace(name)) b.Append("<div class=\"cn\">").Append(Lt(name)).Append("</div>");
             if (!string.IsNullOrWhiteSpace(facts)) b.Append("<div class=\"cf\">").Append(Lt(facts)).Append("</div>");
             if (tiles.Length > 0) b.Append("<div class=\"tiles\">").Append(tiles).Append("</div>");
@@ -285,11 +320,14 @@ public static class SummaryHtml
         b.Append("<div class=\"cards\">");
         var cpu = m.Cpu; var cpuRows = RowsOf("cpu");
         Card(rw.Cpu, Status(cpuRows), cpu?.Name?.Trim(), cpu is null ? null : string.Join(" · ", new[] { cpu.PhysicalCores is { } c ? $"{c} cores" : null, cpu.LogicalProcessors is { } t ? $"{t} threads" : null, cpu.Socket }.Where(x => !string.IsNullOrWhiteSpace(x))),
-            Peak(HeatPart.Cpu) is null ? "" : Tile(w.PartName(HeatPart.Cpu), Peak(HeatPart.Cpu)), cpuRows);
+            (Peak(HeatPart.Cpu) is null ? "" : Tile(w.PartName(HeatPart.Cpu), Peak(HeatPart.Cpu))) + Clocks("Cpu"), cpuRows);
         var gpuRows = RowsOf("gpu");
         string gpus = string.Concat(m.Gpus.Select(g => $"<div class=\"cn\">{Lt(g.Name)}</div><div class=\"cf\">{Lt(string.Join(" · ", new[] { g.AdapterRamBytes is > 0 and var v ? $"{v / 1073741824.0:F0} GB" : null, g.DriverVersion is { } d ? $"driver {d}" : null }.Where(x => x is not null)))}</div>"));
         string gpuTiles = string.Concat(new[] { HeatPart.Gpu, HeatPart.GpuHotSpot, HeatPart.GpuMemory }.Where(p => Peak(p) is not null).Select(p => Tile(w.PartName(p), Peak(p))));
-        Card(w.Gpu, Status(gpuRows), null, null, gpuTiles, gpuRows, gpus);
+        // The card's clocks are one plain line under the temperature boxes, not boxes of their own.
+        var gpuClocks = s.Clocks.Where(c => c.Role.StartsWith("Gpu", StringComparison.Ordinal)).ToList();
+        string gpuClockLine = gpuClocks.Count == 0 ? "" : "<div class=\"clkline\">" + string.Concat(gpuClocks.Select(c => $"<span>{ReportHtml.Ico("clock")}{E(w.ClockName(c.Role))} <b>{Lt($"{c.MaxMhz.ToString("F0", Inv)} MHz")}</b></span>")) + "</div>";
+        Card(w.Gpu, Status(gpuRows), null, null, gpuTiles, gpuRows, gpuClockLine + gpus);
         var ramRows = RowsOf("ram"); bool haveRam = m.TotalPhysicalMemoryBytes is not null || ramRows.Count > 0;
         if (m.TotalPhysicalMemoryBytes is { } ramBytes || ramRows.Count > 0)
             Card(w.Ram, Status(ramRows), null, null, m.TotalPhysicalMemoryBytes is { } total
@@ -312,11 +350,12 @@ public static class SummaryHtml
         if (m.Storage.Count == 0) drives.Append("<p class=\"na\">").Append(E(w.NoDrives)).Append("</p>");
         Card(w.Drives, Status(stoRows), null, null, Peak(HeatPart.Drive) is null ? "" : Tile(w.PartName(HeatPart.Drive), Peak(HeatPart.Drive)), stoRows, drives.ToString(), haveRam ? 6 : 12);
         var psuRows = RowsOf("psu"); var boardPeak = Peak(HeatPart.Board); bool havePsu = s.Power is not null || psuRows.Count > 0;
+        string? boardName = m.Motherboard is { } board ? $"{board.Manufacturer} {board.Product}".Trim() : null; bool haveBoard = boardPeak is not null || !string.IsNullOrWhiteSpace(boardName);
         if (s.Power is { } pw)
             Card(w.PsuTitle, Status(psuRows), null, null,
-                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", boardPeak is null ? 12 : 7);
-        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, boardPeak is null ? 12 : 7);
-        if (boardPeak is { } bp) Card(w.PartName(HeatPart.Board), "", null, null, Tile(w.PartName(HeatPart.Board), bp), [], null, havePsu ? 5 : 12);
+                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", haveBoard ? 7 : 12);
+        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, haveBoard ? 7 : 12);
+        if (haveBoard) Card(w.PartName(HeatPart.Board), "", boardName, m.Bios is { } bios ? $"BIOS {bios.Version}".Trim() : null, boardPeak is null ? "" : Tile(w.PartName(HeatPart.Board), boardPeak), [], null, havePsu ? 5 : 12);
         if (other.Count > 0) Card(w.Tests, Status(other), null, null, "", other, null, 12);
         b.Append("</div>");
         if (s.Peaks.Count == 0) b.Append("<p class=\"note\">").Append(E(w.NoTemps)).Append("</p>");
@@ -332,7 +371,7 @@ public static class SummaryHtml
     internal static string Fit(ReportSummary s)
     {
         var m = s.Report.Machine;
-        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + m.MemoryModules.Count + (s.Power is null ? 0 : 2) + (s.Peaks.Count > 0 ? 1 : 0);
+        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + m.MemoryModules.Count + (s.Power is null ? 0 : 2) + (s.Peaks.Count > 0 ? 1 : 0) + (s.Clocks.Count > 0 ? 1 : 0);
         return lines > 15 ? "tightest" : lines > 10 ? "tight" : "";
     }
 
@@ -343,50 +382,12 @@ public static class SummaryHtml
             $"@font-face{{font-family:'{f.Family}';font-weight:700;src:url(data:font/ttf;base64,{Convert.ToBase64String(f.Bold)}) format('truetype')}}";
         string family = f is null ? "Tahoma,'Segoe UI',sans-serif" : $"'{f.Family}',Tahoma,'Segoe UI',sans-serif";
         return face + $@"
-@page{{size:A4;margin:0}}
-*{{box-sizing:border-box}}
-html{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-body{{margin:0;background:#d9dad5;color:#1b1f21;font:12px/1.5 {family}}}
-main{{width:210mm;min-height:296mm;margin:0 auto;background:#fcfcfa;display:flex;flex-direction:column;box-shadow:0 2px 14px rgba(0,0,0,.18)}}
-.lt{{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate}}
-header{{background:#23282b;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 32px}}
-.brand{{display:flex;align-items:center;gap:16px}} .mark{{flex:none;width:64px;height:64px;border-radius:50%;background:#FDD400;display:flex;align-items:center;justify-content:center}} .logo{{height:28px;width:auto}}
-.kick{{color:#FDD400;font-size:10px;letter-spacing:.18em;direction:ltr;text-align:start;font-weight:700}}
-h1{{margin:2px 0 0;font-size:28px;line-height:1.3}} .sub{{color:#c4cac8;font-size:12.5px}}
-.meta{{text-align:start;line-height:1.5;flex:none}} .meta small{{display:block;color:#a9b0ad;font-size:10.5px;margin-top:4px}} .meta b{{display:block;font-size:12.5px}}
-.verdict{{display:flex;align-items:center;gap:26px;padding:14px 32px;border-top:4px solid #FDD400}}
-.vt{{flex:1}} .vt b{{display:block;font-size:22px;line-height:1.4}} .vt span{{font-size:12.5px}}
-.vn{{flex:none;text-align:center;padding-inline-start:26px;border-inline-start:1px solid rgba(0,0,0,.28)}} .vn b{{display:block;font-size:36px;line-height:1.1}} .vn small{{font-size:12px}}
-.verdict.Incomplete{{background:#FFE04A;color:#2a2400}} .verdict.Passed{{background:#bfe8d0;color:#0b4d2b}} .verdict.Failed{{background:#f6c0bb;color:#7a110a}} .verdict.Benchmark{{background:#dfe5ee;color:#243350}}
-.machine{{background:#ecefeb;border-bottom:1px solid #d3d6d1;padding:12px 32px;display:grid;grid-template-columns:1fr 1fr;gap:5px 30px}}
-.machine div{{display:flex;gap:8px;min-width:0}} dt{{color:#5c6360;flex:none}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-.body{{flex:1;display:flex;flex-direction:column;padding:14px 32px 16px}}
-section.notes{{border:1px solid #cfd2cc;border-radius:6px;padding:8px 12px;margin-bottom:12px;background:#fff}} h2{{margin:0 0 4px;font-size:13px}}
-.cards{{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-content:stretch}}
-.card{{background:#fff;border:1px solid #cfd2cc;border-top:3px solid #23282b;padding:12px 16px;display:flex;flex-direction:column;min-width:0;page-break-inside:avoid}}
-.ch{{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #dfe1dc}} .ch .badge{{margin-inline-start:auto}}
-h3{{margin:0;font-size:17px;line-height:1.3}} .no{{font-style:normal;color:#a3a8a4;font-size:11px;padding-inline-start:10px;border-inline-start:1px solid #d3d6d1}}
-.cn{{font-weight:700;font-size:14px;line-height:1.4}} .cf{{color:#5c6360;font-size:11px;margin-bottom:2px}}
-.tiles{{display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap}}
-.tile{{flex:1 1 0;min-width:90px;padding:8px;border:1px solid #dfe1dc;background:#f1f2ee;text-align:center}}
-.tile .tl{{font-size:11px;color:#4a514e;font-weight:700}} .tile .tv{{font-size:28px;font-weight:700;line-height:1.25}} .tile .td{{font-size:10px;color:#5c6360;line-height:1.35}}
-.tile.ok{{background:#e9f7ef;border-color:#9bd5b4}} .tile.ok .tv{{color:#0f6b3c}} .tile.warn{{background:#fff5da;border-color:#ecd08c}} .tile.warn .tv{{color:#8a5a00}} .tile.bad{{background:#fde8e7;border-color:#f0a39e}} .tile.bad .tv{{color:#a0180f}}
-.tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:32px}}
-table{{width:100%;border-collapse:collapse;margin-top:auto}} td{{padding:6px 2px;border-top:1px solid #e3e5e0;vertical-align:middle}}
-.res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:12px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
-.fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#5c6360;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
-.drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #e3e5e0}} .drive small{{display:block;color:#6a706d;font-size:10.5px}} .drive b{{font-size:12px}}
-.dr{{display:flex;align-items:center;gap:8px}} .dt{{font-weight:700;font-size:12.5px;border-radius:5px;padding:0 7px;border:1px solid;white-space:nowrap}} .dt small{{display:inline;font-size:9.5px;font-weight:400}}
-.dt.ok{{color:#0f6b3c;background:#e9f7ef;border-color:#9bd5b4}} .dt.warn{{color:#8a5a00;background:#fff5da;border-color:#ecd08c}} .dt.bad{{color:#a0180f;background:#fde8e7;border-color:#f0a39e}}
-.badge{{display:inline-block;border-radius:5px;padding:0 9px;font-weight:700;font-size:10.5px;border:1px solid;white-space:nowrap;line-height:1.7}}
-.badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
-.badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
-.note{{margin:8px 0 0;color:#7b807d;font-size:10px}} .na{{color:#7b807d;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
-.installed{{margin-top:12px;background:#23282b;color:#e8ebe9;border-inline-start:5px solid #FDD400;padding:12px 18px;display:flex;align-items:center;gap:14px;font-size:12px}} .installed b{{color:#FDD400;flex:none}}
-.sign{{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:6px}} .sign div{{border-top:1px solid #8d928f;padding-top:6px;font-size:11px;color:#4a514e;text-align:center;margin-top:24px}}
-footer{{display:flex;justify-content:space-between;gap:18px;margin-top:14px;border-top:1px solid #d3d6d1;padding-top:6px;color:#7b807d;font-size:9.5px;line-height:1.45}} footer span:first-child{{flex:none}}
-main.tight{{font-size:11px}} .tight header{{padding:18px 32px}} .tight .mark{{width:60px;height:60px}} .tight h1{{font-size:25px}} .tight .verdict{{padding:12px 32px}} .tight .vn b{{font-size:32px}} .tight .card{{padding:10px 12px}} .tight .tile .tv{{font-size:24px}} .tight td{{padding:4px 2px}} .tight .drive{{padding:4px 0}} .tight .sign div{{margin-top:20px}} .tight .cards{{gap:10px}}
-main.tightest{{font-size:10px}} .tightest header{{padding:10px 28px}} .tightest .mark{{width:48px;height:48px}} .tightest h1{{font-size:21px}} .tightest .sub{{display:none}} .tightest .verdict{{padding:6px 28px}} .tightest .vn b{{font-size:26px}} .tightest .machine{{padding:6px 28px}} .tightest .body{{padding:10px 28px 8px}} .tightest .card{{padding:7px 10px}} .tightest .ch{{margin-bottom:6px;padding-bottom:4px}} .tightest .tile{{padding:4px 8px}} .tightest .tile .tv{{font-size:19px}} .tightest footer{{margin-top:8px}} .tightest .tile .td,.tightest .note{{display:none}} .tightest td{{padding:2px}} .tightest .drive{{padding:2px 0}} .tightest .sign div{{margin-top:10px}} .tightest .installed{{margin-top:8px;padding:7px 14px}} .tightest .cards{{gap:7px}}
-@media print{{body{{background:#fff}} main{{box-shadow:none;width:auto}}}}";
+@page{{size:A4 portrait;margin:0}}*{{box-sizing:border-box}}html{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}body{{margin:0;background:#e8eef2;color:#193347;font:9px/1.35 {{family}}}}main{{width:210mm;min-height:297mm;margin:0 auto;background:#f8fafb;display:flex;flex-direction:column}}.lt{{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate}}
+header{{background:#102c43;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 20px;border-bottom:4px solid #1db5a9}}.brand{{display:flex;align-items:center;gap:11px}}.mark{{height:32px;padding:0 13px;border-radius:16px;background:#FDD400;display:grid;place-items:center}}.logo{{height:17px;width:auto}}.kick{{display:block;color:#a8d4d5;font-size:7px;letter-spacing:1px;margin-bottom:2px}}h1{{margin:0;font-size:17px;line-height:1.3}}.sub{{color:#c4d5df;font-size:9px}}.meta{{background:#ffffff12;border:1px solid #ffffff2b;border-radius:9px;padding:6px 9px;max-width:42%;text-align:start;line-height:1.5}}.meta small{{display:inline;color:#bfd1dc;font-size:8px;margin-inline-end:5px}}.meta small:first-child{{display:block}}.meta b{{font-size:9px}}
+.verdict{{display:flex;align-items:center;gap:12px;margin:9px 12px 7px;padding:8px 14px;border:1px solid #e5e9e9;border-inline-start:4px solid #e0a32b;border-radius:10px;background:#fff;box-shadow:0 2px 7px #102c430d}}.vt{{flex:1;min-width:0}}.vt b{{display:block;font-size:11px}}.vt span{{display:block;color:#657983;font-size:8px;margin-top:2px}}.vn{{display:flex;align-items:baseline;gap:5px;padding-inline-start:12px;border-inline-start:1px solid #dce5e9}}.vn b{{font-size:22px;color:#174e68;line-height:1}}.vn small{{font-size:8px;color:#58717e}}.verdict.Incomplete{{background:#fff7e7;color:#6a4a10;border-color:#f0dfbb;border-inline-start-color:#dfa124}}.verdict.Passed{{background:#eaf7f1;color:#14553c;border-color:#d1ebdd;border-inline-start-color:#39a875}}.verdict.Failed{{background:#fff0ee;color:#7a211b;border-color:#f2d4d0;border-inline-start-color:#d65a50}}.verdict.Benchmark{{background:#eef3fa;color:#243c5b}}
+.machine{{margin:0 12px;padding:6px 10px;border:1px solid #dce7ec;border-radius:9px;background:#edf3f6;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:8px}}.machine div{{display:flex;gap:7px;min-width:0}}dt{{color:#6d7f89;flex:none}}dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#193b50}}.body{{flex:1;min-height:0;display:flex;flex-direction:column;padding:8px 12px}}.cards{{display:grid;grid-template-columns:repeat(12,1fr);gap:7px;align-content:start}}.cards>.card:not([style*=""span 12""]){{grid-column:span 6!important}}.card{{min-width:0;display:flex;flex-direction:column;page-break-inside:avoid;background:#fff;border:1px solid #dce6eb;border-inline-start:3px solid var(--c,#1d4966);border-radius:9px;padding:6px 8px;box-shadow:0 2px 6px #14364c0c}}.ch{{display:flex;align-items:center;gap:6px;padding-bottom:4px;margin-bottom:4px;border-bottom:1px solid #edf1f3}}.ch .badge{{margin-inline-start:auto}}.ci{{width:23px;height:23px;border-radius:7px;background:var(--c);color:#fff;display:grid;place-items:center;flex:none}}.ci .ico{{width:14px;height:14px}}.ico{{width:1em;height:1em;vertical-align:-.15em}}.ch h3{{margin:0;font-size:10px}}.no{{color:#748691;font-size:7px;padding-inline-start:5px;border-inline-start:1px solid #dce5e9}}.cn{{font-size:10px;font-weight:700;color:#193b50}}.cf{{font-size:7.7px;color:#657984;margin:1px 0}}.tiles{{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}}.tile{{flex:1 1 0;min-width:62px;padding:3px 4px;border:1px solid #e2eaee;border-radius:6px;background:#f4f8fa;text-align:center}}.tl{{font-size:7.3px;color:#546e7b;font-weight:700}}.tv{{font-size:15px;font-weight:700;line-height:1.2;color:#193f56}}.td{{font-size:6.8px;line-height:1.25;color:#71828b}}.tile.ok{{background:#edf8f2;border-color:#d3ecde}}.tile.ok .tv{{color:#19714b}}.tile.warn{{background:#fff8e9;border-color:#f1e1bb}}.tile.warn .tv{{color:#93630b}}.tile.bad{{background:#fff0ee;border-color:#f0d2ce}}.tile.bad .tv{{color:#aa332b}}.tile.clk{{background:#eef5fc;border-color:#d5e4f2}}.tile.clk .tv{{color:#23699e}}.tile.big{{flex-basis:100%}}.tile.big .tv{{font-size:19px}}
+.clkline{{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:7.8px;color:#546e7b;margin:1px 0 3px}}.clkline .ico{{color:#23699e;margin-inline-end:2px}}.clkline b{{color:#23699e;font-size:8.2px}}
+table{{width:100%;border-collapse:collapse;margin-top:auto}}td{{padding:3px 1px;border-top:1px solid #edf1f3;vertical-align:middle}}.rn b{{font-size:7.7px}}.figs{{font-size:7px}}.end{{text-align:end;white-space:nowrap}}.srr{{border-top:0;padding-top:0}}.sr{{display:block;font-size:6.8px;color:#93630b;line-height:1.3;white-space:normal}}.fig{{display:inline-block;margin-inline-end:7px}}.fig small{{font-size:6.8px;color:#657984}}.fig .lt{{font-size:7.5px;font-weight:700;white-space:nowrap}}.drive{{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 0;border-top:1px solid #edf1f3}}.drive b{{font-size:8px;color:#193b50}}.drive small{{display:block;color:#71818a;font-size:7px}}.dr{{display:flex;align-items:center;gap:5px}}.dt{{font-size:7.2px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 6px;white-space:nowrap}}.dt small{{display:inline;font-size:6.5px}}.dt.ok{{color:#19714b;background:#edf8f2;border-color:#d3ecde}}.dt.warn{{color:#93630b;background:#fff8e9;border-color:#f1e1bb}}.dt.bad{{color:#aa332b;background:#fff0ee;border-color:#f0d2ce}}.badge{{display:inline-block;border:1px solid;border-radius:999px;padding:0 7px;font-size:7px;font-weight:700;line-height:1.7;white-space:nowrap}}.badge.ok{{color:#19714b;background:#edf8f2;border-color:#d3ecde}}.badge.warn{{color:#93630b;background:#fff8e9;border-color:#f1e1bb}}.badge.bad{{color:#aa332b;background:#fff0ee;border-color:#f0d2ce}}.badge.unk{{color:#5a6870;background:#f0f3f5;border-color:#dfe5e8}}.note{{font-size:7px;color:#73838c;margin:4px 0 0}}.na{{color:#73838c;font-style:italic}}.installed{{margin-top:auto;background:#17364c;color:#dce8ed;border-inline-start:3px solid #1db5a9;border-radius:7px;padding:6px 9px;display:flex;align-items:center;gap:8px;font-size:7.5px}}.installed b{{color:#70d7cc;flex:none}}.sign{{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:5px}}.sign div{{text-align:center;color:#526b78;font-size:7.5px;border-top:1px solid #aab9c0;padding-top:4px;margin-top:13px}}footer{{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #dbe4e8;margin-top:6px;padding-top:4px;color:#778790;font-size:6.8px;line-height:1.35}}footer span:first-child{{flex:none}}.na{{font-weight:400}}.tightest .tile .td,.tightest .note{{display:block!important}}.tightest td{{padding:1.5px 1px}}.tightest .drive{{padding:2px 0}}.tightest .sign div{{margin-top:6px}}.tightest .tiles{{margin:2px 0}}.tightest .installed{{padding:4px 9px}}.tightest footer{{margin-top:3px}}
+@media print{{body{{background:#fff}}main{{width:210mm;min-height:297mm;margin:0;box-shadow:none}}}}";
     }
 }

@@ -12,6 +12,44 @@ public class FileToolsTests
         Assert.False(new FileLockHolder(900, 1, "csrss", null, FileLockKind.Critical).CanClose);
         Assert.False(new FileLockHolder(4, 1, "System", null, FileLockKind.Other).CanClose);
         Assert.True(new FileLockHolder(900, 1, "Word", null, FileLockKind.Window).CanClose);
+        Assert.False(new FileLockHolder(900, 1, "Windows Logon", @"C:\Windows\System32\winlogon.exe", FileLockKind.Other).CanClose);
+    }
+
+    [Fact] public void A_program_restart_manager_calls_critical_can_still_be_closed_unless_it_is_windows_own()
+    {
+        // an elevated program of the owner's own (Mazesta-Admin) was reported as critical and offered no way to close it
+        Assert.True(new FileLockHolder(36528, 1, "Mazesta-Admin", @"D:\app\Mazesta-Admin.exe", FileLockKind.Critical).CanClose);
+        Assert.False(new FileLockHolder(600, 1, "csrss", @"C:\Windows\System32\csrss.exe", FileLockKind.Critical).CanClose);
+    }
+
+    [Fact] public void The_extra_rename_steps_work_one_by_one()
+    {
+        string One(string file, RenameRule r) => RenamePlan.Make([P(file)], r, _ => false, _ => new DateTime(2025, 3, 21, 9, 5, 0))[0].NewName;
+        Assert.Equal("a-a_a.txt", One("a_a_a.txt", new RenameRule("_", "-", FirstOnly: true)));   // only the first match
+        Assert.Equal("cdef.txt", One("abcdef.txt", new RenameRule("", "", RemoveFirst: 2)));
+        Assert.Equal("abcd.txt", One("abcdef.txt", new RenameRule("", "", RemoveLast: 2)));
+        Assert.Equal("my_report_v2.txt", One("report.txt", new RenameRule("", "", Prefix: "my_", Suffix: "_v2")));
+        Assert.Equal("hello world.txt", One("HELLO WORLD.txt", new RenameRule("", "", Case: RenameCase.Lower)));
+        Assert.Equal("Hello World.txt", One("hELLO wORLD.txt", new RenameRule("", "", Case: RenameCase.Title)));
+        Assert.Equal("Hello world.txt", One("hELLO wORLD.txt", new RenameRule("", "", Case: RenameCase.Sentence)));
+        Assert.Equal("a_b_c.txt", One("a  b   c.txt", new RenameRule("", "", TrimSpaces: true, SpaceTo: '_')));
+        Assert.Equal("\u0639\u06A9\u0633 12.jpg", One("\u0639\u06A9\u0633 \u06F1\u06F2.jpg", new RenameRule("", "", LatinDigits: true)));
+        Assert.Equal("\u06A9\u06CC.txt", One("\u0643\u064A.txt", new RenameRule("", "", PersianLetters: true)));
+        Assert.Equal("2025-03-21 a.txt", One("a.txt", new RenameRule("", "", Date: RenameDate.Prefix)));
+        Assert.Equal("a 2025-03-21_09-05.txt", One("a.txt", new RenameRule("", "", Date: RenameDate.Suffix, WithTime: true)));
+        Assert.Equal("1404-01-01 a.txt", One("a.txt", new RenameRule("", "", Date: RenameDate.Prefix, Shamsi: true)));   // 21 March 2025 is 1 Farvardin 1404
+        Assert.Equal("a.md", One("a.TXT", new RenameRule("", "", NewExtension: ".md")));
+        Assert.Equal("a.txt", One("a.TXT", new RenameRule("", "", LowerExtension: true)));
+        Assert.Equal("a", One("a.txt", new RenameRule("", "", NewExtension: "")));
+    }
+
+    [Fact] public void Numbering_can_follow_or_precede_the_old_name_with_a_step_digits_and_separator()
+    {
+        var files = new[] { "b.jpg", "c.jpg" }.Select(P).ToList();
+        Assert.Equal(["b-010.jpg", "c-020.jpg"], RenamePlan.Make(files, new RenameRule("", "", Number: true, KeepName: true, Start: 10, Step: 10, Digits: 3, Separator: "-"), _ => false).Select(i => i.NewName));
+        Assert.Equal(["01 b.jpg", "02 c.jpg"], RenamePlan.Make(files, new RenameRule("", "", Number: true, KeepName: true, NumberFirst: true), _ => false).Select(i => i.NewName));
+        // the find-and-replace still runs before a number is put beside the name
+        Assert.Equal(["x 01.jpg", "c 02.jpg"], RenamePlan.Make(files, new RenameRule("b", "x", Number: true, KeepName: true), _ => false).Select(i => i.NewName));
     }
 
     [Fact] public void A_folders_size_is_everything_under_it_biggest_first_and_an_unread_folder_marks_its_parents()

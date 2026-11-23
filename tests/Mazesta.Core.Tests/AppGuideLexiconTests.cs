@@ -11,7 +11,7 @@ public class AppGuideLexiconTests
      InlineData("زبان برنامه رو انگلیسی کن", "settings"), InlineData("ولتاژ گرافیک رو کم کن", "tuning"), InlineData("پلن پرفورمنس رو فعال کن", "play"),
      InlineData("پاکسازی ویندوز", "tools"), InlineData("اینترنت وصل نیست", "tools"), InlineData("یه برنامه رو بلاک کن", "shield"), InlineData("تله متری ویندوز رو خاموش کن", "tweaks"),
      InlineData("ویندوز آپدیت رو خاموش کن", "updates"), InlineData("برنامه رو آپدیت کن", "appupdate"), InlineData("رنگ رم ها رو قرمز کن", "lights"), InlineData("نور سیستم رو خاموش کن", "lights"),
-     InlineData("نمودار فن گرافیک رو میخوام", "tuning"), InlineData("فن رو روی سایلنت بذار", "fans"), InlineData("حالت بازی رو روشن کن", "play"), InlineData("ایکس ام پی رو فعال کنم", "tuning"), InlineData("تاریخچه دما", "monitoring"), InlineData("نتیجه بررسی دستی رو بفرست به فرم سرویس", "checks"),
+     InlineData("نمودار فن گرافیک رو میخوام", "tuning"), InlineData("فن رو روی سایلنت بذار", "fans"), InlineData("حالت بازی رو روشن کن", "play"), InlineData("ایکس ام پی رو فعال کنم", "tuning"), InlineData("تاریخچه دما", "monitoring"), InlineData("نتیجه بررسی دستی رو بفرست به فرم سرویس", "checks"), InlineData("پورت usb ها رو تست کن", "checks"),
      InlineData("خروجی pdf از مشخصات بگیر", "system"), InlineData("مشخصات سیستم رو pdf کن", "system"),
      InlineData("سیستمم از اسلیپ خودش روشن میشه", "wake"), InlineData("wake on lan رو خاموش کن", "wake"), InlineData("کلید بازیابی درایو", "storage"),
      InlineData("فایل پاک نمیشه میگه در برنامه دیگری باز است", "tools"), InlineData("unlock a locked file", "tools"),

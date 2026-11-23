@@ -62,10 +62,32 @@ export function mount(el) {
   // What the lights do at sleep and shutdown (the background monitor carries it out).
   const powerEnd = h("select", { class: "field", "aria-label": t("Rgb_PowerEnd"), onchange: (e) => run("rgb.powerEnd", { value: e.target.value }) }, ...["leave", "off", "on"].map((v) => h("option", { value: v }, t("Rgb_PowerEnd_" + v))));
   const start = h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.start", { keepMakers: keep.checked }) }, icon("bolt"), t("Rgb_Connect"));
-  const release = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("stop"), t("Rgb_Release"));
-  const dark = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("stop"), t("Rgb_Dark_Off"));
+  const release = h("button", { class: "btn tint t-release", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("swap"), t("Rgb_Release"));
+  const dark = h("button", { class: "btn tint t-dark", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("bulb"), t("Rgb_Dark_Off"));
+  // A search from the beginning: the lights' server is started afresh and every part looked for again; the report below says what was found, what was not, and what stood in the way.
+  const rescan = h("button", { class: "btn tint t-scan", type: "button", onclick: () => run("rgb.rescan", { keepMakers: keep.checked }) }, icon("search"), t("Rgb_Rescan"));
+  const scanBox = h("section", { class: "rgb-scan", hidden: true, "aria-live": "polite" });
   const list = h("div", { class: "rgb-cards" });
   let alive = true, poll = 0;
+
+  function drawScan(r) {
+    const names = (a) => a.join(t("Rgb_Sep"));
+    const kind = (k) => t(`Rgb_Kind_${k}`);
+    const rows = r.found.length
+      ? r.found.map((d) => h("li", {}, icon(ICON[d.kind] || "bolt"), h("b", {}, d.name), h("small", {}, [kind(d.kind), d.vendor, d.leds ? t("Rgb_Leds", d.leds) : ""].filter(Boolean).join(" · "))))
+      : [h("li", { class: "none" }, t("Rgb_Scan_None"))];
+    const blockers = [];
+    if (r.makersStopped.length) blockers.push(h("p", { class: "note ok" }, t("Rgb_Scan_MakersStopped", names(r.makersStopped))));
+    if (r.makersRunning.length) blockers.push(h("p", { class: "note warn" }, t("Rgb_Scan_MakersRunning", names(r.makersRunning))));
+    if (r.monitorsClosed.length) blockers.push(h("p", { class: "note ok" }, t("Rgb_Scan_MonitorsClosed", names(r.monitorsClosed))));
+    if (r.monitors.length) blockers.push(h("p", { class: "note warn" }, t("Rgb_Scan_Monitors", names(r.monitors))),
+      h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.rescan", { keepMakers: keep.checked, closeMonitors: true }) }, icon("stop"), t("Rgb_Scan_CloseAndSearch"))));
+    const missing = r.missing.length ? [h("p", { class: "note warn" }, t("Rgb_Scan_Missing", names(r.missing.map(kind)))), h("p", { class: "note" }, t("Rgb_Scan_MissingWhy"))] : [];
+    const clear = !blockers.length && !missing.length && r.found.length;
+    scanBox.hidden = false;
+    scanBox.replaceChildren(h("h3", { class: "h3" }, t("Rgb_Scan_Title", r.at)), h("ul", { class: "rgb-scan-list" }, rows), ...missing, ...blockers,
+      clear ? h("p", { class: "note ok" }, t("Rgb_Scan_Clear")) : null, r.cards.length ? h("p", { class: "note" }, t("Rgb_Scan_Cards", names(r.cards))) : null);
+  }
 
   // The colour of a look (st): one colour, a gradient of two the user picks (either stop is edited by the same swatches and hue), or a spectrum (ready, or made from
   // the colour), above a strip that shows it as it will run. Colour changes update in place: a redraw would drop the hue slider out of the user's hand.
@@ -172,6 +194,7 @@ export function mount(el) {
     msg.className = `msg ${s.error ? "fail" : ""}`; msg.textContent = s.error || (s.connecting ? t("Rgb_Connecting") : !s.found && !s.connected ? t("Rgb_NotFound") : s.connected && !s.devices.length ? t("Rgb_Empty") : "");
     const shown = s.makers?.length ? t("Rgb_Makers_Stopped", s.makers.join("، ")) : s.running?.length ? t("Rgb_Makers_Running", s.running.join("، ")) : "";
     makers.hidden = !shown; makers.textContent = shown;
+    if (s.scan) drawScan(s.scan);
     const had = !allBody.hidden; allBody.hidden = !s.devices.length;
     if (first || !had) drawAll(s);   // drawn once the devices are there, then kept (so a slider in use is not taken away)
     list.replaceChildren(...s.devices.map(card)); drawHdrs(s);
@@ -232,7 +255,7 @@ export function mount(el) {
           h("button", { class: "btn", type: "button", onclick: () => { probes.delete(pk); run("rgb.zone", { device: d.index, zone: z.index, leds: pr.orig }); } }, t("Rgb_Cancel"))));
     }
     const n = h("input", { type: "number", class: "field num", min: z.min, max: z.max, value: z.leds, inputmode: "numeric", "aria-label": `${z.name}: ${t("Rgb_Zone_Count")}` });
-    const detect = () => { const p = { lo: Math.max(z.min, 1), hi: z.max, n: 0, orig: z.leds || Math.min(30, z.max) }; probes.set(pk, p); p.n = Math.ceil((p.lo + p.hi) / 2); run("rgb.probe", { device: d.index, zone: z.index, leds: p.n }); };
+    const detect = () => { const p = { lo: Math.max(z.min, 1), hi: z.max, n: 0, orig: z.leds || Math.min(70, z.max) }; probes.set(pk, p); p.n = Math.ceil((p.lo + p.hi) / 2); run("rgb.probe", { device: d.index, zone: z.index, leds: p.n }); };
     return h("div", { class: "rgb-hdr" }, name, n, h("small", {}, t("Rgb_Zone_Max", z.max)),
       h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.zone", { device: d.index, zone: z.index, leds: Number(n.value) }) }, t("Rgb_Zone_Set")), h("button", { class: "btn", type: "button", onclick: detect }, t("Rgb_Detect"))));
   }
@@ -248,14 +271,14 @@ export function mount(el) {
     try { show(await call(method, params)); } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); } finally { start.disabled = false; }
   }
 
-  const allBox = box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] });
+  const allBox = box({ cls: "p-lights-all", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] });
   // The controls as one bar across the top; the set's panel, the hint and the devices' cards follow in columns, so no panel leaves a hole beside it.
   const bar = h("section", { class: "rgb-bar" },
     h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))),
     h("div", { class: "rgb-bar-main" },
       h("div", { class: "rgb-bar-head" }, icon("bolt"), h("div", {}, h("h2", {}, t("Rgb_Title")), h("p", { class: "caption" }, t("Rgb_Sub")))),
-      h("div", { class: "rgb-bar-ctl" }, h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field inline" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("div", { class: "btn-row" }, start, dark, release)),
-      makers, msg,
+      h("div", { class: "rgb-bar-ctl" }, h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field inline" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("div", { class: "btn-row" }, start, rescan, dark, release)),
+      makers, msg, scanBox,
       h("details", { class: "rgb-more" }, h("summary", {}, t("Rgb_More")), h("p", { class: "note" }, t("Rgb_Note")), h("p", { class: "note" }, t("Rgb_PowerEnd_Note")))),
     hdrs);
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Lights")), h("p", { class: "page-lede" }, t("Rgb_Page_Lede")))), bar,

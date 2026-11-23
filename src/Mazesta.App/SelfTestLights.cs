@@ -8,6 +8,19 @@ namespace Mazesta.App;
 /// </summary>
 internal static class SelfTestLights
 {
+    private static string Lighting() => string.Join(", ", System.Diagnostics.Process.GetProcesses().Select(p => { using (p) return p.ProcessName; })
+        .Where(n => System.Text.RegularExpressions.Regex.IsMatch(n, "asus|armoury|aura|rog|lighting|icue|corsair|openrgb", System.Text.RegularExpressions.RegexOptions.IgnoreCase)).GroupBy(n => n).OrderBy(g => g.Key).Select(g => $"{g.Key}x{g.Count()}"));
+
+    /// <summary><c>--selftest=makers</c>: which lighting programs run, what stopping them leaves behind after 20 s (anything that started again, or that was never in the list), and putting them back.</summary>
+    public static async Task RunMakersAsync(AppPaths paths, Action<string> say)
+    {
+        var c = new RgbConflicts(Path.Combine(paths.DataRoot, "config", "selftest-makers.txt"));
+        say("before: " + Lighting()); say("known makers running: " + string.Join(", ", c.Running()));
+        say("stopped: " + string.Join(", ", c.StopAll()));
+        for (int s = 5; s <= 20; s += 5) { await Task.Delay(5000); say($"after {s} s: {Lighting()} | known running: {string.Join(", ", c.Running())}"); }
+        c.RestoreAll(); await Task.Delay(8000); say("restored, after 8 s: " + Lighting());
+    }
+
     public static async Task RunAsync(AppPaths paths, Action<string> say)
     {
         var scene = RgbSceneStore.Read(paths); using var session = new RgbSession(AppContext.BaseDirectory, Path.Combine(paths.DataRoot, "openrgb"), NullLogger.Instance);

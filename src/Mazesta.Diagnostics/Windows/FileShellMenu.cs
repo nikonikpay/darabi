@@ -20,13 +20,28 @@ public static class FileShellMenu
     /// <summary>The entries made (or made again) for this tray program and these labels; a moved copy or another language is put right at the next start.</summary>
     public static void Set(string trayExe, Func<string, string> label)
     {
+        // where the Windows 11 package is set up its entries show in the classic menu too, so the registry ones would be a second copy
+        if (File.Exists(Path.Combine(Path.GetDirectoryName(trayExe) ?? "", "ShellMenu", "MazestaShell.dll"))) { RemoveAll(); WriteMenuFile(trayExe, label); return; }
         foreach (var (path, tool) in Entries)
         {
             using var key = Registry.CurrentUser.CreateSubKey(path);
             key.SetValue("", label(tool)); key.SetValue("Icon", $"\"{trayExe}\",0");
-            key.SetValue("MultiSelectModel", "Player");   // shown for any number of files, not only up to 15
+            key.SetValue("MultiSelectModel", tool == ShellFiles.Lock ? "Single" : "Player");   // "what holds it open" checks one file, so only for one; the others show for any number, not only up to 15
             using var command = key.CreateSubKey("command"); command.SetValue("", Command(trayExe, tool));
         }
+        WriteMenuFile(trayExe, label);
+    }
+
+    /// <summary>What Windows 11's top-level entries (tools/win11-menu) show and start: their titles in the app's language and the tray program's path.</summary>
+    private static void WriteMenuFile(string trayExe, Func<string, string> label)
+    {
+        try
+        {
+            // beside the entries' DLL (tools/win11-menu/build.ps1 puts it there); without it the Windows 11 entries are not set up
+            string dir = Path.Combine(Path.GetDirectoryName(trayExe) ?? "", "ShellMenu"); if (!Directory.Exists(dir)) return;
+            File.WriteAllLines(Path.Combine(dir, "menu.txt"), [.. ShellFiles.Tools.Select(t => $"{t}={label(t)}"), $"tray={trayExe}"], new System.Text.UTF8Encoding(false));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     /// <summary>The command each entry starts now, or null where there is none.</summary>

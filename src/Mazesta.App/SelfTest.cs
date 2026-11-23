@@ -53,6 +53,7 @@ internal static class SelfTest
                 Say("DONE"); return;
             }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
+            if (kind == "makers") { await SelfTestLights.RunMakersAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")
             {
                 // What the Settings button does for the statistics: send everything not sent yet, switch or no switch, and say whether the site took it.

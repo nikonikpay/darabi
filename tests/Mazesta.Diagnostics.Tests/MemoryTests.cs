@@ -69,6 +69,28 @@ public class MemoryTests
         Assert.Equal(TestOutcome.Cancelled, result.Outcome);
     }
 
+    [Fact] public void A_wrong_word_is_named_with_its_bits_and_a_clean_second_read_is_said()
+    {
+        foreach (int pass in new[] { 0, 18, MemoryPatterns.AddressPass, MemoryPatterns.RandomPass })
+        {
+            var block = new byte[1 << 12]; MemoryPatterns.Fill(block, pass, 3);
+            Assert.Null(MemoryPatterns.FirstMismatch(block, pass, 3));
+            block[8 * 5 + 2] ^= 0x20;   // bit 21 of word 5
+            var w = MemoryPatterns.FirstMismatch(block, pass, 3)!.Value;
+            Assert.Equal(40, w.Offset); Assert.Equal(1UL << 21, w.Expected ^ w.Actual);
+            Assert.Contains("+0x28 is still wrong", MemoryPatterns.DescribeWord(w)); Assert.Contains("1 bit(s) differ (21)", MemoryPatterns.DescribeWord(w));
+        }
+        Assert.Contains("the same block was right", MemoryPatterns.DescribeWord(null));
+    }
+
+    [Fact] public void An_automatic_run_needs_half_the_installed_ram_and_a_set_size_is_only_reported()
+    {
+        Assert.True(MemoryPatternExecutor.Enough(8 * GiB, 16 * GiB, true)); Assert.False(MemoryPatternExecutor.Enough(7 * GiB, 16 * GiB, true));
+        Assert.True(MemoryPatternExecutor.Enough(1 * GiB, 16 * GiB, false));   // the technician's own size
+        Assert.Equal("50% of the 16384 MiB installed RAM tested", MemoryPatternExecutor.Coverage(8 * GiB, 16 * GiB, true));
+        Assert.Contains("under the half a result needs", MemoryPatternExecutor.Coverage(3 * GiB, 8 * GiB, true));
+    }
+
     // ——— the algorithms: clean memory reads clean, a disturbed word is counted ———
     [Fact] public void Moving_inversions_find_a_bit_that_flips_between_the_walks()
     {

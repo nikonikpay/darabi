@@ -36,7 +36,7 @@ internal sealed class Program : ApplicationContext
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
     private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans; private GpuFanController? _gpuFan;
     /// <summary>The tray starts the app with no window to hold a fan profile (see <see cref="FanController"/>): it ends when no profile is held and no overlay is up.</summary>
-    internal const string BackgroundArgument = "--background";
+    internal const string BackgroundArgument = "--background", InstallDriverArgument = "--install-driver";
 
     [STAThread]
     private static int Main(string[] args)
@@ -46,6 +46,9 @@ internal sealed class Program : ApplicationContext
         Mazesta.Core.Overlay.OverlayCatalog.CcdOfCore = Mazesta.Diagnostics.Benchmarks.HostMetrics.CcdOfCore;   // the overlay's per-CCD clocks need the processor's cache layout, which only the app can read
         // Uninstall, started from Installed apps for a copy the setup installed: it has its own dialogs and needs none of the app's services.
         if (args.Length == 1 && args[0] == Uninstaller.Argument) { Application.EnableVisualStyles(); return Uninstaller.Run(); }
+        // The setup (already elevated) asks for the driver to be checked and put in, as a part of installing or updating: no window, no services; exit 0 when PawnIO is in place.
+        if (args.Length == 1 && args[0] == InstallDriverArgument)
+            return Mazesta.Hardware.Lhm.PawnIoDriver.EnsureInstalled(true, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance) is Mazesta.Hardware.Lhm.PawnIoInstallResult.AlreadyInstalled or Mazesta.Hardware.Lhm.PawnIoInstallResult.Installed ? 0 : 1;
         // Explorer's right-click entries (block a program in the firewall, exclude a folder from the antivirus): one change, one box, no window of the app.
         if (ShieldCli.Is(args)) return ShieldCli.Run(args, ConfiguredLanguage());
         // A downloaded release, started by the running app to put itself in place: no window, no services; see AppUpdater.Apply.

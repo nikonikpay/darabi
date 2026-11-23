@@ -10,7 +10,8 @@ namespace Mazesta.Tray.Space;
 internal sealed class SpaceForm : Form
 {
     private const int MaxHits = 5000;
-    private static readonly Color Back = Color.FromArgb(24, 24, 27), Field = Color.FromArgb(36, 36, 40), On = Color.FromArgb(70, 70, 80), Text1 = Color.FromArgb(235, 235, 240), Dim = Color.FromArgb(150, 150, 160), Folder = Color.FromArgb(240, 200, 90);
+    private static readonly Color Text1 = Theme.Paper, Dim = Theme.Paper2, Folder = Theme.Yellow;
+    private int _sortCol = -1; private bool _sortUp;   // -1: the order the tree gives (biggest first)
     private readonly ComboBox _drive; private readonly TextBox _find; private readonly Button _treeMode, _filesMode; private readonly ListView _list; private readonly Label _status;
     private readonly ImageList _icons = new() { ColorDepth = ColorDepth.Depth32Bit }; private readonly Dictionary<string, int> _iconOf = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _roots = []; private readonly System.Windows.Forms.Timer _typing = new() { Interval = 200 };
@@ -19,20 +20,19 @@ internal sealed class SpaceForm : Form
 
     public SpaceForm()
     {
-        Text = TrayText.Space; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true;
-        AutoScaleMode = AutoScaleMode.Dpi; Font = new Font("Segoe UI", 10f); BackColor = Back; ForeColor = Text1; MinimumSize = new Size(760, 420);
-        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(8, 8, 8, 4), RightToLeft = RightToLeft.Yes, WrapContents = true };
-        _drive = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Field, ForeColor = Text1, Width = 380, RightToLeft = RightToLeft.No };
-        _find = new TextBox { Width = 300, BorderStyle = BorderStyle.FixedSingle, BackColor = Field, ForeColor = Text1, PlaceholderText = TrayText.SpaceFind, RightToLeft = RightToLeft.No };
+        Theme.Window(this); Text = TrayText.Space; ShowInTaskbar = true; StartPosition = FormStartPosition.Manual; KeyPreview = true; MinimumSize = new Size(900, 520);
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(10, 8, 10, 6), RightToLeft = TrayText.Dir, WrapContents = true, BackColor = Theme.Ink2 };
+        _drive = new ComboBox { Width = 400, Margin = new Padding(4, 5, 4, 4), RightToLeft = RightToLeft.No }; Theme.Combo(_drive);
+        _find = new TextBox { Width = 300, PlaceholderText = TrayText.SpaceFind, Margin = new Padding(4, 7, 4, 4), RightToLeft = RightToLeft.No }; Theme.Field(_find);
         _treeMode = Toggle(TrayText.SpaceTree, () => Mode(false)); _filesMode = Toggle(TrayText.SpaceBiggest, () => Mode(true));
         bar.Controls.AddRange([_drive, Toggle(TrayText.SpaceAgain, Scan), _treeMode, _filesMode, _find]);
-        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, FullRowSelect = true, HideSelection = false, MultiSelect = false, BorderStyle = BorderStyle.None, BackColor = Back, ForeColor = Text1, HeaderStyle = ColumnHeaderStyle.Nonclickable, SmallImageList = _icons };
+        _list = new ListView { Dock = DockStyle.Fill, View = View.Details, VirtualMode = true, HideSelection = false, MultiSelect = false, SmallImageList = _icons };
         _list.Columns.Add(TrayText.SearchName, 420); _list.Columns.Add(TrayText.SearchSize, 100, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SpaceShare, 80, HorizontalAlignment.Right);
         _list.Columns.Add(TrayText.SpaceFiles, 90, HorizontalAlignment.Right); _list.Columns.Add(TrayText.SearchFolder, 420);
-        _status = new Label { Dock = DockStyle.Bottom, Height = 26, ForeColor = Dim, TextAlign = ContentAlignment.MiddleRight, RightToLeft = RightToLeft.Yes, Padding = new Padding(8, 0, 8, 0) };
-        Controls.Add(_list); Controls.Add(_status); Controls.Add(bar);
-        var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
+        Theme.List(_list, () => _sortCol < 0 ? null : (_sortCol, _sortUp), Resort); Theme.DarkScroll(_list);
+        _status = new Label { Dock = DockStyle.Bottom, Height = 32, ForeColor = Dim, BackColor = Theme.Ink2, TextAlign = ContentAlignment.MiddleRight, RightToLeft = TrayText.Dir, Padding = new Padding(12, 0, 12, 0) };
+        Controls.Add(_list); Controls.Add(_status); Controls.Add(bar); Controls.Add(Theme.Banner(Theme.Drive, Theme.Storage, TrayText.Space, TrayText.SpaceSub));
+        var menu = new ContextMenuStrip { RightToLeft = TrayText.Dir, ShowImageMargin = false };
         menu.Items.Add(TrayText.SearchOpenFolder, null, (_, _) => Reveal()); menu.Items.Add(TrayText.SearchCopyPath, null, (_, _) => CopyPath());
         _list.ContextMenuStrip = menu;
 
@@ -41,16 +41,13 @@ internal sealed class SpaceForm : Form
         _find.TextChanged += (_, _) => { _typing.Stop(); _typing.Start(); };
         _typing.Tick += (_, _) => { _typing.Stop(); Find(); };
         _drive.SelectionChangeCommitted += (_, _) => Pick();
-        HandleCreated += (_, _) => { int on = 1; DwmSetWindowAttribute(Handle, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, ref on, 4); };
-        _list.HandleCreated += (_, _) => { SetWindowTheme(_list.Handle, "DarkMode_Explorer", null); SetWindowTheme(SendMessage(_list.Handle, 0x101F /* LVM_GETHEADER */, 0, 0), "DarkMode_ItemsView", null); };
         _icons.ImageSize = new Size(LogicalToDeviceUnits(16), LogicalToDeviceUnits(16));
         Drives(); Modes();
     }
 
     private Button Toggle(string text, Action click)
     {
-        var b = new Button { Text = text, AutoSize = true, FlatStyle = FlatStyle.Flat, BackColor = Field, ForeColor = Text1, Margin = new Padding(4, 0, 4, 4), Cursor = Cursors.Hand };
-        b.FlatAppearance.BorderSize = 0; b.Click += (_, _) => click();
+        var b = Theme.Button(text); b.Click += (_, _) => click();
         return b;
     }
 
@@ -127,7 +124,41 @@ internal sealed class SpaceForm : Form
 
     private void Mode(bool biggest) { _biggest = biggest; Modes(); if (_find.TextLength > 0) _find.Clear(); else Find(); }
 
-    private void Modes() { _treeMode.BackColor = _biggest ? Field : On; _filesMode.BackColor = _biggest ? On : Field; }
+    // the chosen view is yellow, the other plain
+    private void Modes()
+    {
+        _treeMode.BackColor = _biggest ? Theme.Ink4 : Theme.Yellow; _treeMode.ForeColor = _biggest ? Theme.Paper : Theme.OnYellow;
+        _filesMode.BackColor = _biggest ? Theme.Yellow : Theme.Ink4; _filesMode.ForeColor = _biggest ? Theme.OnYellow : Theme.Paper;
+    }
+
+    // A click on a column's header orders the rows by it: the tree within each folder, or the flat list as a whole; a second click turns it over.
+    private void Resort(int col)
+    {
+        if (_tree is not { } t) return;
+        _sortUp = _sortCol == col ? !_sortUp : col is 0 or 4; _sortCol = col;   // text first A to Z, numbers biggest first
+        if (_flat) _hits = [.. Sorted(_hits.ToArray())];
+        else { _rows.Clear(); _depth.Clear(); _rows.Add(t.RootEntry); _depth.Add(0); AddOpen(t, t.RootEntry, 0); }
+        ShowRows(0); _list.Invalidate();
+    }
+
+    private void AddOpen(DiskTree t, int e, int depth)
+    {
+        if (!_open.Contains(e)) return;
+        foreach (int k in Sorted(t.Children(e).ToArray())) { _rows.Add(k); _depth.Add(depth + 1); AddOpen(t, k, depth + 1); }
+    }
+
+    private int[] Sorted(int[] list)
+    {
+        if (_sortCol < 0 || _tree is not { } t) return list;
+        IOrderedEnumerable<int> o = _sortCol switch
+        {
+            0 => list.OrderBy(e => t.Name(e), StringComparer.CurrentCultureIgnoreCase),
+            3 => list.OrderBy(e => (double)t.Files(e)),
+            4 => list.OrderBy(e => t.PathOf(t.Parent(e)), StringComparer.CurrentCultureIgnoreCase),
+            _ => list.OrderBy(e => (double)t.Size(e)),
+        };
+        return [.. _sortUp ? o : o.Reverse()];
+    }
 
     // typing, or "biggest files": a flat list found off the window's thread; no text in the tree mode brings the tree back as it was
     private void Find()
@@ -157,7 +188,7 @@ internal sealed class SpaceForm : Form
     {
         if (_tree is not { } t || _flat) return;
         int e = _rows[row]; if (!t.IsDir(e) || !_open.Add(e)) return;
-        var kids = t.Children(e).ToArray();
+        var kids = Sorted(t.Children(e).ToArray());
         _rows.InsertRange(row + 1, kids); _depth.InsertRange(row + 1, Enumerable.Repeat(_depth[row] + 1, kids.Length));
     }
 
@@ -184,7 +215,8 @@ internal sealed class SpaceForm : Form
     private ListViewItem Row(int row)
     {
         if (_cache.TryGetValue(row, out var cached)) return cached;
-        var t = _tree!; int e = EntryAt(row); bool dir = t.IsDir(e);
+        if (_tree is not { } t || row < 0 || EntryAt(row) < 0) return new ListViewItem(["", "", "", "", ""]);   // a closing window asks for rows once more after the tree was let go
+        int e = EntryAt(row); bool dir = t.IsDir(e);
         string name = t.Name(e);
         if (!_flat) name = (dir ? (_open.Contains(e) ? "▾ " : "▸ ") : "   ") + name;
         string size = t.Unread(e) ? TrayText.SpaceUnread : (t.PartUnread(e) ? "≥ " : "") + Bytes(t.Size(e));
@@ -264,7 +296,4 @@ internal sealed class SpaceForm : Form
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)] private static extern nint SHGetFileInfo(string path, uint attributes, ref ShFileInfo info, uint size, uint flags);
     [DllImport("user32.dll")] private static extern bool DestroyIcon(nint icon);
-    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] private static extern int SetWindowTheme(nint window, string app, string? id);
-    [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(nint window, int attribute, ref int value, int size);
-    [DllImport("user32.dll")] private static extern nint SendMessage(nint window, int message, nint w, nint l);
 }

@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using Mazesta.Core.Health; using Mazesta.Core.Tray; using Mazesta.Core.Providers; using Mazesta.Core.Time; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Wmi; using Mazesta.Persistence;
+using Mazesta.Core.Health; using Mazesta.Diagnostics.Storage; using Mazesta.Core.Tray; using Mazesta.Core.Providers; using Mazesta.Core.Time; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Wmi; using Mazesta.Persistence;
 using Microsoft.Extensions.Logging.Abstractions;
 namespace Mazesta.Tray;
 
@@ -30,6 +30,9 @@ internal sealed class TrayContext : ApplicationContext
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
     public bool IsChecking => _checking;
     public event Action? Changed;
+    /// <summary>The language in the app changed since this menu was built; <see cref="Program"/> builds a new tray.</summary>
+    public bool Restart { get; private set; }
+    private readonly bool _fa = TrayText.Fa;
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
@@ -38,7 +41,7 @@ internal sealed class TrayContext : ApplicationContext
         _memory = new(intervals.RamAlertPercent, TimeSpan.FromMinutes(intervals.RamHoldMinutes)); _ramFile = Path.Combine(Path.GetDirectoryName(logFile) ?? "", "ram-alert.txt");
         try { if (DateTimeOffset.TryParse(File.ReadAllText(_ramFile), null, System.Globalization.DateTimeStyles.RoundtripKind, out var last)) _memory.LastFired = last; } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         Checks = TrayCheckLog.Read(logFile);
-        var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
+        var menu = new ContextMenuStrip { RightToLeft = TrayText.Dir, ShowImageMargin = false };
         var open = new ToolStripMenuItem(TrayText.OpenApp, null, (_, _) => OpenApp()) { Font = new Font(menu.Font, FontStyle.Bold) };
         _checkNow = new ToolStripMenuItem(TrayText.CheckNow, null, async (_, _) => await CheckAllAsync());
         _overlay = new ToolStripMenuItem(TrayText.Overlay, null, (_, _) => ToggleOverlay());
@@ -51,13 +54,14 @@ internal sealed class TrayContext : ApplicationContext
         _ui.CreateControl();
         _spaceWait = ThreadPool.RegisterWaitForSingleObject(_spaceSignal, (_, _) => { try { _ui.BeginInvoke(ShowSpace); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
         // Explorer's right-click entries for the file tools: a selection gathered here, then the app wakes (or starts) and opens that box with it
-        _shell = new Shell.ShellInbox(Path.Combine(paths.DataRoot, "tray", ShellFiles.FileName), () => { if (EventWaitHandle.TryOpenExisting(ShellFiles.Event, out var e)) using (e) e.Set(); else StartApp(""); });
+        _shell = new Shell.ShellInbox(Path.Combine(paths.DataRoot, "tray", ShellFiles.FileName), () => { if (EventWaitHandle.TryOpenExisting(ShellFiles.Event, out var e)) using (e) e.Set(); else StartApp(""); },
+            (tool, files) => { Form f = tool == ShellFiles.Lock ? new Shell.LockForm(files) : tool == ShellFiles.Resize ? new Shell.ResizeForm(files) : new Shell.RenameForm(files, Path.Combine(paths.DataRoot, "rename", "last.json")); f.FormClosed += (_, _) => f.Dispose(); f.Show(); });
         _colors = new Colors.ColorHost(Path.Combine(Path.GetDirectoryName(logFile) ?? "", "colors.txt"));
         _color = new ToolStripMenuItem(TrayText.Color, null, (_, _) => _colors.Pick());
         _mixerWait = ThreadPool.RegisterWaitForSingleObject(_mixerSignal, (_, _) => { try { _ui.BeginInvoke(ShowMixer); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
         menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, _search, new ToolStripMenuItem(TrayText.Space, null, (_, _) => ShowSpace()), new ToolStripMenuItem(TrayText.Mixer, null, (_, _) => ShowMixer()), _color, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
             _status, new ToolStripSeparator(), new ToolStripMenuItem(TrayText.Exit, null, (_, _) => ExitThread())]);
-        menu.Opening += (_, _) => { _overlay.Checked = OverlayShown(); _search.Visible = _files?.On == true; _search.Text = TrayText.SearchMenu(_files?.Shortcut); _color.Text = TrayText.ColorMenu(_colors.Shortcut); };
+        menu.Opening += (_, e) => { if (TrayText.Fa != _fa) { e.Cancel = true; Restart = true; _ui.BeginInvoke(ExitThread); return; } _overlay.Checked = OverlayShown(); _search.Visible = _files?.On == true; _search.Text = TrayText.SearchMenu(_files?.Shortcut); _color.Text = TrayText.ColorMenu(_colors.Shortcut); };
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
         _icon.DoubleClick += (_, _) => ShowSummary();
         _icon.BalloonTipClicked += (_, _) => { if (_link is { } l) OpenLink(l); else ShowSummary(); };
@@ -135,6 +139,7 @@ internal sealed class TrayContext : ApplicationContext
             {
                 var now = DateTimeOffset.UtcNow;
                 var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
+                alerts.AddRange((await StalledDisksAsync()).Select(TrayText.DiskStalled));
                 check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
                 foreach (var a in alerts) Notify(a);
                 CheckScreen(now);
@@ -152,18 +157,63 @@ internal sealed class TrayContext : ApplicationContext
         TrayCheck check;
         try
         {
-            var drives = (await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2)))
+            var raw = await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2));
+            var drives = raw
                 .Select(d => new TrayDrive(d.Name, DriveAttention.Verdict(d.Status, d.WearPercent), d.WearPercent, d.TemperatureC, DriveAttention.Needs(d) || DriveAttention.Verdict(d.Status, d.WearPercent) == "Unhealthy", d.Letters)).ToList();
             var problems = drives.Where(d => d.NeedsAttention || d.Status == "Warning").Select(TrayText.DriveProblem).ToList();
             // A drive's problem is announced once; it is announced again only after it has cleared and come back.
             foreach (var d in drives)
                 if (!d.NeedsAttention && d.Status != "Warning") _drivesAnnounced.Remove(d.Name);
                 else if (_drivesAnnounced.Add(d.Name)) Notify(TrayText.DriveProblem(d));
+            // The practical check besides SMART: can it be written to, does it read back what was written, is it far slower than a drive of its kind.
+            foreach (var (i, p) in await ProbeDrivesAsync(raw))
+            {
+                var d = drives[i]; string key = d.Name + "|probe";
+                if (p.Status is ProbeStatus.Ok or ProbeStatus.Skipped) { _drivesAnnounced.Remove(key); continue; }
+                string text = TrayText.DriveProbe(d, p); problems.Add(text);
+                if (_drivesAnnounced.Add(key)) Notify(text);
+                drives[i] = d with { Status = p.Status == ProbeStatus.Slow ? (d.Status == "Unhealthy" ? d.Status : "Warning") : "Unhealthy", NeedsAttention = d.NeedsAttention || p.Status != ProbeStatus.Slow };
+            }
             check = new(DateTimeOffset.UtcNow, "health", null, null, drives, problems, null);
         }
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "health", null, null, [], [], e.Message); }
         End(check);
         Schedule(_health, TimeSpan.FromMinutes(_intervals.HealthMinutes));
+    }
+
+    private readonly HashSet<string> _stalled = [];
+
+    /// <summary>The disks that sat at ~100 % active time moving almost nothing for the whole 6-second look and were not already announced; one that recovers is announced again if it sticks again.</summary>
+    private async Task<List<string>> StalledDisksAsync()
+    {
+        try
+        {
+            var all = await Within(Task.Run(() => DiskActivity.Sample(new WmiQuery(), 6)), TimeSpan.FromSeconds(40));
+            var now = all.Where(kv => DiskStall.IsStalled(kv.Value)).Select(kv => kv.Key).ToList();
+            _stalled.RemoveWhere(n => !now.Contains(n));
+            return [.. now.Where(_stalled.Add)];
+        }
+        catch (TimeoutException) { return []; }
+    }
+
+    /// <summary>The probe of each internal drive that has a letter (the first one it has; a drive removed or not ready is skipped), by the drive's index in <paramref name="raw"/>.
+    /// A probe that does not finish in 20 minutes is left out of the check rather than holding the tray.</summary>
+    private static async Task<List<(int Index, DriveProbeResult Result)>> ProbeDrivesAsync(IReadOnlyList<DriveHealth> raw)
+    {
+        try
+        {
+            return await Within(Task.Run(() =>
+            {
+                var done = new List<(int, DriveProbeResult)>();
+                for (int i = 0; i < raw.Count; i++)
+                {
+                    if (System.Text.RegularExpressions.Regex.Matches(raw[i].Letters ?? "", "[A-Za-z]:").Select(m => m.Value + "\\").FirstOrDefault(r => { try { return new DriveInfo(r).DriveType == DriveType.Fixed; } catch (ArgumentException) { return false; } }) is { } root)
+                        done.Add((i, DriveProbe.Run(root, raw[i].Media)));
+                }
+                return done;
+            }), TimeSpan.FromMinutes(20));
+        }
+        catch (TimeoutException) { return []; }
     }
 
     /// <summary>The work, or a timeout once <paramref name="limit"/> has passed: a sensor open or a WMI query that never returns is reported as a failed

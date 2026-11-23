@@ -72,6 +72,14 @@ public class GpuCheckTests
         Assert.Contains(GpuCheck.Evaluate(V(98)), x => x.Code == FindingCode.GpuVramWarm);
         Assert.Contains(GpuCheck.Evaluate(V(86)), x => x.Code == FindingCode.GpuVramOk);
     }
+    [Fact] public void A_card_with_no_throttle_report_is_judged_by_its_hottest_reading()
+    {
+        FindingLevel Hot(Func<int, double>? core, Func<int, double>? spot) => Assert.Single(GpuCheck.Evaluate(Run(core: core, spot: spot, vendor: HardwareVendor.Amd)), x => x.Code == FindingCode.GpuRunsHot).Level;
+        Assert.Equal(FindingLevel.Problem, Hot(_ => 92, _ => 110)); Assert.Equal(FindingLevel.Attention, Hot(_ => 92, _ => 106));   // the hot spot, where there is one
+        Assert.Equal(FindingLevel.Attention, Hot(_ => 93, null)); Assert.Equal(FindingLevel.Problem, Hot(_ => 101, null));         // else the core
+        Assert.Contains(GpuCheck.Evaluate(Run(core: _ => 75, spot: _ => 95, vendor: HardwareVendor.Amd)), x => x.Code == FindingCode.GpuHeatOk);   // 95 °C at the hot spot is a Radeon working as built
+        Assert.DoesNotContain(GpuCheck.Evaluate(Run(new(60, 0, 0, 0, 0, 0, 88, 350), core: _ => 95)), x => x.Code == FindingCode.GpuRunsHot);    // a driver that reports is believed
+    }
     [Fact] public void A_power_brake_is_a_problem() => Assert.Contains(GpuCheck.Evaluate(Run(new(60, 0, 0, 10, 0, 10, 88, 350))), x => x.Code == FindingCode.GpuPowerBrake && x.Level == FindingLevel.Problem);
     [Fact] public void A_brief_general_slowdown_is_not_a_fault() => Assert.DoesNotContain(GpuCheck.Evaluate(Run(new(60, 0, 0, 2, 0, 0, 88, 350))), x => x.Code == FindingCode.GpuHwSlowdown);
     [Fact] public void Running_at_the_power_limit_is_only_noted()
@@ -222,7 +230,7 @@ public class CpuSpecTests
         Assert.Equal((code, level), (f.Code, f.Level));
     }
     private static Mazesta.Core.Providers.DriveHealth Drive(string? status, int? wear, long? mediaErrors = null, string bus = "NVMe") => new("SSD", null, status, wear, 40, 60, mediaErrors, 0, 1000, bus);
-    [Theory, InlineData("Healthy", 5, FindingCode.DriveHealthy, FindingLevel.Good), InlineData("Healthy", 75, FindingCode.DriveWorn, FindingLevel.Attention),
+    [Theory, InlineData("Healthy", 5, FindingCode.DriveHealthy, FindingLevel.Good), InlineData("Healthy", 30, FindingCode.DriveWorn, FindingLevel.Attention), InlineData("Healthy", 41, FindingCode.DriveWorn, FindingLevel.Problem), InlineData("Healthy", 75, FindingCode.DriveWorn, FindingLevel.Problem),
         InlineData("Healthy", 95, FindingCode.DriveWorn, FindingLevel.Problem), InlineData("Warning", 5, FindingCode.DriveUnhealthy, FindingLevel.Attention),
         InlineData("Unhealthy", 5, FindingCode.DriveUnhealthy, FindingLevel.Problem), InlineData("Healthy", null, FindingCode.DriveHealthy, FindingLevel.Good)]
     public void Drive_health_is_judged_by_its_own_report(string status, int? wear, FindingCode code, FindingLevel level)

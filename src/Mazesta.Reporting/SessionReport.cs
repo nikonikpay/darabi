@@ -15,7 +15,11 @@ public enum ReportKind { TestSession, Benchmark }
 
 public sealed record TestEntry(string Id, string Name, ReportOutcome Outcome, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, double DurationSeconds,
     long ErrorCount, string? Detail, IReadOnlyDictionary<string, string> Options,
-    string? Advice = null);   // what to make of a failed or inconclusive result, in the report's language; absent in older reports
+    string? Advice = null, double? FullSeconds = null)   // Advice: what to make of a failed or inconclusive result, in the report's language; FullSeconds: how long the test takes in full (both absent in older reports)
+{
+    /// <summary>No error was seen but the run was shorter than the test needs to finish: shown as passed with a note to run longer (the saved outcome stays Inconclusive, the verdict stays Incomplete).</summary>
+    public bool CleanButShort => Outcome == ReportOutcome.Inconclusive && ErrorCount == 0 && FullSeconds is { } f && f > DurationSeconds + 1;
+}
 
 public sealed record TracePoint(double Seconds, double Value);
 
@@ -38,6 +42,9 @@ public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset Finis
 public sealed record FindingEntry(string Level, string Title, string Text, string? Hint, string? Subject, IReadOnlyList<FindingMeasure> Measures, string? Source = null);
 public sealed record FindingMeasure(string Name, string Value);
 
+/// <summary>What the sensors read during one test's own run (min, average, max and a trace measured from the test's start), so every figure and chart belongs to a named test.</summary>
+public sealed record TestSensorSet(string TestId, IReadOnlyList<SensorSummary> Sensors);
+
 public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancelled, int Unsupported, int NotRun, long Errors);
 
 public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset CreatedAt, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, string ShopName, string AppVersion,
@@ -47,7 +54,8 @@ public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset 
     IReadOnlyList<WindowPeak>? Peaks = null,   // each test's and benchmark's own peak readings; absent in older reports
     IReadOnlyList<FindingEntry>? Findings = null,
     string? ServiceNotes = null,
-    string? ServiceStage = null)   // "Before" or "After" the service, as the technician marked the report; absent when not marked.  // what the technician did on the customer's system, written before the report goes to the site; absent when none   // the checkup's findings; absent in older reports and where nothing was judged
+    string? ServiceStage = null,
+    IReadOnlyList<TestSensorSet>? TestSensors = null)   // each test's own sensor figures and traces; absent in older reports. "Before" or "After" the service, as the technician marked the report; absent when not marked.  // what the technician did on the customer's system, written before the report goes to the site; absent when none   // the checkup's findings; absent in older reports and where nothing was judged
 {
     public const int CurrentSchemaVersion = 1;
     public double DurationSeconds => Math.Max(0, (FinishedAt - StartedAt).TotalSeconds);

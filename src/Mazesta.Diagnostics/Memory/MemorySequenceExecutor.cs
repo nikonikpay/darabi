@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Evidence;
 namespace Mazesta.Diagnostics.Memory;
 
 /// <summary>
@@ -9,7 +9,7 @@ namespace Mazesta.Diagnostics.Memory;
 /// "Custom" runs a sequence the technician typed. A wrong word is a counted error naming the step it was found after; the run goes on.
 /// A clean run passes only when every step of the sequence ran to its end at least once and something was checked: a run that ended before
 /// that (an idle the time ran out in, a sweep cut short) is Inconclusive. Data a fill would overwrite unchecked is checked first.
-/// The memory reserve and the block size are the pattern test's.
+/// The memory reserve, the block size, the lock that keeps the blocks in RAM and the share of the installed RAM a pass needs are the pattern test's.
 /// </summary>
 public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
 {
@@ -37,14 +37,16 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
         IReadOnlyList<MemorySequence.Step> steps;
         try { steps = SequenceOf(options); }
         catch (FormatException e) { return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"The sequence cannot be read: {e.Message}")); }
-        long budget = MemoryPatternExecutor.Budget(probe.FreeUp(), options.GetInt(MemoryPatternExecutor.SizeOption));
+        var status = probe.FreeUp(); int asked = options.GetInt(MemoryPatternExecutor.SizeOption);
+        long budget = MemoryPatternExecutor.Budget(status, asked);
         if (budget < BlockBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of free RAM is available above the OS reserve; at least {BlockBytes >> 20} MiB is needed."));
-        return Task.Run(() => new Run(request, options.Get(PresetOption), steps, budget, started, ct).Go(), CancellationToken.None);
+        return Task.Run(() => new Run(request, options.Get(PresetOption), steps, budget, status.TotalBytes, asked <= 0, started, ct).Go(), CancellationToken.None);
     }
 
-    private sealed class Run(TestExecutionRequest request, string preset, IReadOnlyList<MemorySequence.Step> steps, long budget, DateTimeOffset started, CancellationToken ct)
+    private sealed class Run(TestExecutionRequest request, string preset, IReadOnlyList<MemorySequence.Step> steps, long budget, long total, bool automatic, DateTimeOffset started, CancellationToken ct)
     {
-        private readonly List<NativeBlock> _blocks = [];
+        private readonly List<NativeBlock> _blocks = []; private RamLock? _held;
+        private long Tested => (long)_blocks.Count * BlockBytes;
         private readonly MemorySequence.Expected _expected = new();
         private readonly Stopwatch _timed = new();
         private readonly ParallelOptions _parallel = new() { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount };
@@ -64,6 +66,7 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
                     MemorySequence.Fill(Words(_blocks.Count - 1), MemorySequence.Pattern.Random, 0, _blocks.Count - 1);   // commits the pages before anything is timed
                     request.Progress?.Invoke(new TestProgress(0, "Test_Status_Allocating"));
                 }
+                _held = new RamLock(_blocks);
                 _expected.Filled(MemorySequence.Pattern.Random, 0);
                 request.Note("Log_MemSeq_Start", string.Join("; ", Flatten(steps)), preset, (long)_blocks.Count * BlockBytes >> 20);
                 _duration = TimeSpan.FromSeconds(request.DurationSeconds);
@@ -78,9 +81,9 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
                 if (_dirty) Check("end of run");   // the last steps are checked too
             }
             catch (OperationCanceledException) { return Result(_errors > 0 ? TestOutcome.Failed : TestOutcome.Cancelled); }
-            finally { foreach (var b in _blocks) b.Dispose(); }
+            finally { foreach (var b in _blocks) b.Dispose(); _held?.Dispose(); }
             request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-            return Result(_errors > 0 ? TestOutcome.Failed : Complete ? TestOutcome.Passed : TestOutcome.Inconclusive);
+            return Result(_errors > 0 ? TestOutcome.Failed : Complete && MemoryPatternExecutor.Enough(Tested, total, automatic) ? TestOutcome.Passed : TestOutcome.Inconclusive);
         }
 
         private Span<ulong> Words(int i) => System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ulong>(_blocks[i].Span);
@@ -155,7 +158,7 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
             _checks++; _dirty = false;
             if (words == 0) return;
             _errors += words; _bits += bits;
-            if (_firstError.Length == 0) _firstError = $"first wrong words in buffer block {firstBlock} (offset {(long)firstBlock * BlockBytes >> 20} MiB), found by the check after '{after}' in round {_rounds + 1}";
+            if (_firstError.Length == 0) _firstError = $"first wrong words in buffer block {firstBlock} (offset {(long)firstBlock * BlockBytes >> 20} MiB), found by the check after '{after}' in round {_rounds + 1}; {MemoryPatterns.DescribeWord(MemorySequence.FirstWrong(Words(firstBlock), _expected, firstBlock))}";
             request.NoteError("Log_MemSeq_Errors", "words ≠ expected(fill, affine map, mirrors)", after, words, bits);
         }
 
@@ -168,6 +171,8 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
                 + $"; {_sweeps} sweeps, {_checks} checks, ~{gbps:F1} GB/s of sweeps; {_errors} wrong word(s), {_bits} wrong bit(s); "
                 + "covers only the RAM Windows let the test have, addressed by buffer offset, not physical address or slot"
                 + (_firstError.Length > 0 ? $"; {_firstError}" : "") + (_sink == 0x5EED ? "." : "");   // the read steps' result is used, so they are not optimised away
+            detail = SensorEvidence.Join(detail, MemoryPatternExecutor.Coverage(Tested, total, automatic), _held is null ? null : MemoryPatternExecutor.Locks(_held.Locked, _blocks.Count),
+                SensorEvidence.Read(request.Engine, HardwareKind.Memory, SensorRole.DimmTemp, started, request.Clock.UtcNow)?.Format("RAM temperature", "°C", includeMax: true));
             return new(Definition.Id, outcome, started, request.Clock.UtcNow, _errors, detail);
         }
     }

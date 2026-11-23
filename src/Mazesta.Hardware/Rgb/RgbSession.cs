@@ -71,6 +71,13 @@ public sealed class RgbSession : IDisposable
         return RgbConnect.Connected;
     }
 
+    /// <summary>The graphics adapters Windows lists, by name (empty when Windows does not answer).</summary>
+    public static IReadOnlyList<string> VideoCardNames()
+    {
+        try { using var q = new System.Management.ManagementObjectSearcher("SELECT Name FROM Win32_VideoController"); return [.. q.Get().Cast<System.Management.ManagementBaseObject>().Select(o => o["Name"]?.ToString() ?? "").Where(n => n.Length > 0)]; }
+        catch (Exception e) when (e is System.Management.ManagementException or System.Runtime.InteropServices.COMException or UnauthorizedAccessException) { return []; }
+    }
+
     private static string VideoCards()
     {
         try { using var q = new System.Management.ManagementObjectSearcher("SELECT Name, PNPDeviceID FROM Win32_VideoController"); return string.Join(" | ", q.Get().Cast<System.Management.ManagementBaseObject>().Select(o => $"{o["Name"]} {o["PNPDeviceID"]}")); }

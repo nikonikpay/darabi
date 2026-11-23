@@ -4,7 +4,7 @@ namespace Mazesta.Diagnostics.Storage;
 /// <summary>
 /// Final SMART re-check (spec 4.2 #11, 5.3): every physical drive's health as Windows reads it from SMART, run last in the queue so it sees what
 /// the tests did to the drives. A drive Windows calls Warning or Unhealthy, or one that reports uncorrected read/write errors, fails the test -
-/// each such drive is one error. Wear, temperatures and power-on hours are reported as evidence, never judged here. It only reads: nothing is
+/// each such drive is one error. A drive whose life left (100 - wear) is under 60 % fails too; under 80 % the test is Inconclusive (orange), not failed. Temperatures and power-on hours are evidence, never judged here. It only reads: nothing is
 /// written to any drive. No drive reporting a health status is Unsupported, not a pass. NVMe drives are also asked for their own health log:
 /// a critical-warning bit or a media (unrecovered data integrity) error it counts is one error for the drive, as Windows' own verdict is.
 /// </summary>
@@ -30,11 +30,12 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives, INvmeHealthS
             try { logs = nvme.Read(); } catch (Exception e) when (e is not OperationCanceledException) { request.NoteWarning("Log_Smart_NvmeFailed", e.Message); }
         }
         // Every drive is named in full, failing ones first and marked, so whoever reads the result knows which disk it is about without knowing models.
-        var failing = new List<string>();
+        var failing = new List<string>(); var declining = new List<string>();
         foreach (var d in reported)
         {
             request.Note("Log_Smart_Drive", d.Serial is { } s ? $"S/N {s}" : null, d.Label, "@Detail_Drive_" + d.Status);
             if (NeedsAttention(d)) { failing.Add(d.Label); request.NoteError("Log_Smart_DriveBad", null, d.Label); }
+            else if (Declining(d)) { declining.Add(d.Label); request.NoteWarning("Log_Smart_Declining", null, d.Label); }
         }
         foreach (var l in logs.Where(l => NvmeNeedsAttention(l.Log)))
         {
@@ -44,8 +45,9 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives, INvmeHealthS
         }
         long bad = reported.Count(NeedsAttention) + logs.Count(l => NvmeNeedsAttention(l.Log));
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        var lines = failing.Select(f => $"needs attention: {f}").Concat(reported.OrderByDescending(NeedsAttention).Select(Describe)).Concat(logs.Select(l => DescribeNvme(l, LabelOf(l, reported))));
-        return Task.FromResult(new TestRunResult(Definition.Id, bad > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, bad, string.Join("; ", lines)));
+        var lines = failing.Select(f => $"needs attention: {f}").Concat(declining.Select(f => $"health declining: {f}")).Concat(reported.OrderByDescending(NeedsAttention).Select(Describe)).Concat(logs.Select(l => DescribeNvme(l, LabelOf(l, reported))));
+        var outcome = bad > 0 ? TestOutcome.Failed : declining.Count > 0 ? TestOutcome.Inconclusive : TestOutcome.Passed;   // orange: health under 80 %, red (Failed): under 60 % or a fault
+        return Task.FromResult(new TestRunResult(Definition.Id, outcome, started, request.Clock.UtcNow, bad, string.Join("; ", lines)));
     }
 
     /// <summary>The NVMe log's drive as the health list names it (same serial, else same model); its bare model when Windows did not list it.</summary>
@@ -54,7 +56,8 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives, INvmeHealthS
            ?? $"{l.Model ?? "NVMe"} (disk {l.DiskNumber})";
     private static string Key(string serial) => new([.. serial.Where(char.IsLetterOrDigit)]);
 
-    internal static bool NeedsAttention(DriveHealth d) => Core.Health.DriveAttention.Needs(d);
+    internal static bool NeedsAttention(DriveHealth d) => Core.Health.DriveAttention.Needs(d) || Core.Health.DriveAttention.HealthPercent(d.WearPercent) < Core.Health.DriveAttention.FailBelow;
+    internal static bool Declining(DriveHealth d) => Core.Health.DriveAttention.HealthPercent(d.WearPercent) < Core.Health.DriveAttention.WatchBelow;
     internal static bool NvmeNeedsAttention(NvmeHealthLog l) => l.CriticalWarning != 0 || l.MediaErrors > 0;
 
     internal static string DescribeNvme(NvmeDriveHealth d, string label)
@@ -68,6 +71,7 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives, INvmeHealthS
         if (d.TemperatureC is { } t) parts.Add(string.Create(CultureInfo.InvariantCulture, $"{t:0} °C") + (d.TemperatureMaxC is { } max ? string.Create(CultureInfo.InvariantCulture, $" (max {max:0} °C)") : ""));
         if (d.PowerOnHours is { } h) parts.Add($"power-on {h} h");
         if (d.ReadErrorsUncorrected is not null || d.WriteErrorsUncorrected is not null) parts.Add($"uncorrected read/write errors {d.ReadErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"}/{d.WriteErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"}");
+        if (d.BadSectors is { } bad) parts.Add($"replaced, pending or unreadable sectors {bad}");
         return string.Join(", ", parts);
     }
 }

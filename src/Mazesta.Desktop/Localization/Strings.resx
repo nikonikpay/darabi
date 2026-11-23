@@ -109,7 +109,7 @@
     <value>Sensors: failed — {0}</value>
   </data>
   <data name="Provider.PawnIoMissing" xml:space="preserve">
-    <value>PawnIO driver is not installed and the automatic install did not succeed. CPU temperatures and clocks are unavailable. Install PawnIO from its official page, then restart.</value>
+    <value>PawnIO driver is not installed and the automatic install did not succeed. CPU temperatures and clocks are unavailable. Press "Install PawnIO by hand", then Install in the window that opens, and restart the program.</value>
   </data>
   <data name="Provider.NotElevated" xml:space="preserve">
     <value>Not running as administrator. CPU and motherboard sensors are unavailable.</value>
@@ -131,6 +131,9 @@
   </data>
   <data name="Banner_SensorsSlow" xml:space="preserve">
     <value>The sensors are not loading. If a flash drive or an external hard disk is plugged in, unplug it. The rest keeps loading while you use the app.</value>
+  </data>
+  <data name="Banner_InstallPawnIoManual" xml:space="preserve">
+    <value>Install PawnIO by hand</value>
   </data>
   <data name="Banner_InstallPawnIo" xml:space="preserve">
     <value>Open pawnio.eu</value>
@@ -2710,6 +2713,16 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Send_NoService" xml:space="preserve"><value>Type the service number (in the top bar or here) first.</value></data>
   <data name="Checks_Wifi" xml:space="preserve"><value>Wi-Fi</value></data>
   <data name="Checks_Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="Checks_Usb_Sub" xml:space="preserve"><value>a device in each port</value></data>
+  <data name="Checks_Usb_Text" xml:space="preserve"><value>Press Start: every port that already holds a recognised device is ticked at once. Then plug a flash drive, a disk or any USB device into each empty port in turn; every port where Windows recognises it is ticked as working, with the device&apos;s name. A port that stays unticked recognised nothing.</value></data>
+  <data name="Checks_Usb_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Checks_Usb_Waiting" xml:space="preserve"><value>Waiting: plug a device into a port.</value></data>
+  <data name="Checks_Usb_Port" xml:space="preserve"><value>Port {0} · hub {1}</value></data>
+  <data name="Checks_Usb_NoPort" xml:space="preserve"><value>Port not reported</value></data>
+  <data name="Checks_Usb_Count" xml:space="preserve"><value>{0} ports working</value></data>
+  <data name="Checks_Usb_Error" xml:space="preserve"><value>Windows reports a problem with this device</value></data>
+  <data name="Help_Checks_Usb" xml:space="preserve"><value>Finds which USB ports of the case or laptop work: after Start, each port holding a device Windows recognises (a flash drive, a disk, a mouse) is ticked with the device&apos;s name, whether it was plugged in before or during the check. Moving one flash drive from port to port ticks each port in turn.</value></data>
+  <data name="HelpHow_Checks_Usb" xml:space="preserve"><value>Press Start.|Plug a flash drive or any USB device into one port and wait for its tick.|Unplug it and move to the next port, until every port is tried.|Mark the card as fine, or as a problem if a port stayed unticked.</value></data>
   <data name="Checks_Usb" xml:space="preserve"><value>USB ports</value></data>
   <data name="Checks_VideoOut" xml:space="preserve"><value>Video out (HDMI)</value></data>
   <data name="Checks_Lan" xml:space="preserve"><value>Wired network (LAN)</value></data>
@@ -2911,6 +2924,10 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_GpuThermalSlowdown_Text" xml:space="preserve"><value>The driver lowered the card's clock because it reached its temperature target. Clean the card's fans and heatsink and check the case airflow; on an older card the paste and pads may need replacing.</value></data>
   <data name="Check_GpuPowerLimited" xml:space="preserve"><value>The graphics card runs at its power limit</value></data>
   <data name="Check_GpuPowerLimited_Text" xml:space="preserve"><value>Under full load the card ran at its power limit. That is how graphics cards are built to run, not a fault.</value></data>
+  <data name="Check_GpuRunsHot" xml:space="preserve"><value>The graphics card runs very hot</value></data>
+  <data name="Check_GpuRunsHot_Text" xml:space="preserve"><value>This card's driver does not report when it slows the card, so it is judged by its temperature alone: under load it reached a temperature at which cards of this kind slow themselves, or came close to it. Clean the card's fans and heatsink and check the case airflow; on an older card the paste and pads may need replacing.</value></data>
+  <data name="Detail_Word_BadSectors" xml:space="preserve"><value>replaced, pending or unreadable sectors</value></data>
+  <data name="Detail_Gpu_Twice" xml:space="preserve"><value>Each of {0} batches was computed twice and all {1} results compared on the card itself: {2} differed</value></data>
   <data name="Check_GpuHeatOk" xml:space="preserve"><value>The graphics card was not held back by heat</value></data>
   <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>The card stayed below the temperature at which it slows itself.</value></data>
   <data name="Check_GpuHotspotGap" xml:space="preserve"><value>Hot spot far above the core</value></data>
@@ -3205,6 +3222,8 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Cpu_Compressed" xml:space="preserve"><value>Compressed to {0}% of its size</value></data>
   <data name="Detail_Cpu_Coverage" xml:space="preserve"><value>Ran on {0} of {1} logical processors</value></data>
   <data name="Detail_Cpu_CoverageSplit" xml:space="preserve"><value>Ran on {0} of {1} logical processors ({2})</value></data>
+  <data name="Detail_Cpu_CycleWork" xml:space="preserve"><value>Each visit runs three kinds of work, a third each: matrix products, vector multiply-adds ({0}), integer arithmetic</value></data>
+  <data name="Detail_Cpu_WrongByWork" xml:space="preserve"><value>Wrong results by kind of work: matrix {0}, vector {1}, integer {2}</value></data>
   <data name="Detail_Cpu_Cycle" xml:space="preserve"><value>One core at a time over {0} physical cores, {1} s each, {2} load, matrix {3}×{3}</value></data>
   <data name="Detail_Cpu_ECores" xml:space="preserve"><value>E-cores {0} of {1} threads</value></data>
   <data name="Detail_Cpu_EveryCore" xml:space="preserve"><value>Every core was tested</value></data>
@@ -3261,6 +3280,11 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Mem_Faded" xml:space="preserve"><value>First faded bytes in buffer block {0} (at {1} MiB) after holding “{2}”</value></data>
   <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}</value></data>
   <data name="Detail_Mem_HeldShort" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}: shorter than the {2} s a leaking cell needs to show</value></data>
+  <data name="Detail_Mem_Share" xml:space="preserve"><value>{0}% of the {1} MiB of installed RAM was tested</value></data>
+  <data name="Detail_Mem_ShareLow" xml:space="preserve"><value>{0}% of the {1} MiB of installed RAM was tested: less than the half a result needs. Close other programs and run it again, or test the whole RAM from boot</value></data>
+  <data name="Detail_Mem_ReadAgainRight" xml:space="preserve"><value>Read again, the same block was right: the fault was in reading the RAM or on the way, not a cell holding a wrong value</value></data>
+  <data name="Detail_Mem_ReadAgainWrong" xml:space="preserve"><value>Read again, the word at +0x{0} is still wrong: expected 0x{1}, read 0x{2}; {3} bit(s) differ (bit {4})</value></data>
+  <data name="Detail_L_RamTemp" xml:space="preserve"><value>RAM temperature</value></data>
   <data name="Detail_Mem_Locked" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM</value></data>
   <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM; Windows would not lock the rest, so they may have gone to disk while waiting and their result says nothing about the RAM</value></data>
   <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>First mismatch in buffer block {0} (at {1} MiB) with the pattern “{2}”</value></data>
@@ -3410,6 +3434,19 @@ Cancel: stop.</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>Fan control</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colour and effect of the memory, graphics card, board, fans and LED strips.</value></data>
   <data name="Rgb_Note" xml:space="preserve"><value>Press the button to find the lights. The makers' own lighting programs (Armoury Crate, MSI Center, iCUE and others) are disabled while the lights are Mazesta's and put back after. Your settings are kept and applied at every start.</value></data>
+  <data name="Rgb_Rescan" xml:space="preserve"><value>Search again from the start</value></data>
+  <data name="Rgb_Sep" xml:space="preserve"><value>, </value></data>
+  <data name="Rgb_Scan_Title" xml:space="preserve"><value>The search from the start ({0})</value></data>
+  <data name="Rgb_Scan_None" xml:space="preserve"><value>No part with lights was found.</value></data>
+  <data name="Rgb_Scan_MakersStopped" xml:space="preserve"><value>Lighting programs that were in the way and are now disabled (they come back when you let go): {0}</value></data>
+  <data name="Rgb_Scan_MakersRunning" xml:space="preserve"><value>Lighting programs still running because you chose to keep them; they can hide parts from this search: {0}</value></data>
+  <data name="Rgb_Scan_Monitors" xml:space="preserve"><value>Monitoring programs are open and read the same chips, so they can hide parts: {0}</value></data>
+  <data name="Rgb_Scan_MonitorsClosed" xml:space="preserve"><value>Monitoring programs closed for this search: {0}</value></data>
+  <data name="Rgb_Scan_CloseAndSearch" xml:space="preserve"><value>Close them and search again</value></data>
+  <data name="Rgb_Scan_Missing" xml:space="preserve"><value>Not found: {0}</value></data>
+  <data name="Rgb_Scan_MissingWhy" xml:space="preserve"><value>Not found does not mean broken: a board, memory or card without lights is never listed. If yours has lights, close the programs named above and search again, then check that the app runs as administrator.</value></data>
+  <data name="Rgb_Scan_Clear" xml:space="preserve"><value>Nothing was in the way.</value></data>
+  <data name="Rgb_Scan_Cards" xml:space="preserve"><value>Graphics cards Windows lists: {0}</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>Let go (give the lights back)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>Do not stop the makers&apos; programs</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>These are open and are closed while you use this page: {0}</value></data>
@@ -3442,7 +3479,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>number of LEDs</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>up to {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>Set</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>Each output starts at 30 LEDs; if your strip has another number, enter it.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>Each output starts at 70 LEDs; if your strip has another number, enter it.</value></data>
   <data name="Rgb_Connecting" xml:space="preserve"><value>Starting the lights... the first search takes a little while.</value></data>
   <data name="Rgb_Dark_Off" xml:space="preserve"><value>Switch all off (the scene is kept)</value></data>
   <data name="Rgb_Dark_On" xml:space="preserve"><value>Switch the scene back on</value></data>
@@ -3943,6 +3980,9 @@ Cancel: stop.</value></data>
   <data name="Done_Overall_Attention" xml:space="preserve"><value>The parts work, but a few things are worth a look.</value></data>
   <data name="Done_Overall_Problem" xml:space="preserve"><value>A problem was found. The part with a red mark needs attention.</value></data>
   <data name="Done_Level_Good" xml:space="preserve"><value>Healthy</value></data>
+  <data name="Done_Level_Partial" xml:space="preserve"><value>Test passed</value></data>
+  <data name="Done_NeedTime" xml:space="preserve"><value>{0}: no error was seen. Warning: this {2}-minute run was too short for every part of the test; allow about {1} minutes for a complete result.</value></data>
+  <data name="Done_Overall_Partial" xml:space="preserve"><value>The parts work and nothing wrong was seen; some tests need more time for a complete result.</value></data>
   <data name="Done_Level_Attention" xml:space="preserve"><value>Worth a look</value></data>
   <data name="Done_Level_Problem" xml:space="preserve"><value>Problem</value></data>
   <data name="Done_Tests" xml:space="preserve"><value>tests passed</value></data>
@@ -4033,7 +4073,7 @@ Cancel: stop.</value></data>
   <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>A profile applied by itself when a full-screen game or a program you list (Lumion, D5 Render, 3ds Max…) starts, and taken off when it ends. The background monitor does this.</value></data>
   <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>The main garden scene with its moving camera, to compare settings: apply a profile, run it, change the settings, run it again. Automatic undervolt and overclock find the card's own limits step by step under load.</value></data>
   <data name="Help_Tuning_Memory" xml:space="preserve"><value>Memory timings and XMP, DOCP or EXPO profiles are set in the BIOS; the button restarts the computer straight into BIOS setup.</value></data>
-  <data name="Help_Nav_Lights" xml:space="preserve"><value>Colours and effects of the RGB lights of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI and more), for all devices at once or one by one.</value></data>
+  <data name="Help_Nav_Lights" xml:space="preserve"><value>Colours and effects of the RGB lights of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI and more), for all devices at once or one by one. When a part is not found, "Search again from the start" looks for every part afresh and names the programs that stand in the way.</value></data>
   <data name="Help_Nav_Fans" xml:space="preserve"><value>The board's fan outputs: left to the board, a fixed speed, or a curve of temperature against speed that you draw. Ready profiles put one setting on every fan.</value></data>
   <data name="Help_Dns_Title" xml:space="preserve"><value>The DNS each adapter uses now. The test times every known DNS on this connection and can set the fastest; or pick one from the list.</value></data>
   <data name="Help_NetFix_Title" xml:space="preserve"><value>Finds where the internet stops (adapter, router, internet, DNS, a web page, proxy) without changing anything, then offers the usual repairs: clear the proxy, set the DNS, empty the DNS cache, reset the network.</value></data>
@@ -4276,6 +4316,7 @@ Cancel: stop.</value></data>
   <data name="HelpHow_Tuning_FanCurve_Title" xml:space="preserve"><value>Open Tuning and find the fan chart.|Pick a ready-made profile, or drag the points to set the speed at each temperature.|Save your own curve under a name; press Automatic to give the fans back to the card.</value></data>
   <data name="Log_Smart_Drive" xml:space="preserve"><value>{0}: Windows reports it as {1}.</value></data>
   <data name="Log_Smart_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}. Back up its data now.</value></data>
+  <data name="Log_Smart_Declining" xml:space="preserve"><value>This drive's health is declining: {0}. Keep its data backed up and plan a replacement.</value></data>
   <data name="Log_Smart_NvmeBad" xml:space="preserve"><value>This drive's own health log reports a critical warning or media errors: {0}. Back up its data now.</value></data>
   <data name="Detail_Sto_DriveAt" xml:space="preserve"><value>Drive {0}</value></data>
   <data name="Detail_Sto_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}</value></data>

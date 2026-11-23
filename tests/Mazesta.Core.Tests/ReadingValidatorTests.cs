@@ -27,6 +27,12 @@ public class ReadingValidatorTests
     [InlineData(SensorKind.SmallData, 0.0, DataQuality.Ok)]
     [InlineData(SensorKind.Timing, -3.0, DataQuality.Ok)]
     public void Ranges(SensorKind kind, double value, DataQuality expected) => Assert.Equal(expected, ReadingValidator.Validate(kind, value));
+    [Theory]
+    [InlineData(SensorRole.BoardTemp, 118.0, DataQuality.Invalid)]
+    [InlineData(SensorRole.ChipsetTemp, 110.0, DataQuality.Invalid)]
+    [InlineData(SensorRole.BoardTemp, 85.0, DataQuality.Ok)]
+    [InlineData(SensorRole.CpuPackageTemp, 105.0, DataQuality.Ok)]   // a CPU really can reach this
+    public void An_unwired_board_input_is_not_a_temperature(SensorRole role, double value, DataQuality expected) => Assert.Equal(expected, ReadingValidator.Validate(SensorKind.Temperature, value, role));
     [Fact] public void Null_is_missing() => Assert.Equal(DataQuality.Missing, ReadingValidator.Validate(SensorKind.Temperature, null));
     [Fact] public void NaN_and_infinity_are_invalid() { Assert.Equal(DataQuality.Invalid, ReadingValidator.Validate(SensorKind.Fan, double.NaN)); Assert.Equal(DataQuality.Invalid, ReadingValidator.Validate(SensorKind.Fan, double.PositiveInfinity)); }
     [Fact] public void ProviderStatus_factories()
