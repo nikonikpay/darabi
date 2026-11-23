@@ -139,6 +139,7 @@ internal sealed class TrayContext : ApplicationContext
             {
                 var now = DateTimeOffset.UtcNow;
                 var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
+                alerts.AddRange((await StalledDisksAsync()).Select(TrayText.DiskStalled));
                 check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
                 foreach (var a in alerts) Notify(a);
                 CheckScreen(now);
@@ -178,6 +179,21 @@ internal sealed class TrayContext : ApplicationContext
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "health", null, null, [], [], e.Message); }
         End(check);
         Schedule(_health, TimeSpan.FromMinutes(_intervals.HealthMinutes));
+    }
+
+    private readonly HashSet<string> _stalled = [];
+
+    /// <summary>The disks that sat at ~100 % active time moving almost nothing for the whole 6-second look and were not already announced; one that recovers is announced again if it sticks again.</summary>
+    private async Task<List<string>> StalledDisksAsync()
+    {
+        try
+        {
+            var all = await Within(Task.Run(() => DiskActivity.Sample(new WmiQuery(), 6)), TimeSpan.FromSeconds(40));
+            var now = all.Where(kv => DiskStall.IsStalled(kv.Value)).Select(kv => kv.Key).ToList();
+            _stalled.RemoveWhere(n => !now.Contains(n));
+            return [.. now.Where(_stalled.Add)];
+        }
+        catch (TimeoutException) { return []; }
     }
 
     /// <summary>The probe of each internal drive that has a letter (the first one it has; a drive removed or not ready is skipped), by the drive's index in <paramref name="raw"/>.

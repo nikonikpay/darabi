@@ -310,6 +310,10 @@ internal static class TrayText
                $"Drive {DriveName(d)}: is far too slow (write {p.WriteMBps:0} and read {p.ReadMBps:0} MB/s, random read {p.RandomMs:0.0} ms) although its health reads fine. It slows the whole system."),
     };
 
+    /// <param name="instance">Windows' name for the disk: its number, then its letters ("0 C: D:").</param>
+    public static string DiskStalled(string instance) => T($"دیسک {instance} روی ۱۰۰٪ فعالیت گیر کرده و تقریباً چیزی نمی‌خواند یا نمی‌نویسد (کمتر از ۲ مگابایت بر ثانیه). سیستم کند یا قفل می‌شود؛ ممکن است دیسک یا درایور آن مشکل داشته باشد. از اطلاعات آن نسخهٔ پشتیبان بگیرید.",
+        $"Disk {instance} is stuck at 100% active time while moving almost nothing (under 2 MB/s). The system slows or freezes; the disk or its driver may be faulty. Back up its data.");
+
     public static string DriveName(TrayDrive d) => d.Letters is null ? d.Name : $"{d.Name} ({d.Letters})";
 
     public static string Status(string? status) => status switch
