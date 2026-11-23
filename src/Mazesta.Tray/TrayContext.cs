@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using Mazesta.Core.Health; using Mazesta.Core.Tray; using Mazesta.Core.Providers; using Mazesta.Core.Time; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Wmi; using Mazesta.Persistence;
+using Mazesta.Core.Health; using Mazesta.Diagnostics.Storage; using Mazesta.Core.Tray; using Mazesta.Core.Providers; using Mazesta.Core.Time; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Wmi; using Mazesta.Persistence;
 using Microsoft.Extensions.Logging.Abstractions;
 namespace Mazesta.Tray;
 
@@ -156,18 +156,48 @@ internal sealed class TrayContext : ApplicationContext
         TrayCheck check;
         try
         {
-            var drives = (await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2)))
+            var raw = await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2));
+            var drives = raw
                 .Select(d => new TrayDrive(d.Name, DriveAttention.Verdict(d.Status, d.WearPercent), d.WearPercent, d.TemperatureC, DriveAttention.Needs(d) || DriveAttention.Verdict(d.Status, d.WearPercent) == "Unhealthy", d.Letters)).ToList();
             var problems = drives.Where(d => d.NeedsAttention || d.Status == "Warning").Select(TrayText.DriveProblem).ToList();
             // A drive's problem is announced once; it is announced again only after it has cleared and come back.
             foreach (var d in drives)
                 if (!d.NeedsAttention && d.Status != "Warning") _drivesAnnounced.Remove(d.Name);
                 else if (_drivesAnnounced.Add(d.Name)) Notify(TrayText.DriveProblem(d));
+            // The practical check besides SMART: can it be written to, does it read back what was written, is it far slower than a drive of its kind.
+            foreach (var (i, p) in await ProbeDrivesAsync(raw))
+            {
+                var d = drives[i]; string key = d.Name + "|probe";
+                if (p.Status is ProbeStatus.Ok or ProbeStatus.Skipped) { _drivesAnnounced.Remove(key); continue; }
+                string text = TrayText.DriveProbe(d, p); problems.Add(text);
+                if (_drivesAnnounced.Add(key)) Notify(text);
+                drives[i] = d with { Status = p.Status == ProbeStatus.Slow ? (d.Status == "Unhealthy" ? d.Status : "Warning") : "Unhealthy", NeedsAttention = d.NeedsAttention || p.Status != ProbeStatus.Slow };
+            }
             check = new(DateTimeOffset.UtcNow, "health", null, null, drives, problems, null);
         }
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "health", null, null, [], [], e.Message); }
         End(check);
         Schedule(_health, TimeSpan.FromMinutes(_intervals.HealthMinutes));
+    }
+
+    /// <summary>The probe of each internal drive that has a letter (the first one it has; a drive removed or not ready is skipped), by the drive's index in <paramref name="raw"/>.
+    /// A probe that does not finish in 20 minutes is left out of the check rather than holding the tray.</summary>
+    private static async Task<List<(int Index, DriveProbeResult Result)>> ProbeDrivesAsync(IReadOnlyList<DriveHealth> raw)
+    {
+        try
+        {
+            return await Within(Task.Run(() =>
+            {
+                var done = new List<(int, DriveProbeResult)>();
+                for (int i = 0; i < raw.Count; i++)
+                {
+                    if (System.Text.RegularExpressions.Regex.Matches(raw[i].Letters ?? "", "[A-Za-z]:").Select(m => m.Value + "\\").FirstOrDefault(r => { try { return new DriveInfo(r).DriveType == DriveType.Fixed; } catch (ArgumentException) { return false; } }) is { } root)
+                        done.Add((i, DriveProbe.Run(root, raw[i].Media)));
+                }
+                return done;
+            }), TimeSpan.FromMinutes(20));
+        }
+        catch (TimeoutException) { return []; }
     }
 
     /// <summary>The work, or a timeout once <paramref name="limit"/> has passed: a sensor open or a WMI query that never returns is reported as a failed

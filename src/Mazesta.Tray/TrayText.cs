@@ -1,4 +1,4 @@
-using System.Globalization; using Mazesta.Core.Health; using Mazesta.Persistence;
+using System.Globalization; using Mazesta.Core.Health; using Mazesta.Diagnostics.Storage; using Mazesta.Persistence;
 namespace Mazesta.Tray;
 
 /// <summary>The tray's wording in the app's two languages (Persian by default, English when appconfig.json says "en"). Every entry is read when a window or menu is built, so a language change in the app shows in the tray without restarting it. Values keep Latin digits, as in the app.</summary>
@@ -300,6 +300,15 @@ internal static class TrayText
         : d.Status is "Warning" or "Unhealthy"
         ? T($"دیسک {DriveName(d)}: ویندوز از روی SMART آن را «{Status(d.Status)}» گزارش کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید.", $"Drive {DriveName(d)}: Windows reports it as \"{Status(d.Status)}\" from its SMART data. Back up its data.")
         : T($"دیسک {DriveName(d)}: خطای اصلاح‌نشده‌ی خواندن یا نوشتن ثبت کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید.", $"Drive {DriveName(d)}: logged an uncorrected read or write error. Back up its data.");
+
+    /// <summary>What the daily practical check of a drive found: it cannot be written to, it fails or returns wrong data, or it is far slower than it should be.</summary>
+    public static string DriveProbe(TrayDrive d, DriveProbeResult p) => p.Status switch
+    {
+        ProbeStatus.ReadOnly => T($"دیسک {DriveName(d)}: فقط‌خواندنی شده است و نمی‌شود روی آن نوشت. این معمولاً نشانهٔ خرابی است؛ از اطلاعات آن نسخهٔ پشتیبان بگیرید.", $"Drive {DriveName(d)}: has become read-only and cannot be written to. That is usually a sign of failure; back up its data."),
+        ProbeStatus.IoError => T($"دیسک {DriveName(d)}: در آزمون نوشتن و خواندن خطا داد ({p.Detail}). از اطلاعات آن نسخهٔ پشتیبان بگیرید.", $"Drive {DriveName(d)}: failed a write and read test ({p.Detail}). Back up its data."),
+        _ => T($"دیسک {DriveName(d)}: بیش از حد کند است (نوشتن {p.WriteMBps:0} و خواندن {p.ReadMBps:0} مگابایت بر ثانیه، خواندن تصادفی {p.RandomMs:0.0} میلی‌ثانیه)، با اینکه سلامتش خوب گزارش می‌شود. سیستم را کند می‌کند.",
+               $"Drive {DriveName(d)}: is far too slow (write {p.WriteMBps:0} and read {p.ReadMBps:0} MB/s, random read {p.RandomMs:0.0} ms) although its health reads fine. It slows the whole system."),
+    };
 
     public static string DriveName(TrayDrive d) => d.Letters is null ? d.Name : $"{d.Name} ({d.Letters})";
 

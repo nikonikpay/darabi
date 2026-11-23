@@ -4316,6 +4316,7 @@ Cancel: stop.</value></data>
   <data name="HelpHow_Tuning_FanCurve_Title" xml:space="preserve"><value>Open Tuning and find the fan chart.|Pick a ready-made profile, or drag the points to set the speed at each temperature.|Save your own curve under a name; press Automatic to give the fans back to the card.</value></data>
   <data name="Log_Smart_Drive" xml:space="preserve"><value>{0}: Windows reports it as {1}.</value></data>
   <data name="Log_Smart_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}. Back up its data now.</value></data>
+  <data name="Log_Smart_Declining" xml:space="preserve"><value>This drive's health is declining: {0}. Keep its data backed up and plan a replacement.</value></data>
   <data name="Log_Smart_NvmeBad" xml:space="preserve"><value>This drive's own health log reports a critical warning or media errors: {0}. Back up its data now.</value></data>
   <data name="Detail_Sto_DriveAt" xml:space="preserve"><value>Drive {0}</value></data>
   <data name="Detail_Sto_DriveBad" xml:space="preserve"><value>This drive needs attention: {0}</value></data>

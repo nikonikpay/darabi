@@ -230,7 +230,7 @@ public class CpuSpecTests
         Assert.Equal((code, level), (f.Code, f.Level));
     }
     private static Mazesta.Core.Providers.DriveHealth Drive(string? status, int? wear, long? mediaErrors = null, string bus = "NVMe") => new("SSD", null, status, wear, 40, 60, mediaErrors, 0, 1000, bus);
-    [Theory, InlineData("Healthy", 5, FindingCode.DriveHealthy, FindingLevel.Good), InlineData("Healthy", 75, FindingCode.DriveWorn, FindingLevel.Attention),
+    [Theory, InlineData("Healthy", 5, FindingCode.DriveHealthy, FindingLevel.Good), InlineData("Healthy", 30, FindingCode.DriveWorn, FindingLevel.Attention), InlineData("Healthy", 41, FindingCode.DriveWorn, FindingLevel.Problem), InlineData("Healthy", 75, FindingCode.DriveWorn, FindingLevel.Problem),
         InlineData("Healthy", 95, FindingCode.DriveWorn, FindingLevel.Problem), InlineData("Warning", 5, FindingCode.DriveUnhealthy, FindingLevel.Attention),
         InlineData("Unhealthy", 5, FindingCode.DriveUnhealthy, FindingLevel.Problem), InlineData("Healthy", null, FindingCode.DriveHealthy, FindingLevel.Good)]
     public void Drive_health_is_judged_by_its_own_report(string status, int? wear, FindingCode code, FindingLevel level)

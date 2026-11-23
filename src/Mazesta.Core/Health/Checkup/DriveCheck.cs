@@ -7,9 +7,6 @@ namespace Mazesta.Core.Health.Checkup;
 /// </summary>
 public static class DriveCheck
 {
-    /// <summary>Life left at or below these is worth planning a replacement for, and then urgent (makers rate the drive's endurance by it).</summary>
-    public const int LifeAttention = 30, LifeProblem = 10;
-
     public static IReadOnlyList<Finding> Evaluate(IEnumerable<DriveHealth> drives) => [.. drives.Select(One).OfType<Finding>()];
 
     private static Finding? One(DriveHealth d)
@@ -24,8 +21,8 @@ public static class DriveCheck
         Finding F(FindingCode c, FindingLevel lv) => new(c, lv, HardwareKind.Storage, m, d.Label);
         if (d.Status == "Unhealthy") return F(FindingCode.DriveUnhealthy, FindingLevel.Problem);
         if (DriveAttention.Needs(d)) return F(FindingCode.DriveUnhealthy, FindingLevel.Attention);
-        if (life <= LifeProblem) return F(FindingCode.DriveWorn, FindingLevel.Problem);
-        if (life <= LifeAttention) return F(FindingCode.DriveWorn, FindingLevel.Attention);
+        if (life < DriveAttention.FailBelow) return F(FindingCode.DriveWorn, FindingLevel.Problem);       // the same limits as the tray and the SMART test: under 60 % red, under 80 % orange
+        if (life < DriveAttention.WatchBelow) return F(FindingCode.DriveWorn, FindingLevel.Attention);
         return d.Status == "Healthy" || life is not null ? F(FindingCode.DriveHealthy, FindingLevel.Good) : null;
     }
 
