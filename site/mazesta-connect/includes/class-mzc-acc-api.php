@@ -109,10 +109,17 @@ final class MZC_Acc_Api
         return array($v, null);
     }
 
+    /** The staff program's offline queue sends each new payment or draft with its own id (header X-MZC-Op); a second send of the same id must not book it twice. The meta table keeps id -> record. */
+    private static function op_key($req) { $o = (string) $req->get_header('x_mzc_op'); return preg_match('/^[A-Za-z0-9\-]{8,64}$/', $o) ? 'op:' . substr(md5($o), 0, 32) : ''; }
+    private static function op_seen($key) { $db = $key !== '' ? MZC_Crm_Db::db() : null; $v = $db ? $db->get_var($db->prepare('SELECT v FROM `' . MZC_Crm_Db::t('meta') . '` WHERE k = %s', $key)) : null; return $v === null ? 0 : (int) $v; }
+    private static function op_keep($key, $id) { $db = $key !== '' ? MZC_Crm_Db::db() : null; if ($db) { $db->query($db->prepare('REPLACE INTO `' . MZC_Crm_Db::t('meta') . '` (k, v) VALUES (%s, %s)', $key, (string) (int) $id)); } }
+
     public static function rest_invoice_save($req)
     {
         $a = self::auth($req, 2); if ($a instanceof WP_REST_Response) { return $a; }
         $p = MZC_Api::body($req); $id = MZC_Api::n($p, 'id');
+        $op = $id ? '' : self::op_key($req);
+        if ($op !== '' && ($was = self::op_seen($op)) && ($v = MZC_Acc::invoice($was))) { return MZC_Api::ok(self::invoice_out($v, $a, true) + array('duplicate' => true), 200); }
         if ($id) { list(, $e) = self::current($p, $a); if ($e) { return $e; } }
         $d = array();
         foreach (array('kind', 'title', 'notes') as $k) { if (array_key_exists($k, $p)) { $d[$k] = MZC_Api::s($p, $k, $k === 'notes' ? 2000 : 190); } }
@@ -131,7 +138,7 @@ final class MZC_Acc_Api
         }
         $r = MZC_Acc::save_invoice($id, $d, $a['id']);
         if (!is_int($r)) { return self::fail($r, 422); }
-        $v = MZC_Acc::invoice($r);
+        $v = MZC_Acc::invoice($r); self::op_keep($op, $r);
         MZC_Api::log($a, $id ? 'update' : 'create', 'invoice', $r, $v['kind'] . ' ' . ($v['no'] ?: $v['title']));
         return MZC_Api::ok(self::invoice_out($v, $a, true), $id ? 200 : 201);
     }
@@ -205,6 +212,8 @@ final class MZC_Acc_Api
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $p = MZC_Api::body($req); $id = MZC_Api::n($p, 'id'); $old = $id ? MZC_Acc::payment($id) : null;
         if ($id && !$old) { return self::fail('پرداخت پیدا نشد.', 404); }
+        $op = $id ? '' : self::op_key($req);
+        if ($op !== '' && ($was = self::op_seen($op)) && ($y = MZC_Acc::payment($was))) { return MZC_Api::ok(self::payment_out($y) + array('duplicate' => true), 200); }
         $dir = isset($p['direction']) ? (string) $p['direction'] : ($old ? $old['direction'] : 'in');
         // a customer's deposit may be taken by whoever handles payments; everything else (refunds, suppliers, expenses, changing old entries) is the accountant's
         $deposit = !$old && $dir === 'in' && MZC_Api::n($p, 'customer_id') && !MZC_Api::n($p, 'vendor_id');
@@ -217,7 +226,7 @@ final class MZC_Acc_Api
         if (isset($p['cheque']) && is_array($p['cheque'])) { $c = $p['cheque']; $d['cheque'] = array('no' => MZC_Api::s($c, 'no', 40), 'bank' => MZC_Api::s($c, 'bank', 80), 'due_at' => MZC_Api::d($c, 'due_at')); if (!empty($c['account'])) { $d['cheque']['account'] = MZC_Api::s($c, 'account', 120); } }
         $r = MZC_Acc::save_payment($id, $d, $a['id']);
         if (!is_int($r)) { return self::fail($r, 422); }
-        $y = MZC_Acc::payment($r);
+        $y = MZC_Acc::payment($r); self::op_keep($op, $r);
         MZC_Api::log($a, $id ? 'update' : 'create', 'payment', $r, $y['direction'] . ' ' . $y['amount']);
         return MZC_Api::ok(self::payment_out($y), $id ? 200 : 201);
     }
