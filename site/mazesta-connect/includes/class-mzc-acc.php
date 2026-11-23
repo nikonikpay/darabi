@@ -459,6 +459,20 @@ final class MZC_Acc
         return self::run($rows);
     }
 
+    /** What the customer sees of their own final sale and return invoices (newest first): numbers, dates, lines, what was paid. Never a buy price, never a draft or void one. */
+    public static function portal_invoices($cid)
+    {
+        $db = MZC_Crm_Db::db(); if (!$db) { return array(); }
+        $rows = $db->get_results($db->prepare('SELECT v.id, v.kind, v.no, v.at, v.discount, v.tax, v.total, ' . self::paid_sql() . ' AS paid FROM `' . self::t('invoices') . "` v WHERE v.customer_id = %d AND v.status = 'final' AND v.kind IN ('sale','return') ORDER BY v.at DESC, v.id DESC LIMIT 100", (int) $cid), ARRAY_A) ?: array();
+        $out = array();
+        foreach ($rows as $v) {
+            $items = $db->get_results($db->prepare('SELECT name, qty, unit_price, warranty_months FROM `' . self::t('invoice_items') . '` WHERE invoice_id = %d ORDER BY id', (int) $v['id']), ARRAY_A) ?: array();
+            $out[] = array('kind' => $v['kind'], 'kindText' => self::$kinds[$v['kind']], 'no' => (int) $v['no'], 'date' => $v['at'] ? MZC_Crm::jdate($v['at']) : '', 'discount' => (int) $v['discount'], 'tax' => (int) $v['tax'], 'total' => (int) $v['total'], 'paid' => (int) $v['paid'],
+                'items' => array_map(function ($l) { return array('name' => $l['name'], 'qty' => (int) $l['qty'], 'price' => (int) $l['unit_price'], 'months' => $l['warranty_months'] === null ? null : (int) $l['warranty_months']); }, $items));
+        }
+        return $out;
+    }
+
     /** A supplier's account (positive: the shop owes them): purchase invoices (credit to them), payments to them, money they paid back. */
     public static function vendor_ledger($vid)
     {

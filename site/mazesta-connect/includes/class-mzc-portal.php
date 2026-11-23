@@ -156,7 +156,7 @@ final class MZC_Portal
                 'diagnosis' => isset($j['diagnosis']) ? (string) $j['diagnosis'] : '', 'hands' => self::hands($j['hands_out']),
                 'report_pre' => $link(isset($j['report_pre']) ? $j['report_pre'] : ''), 'compare' => !empty($j['report_pre']) && $j['report_id'] ? MZC_Crm::compare($j['report_pre'], $j['report_id']) : array());
         }
-        return self::ok(array('name' => $c['name'], 'mobile' => (string) $c['mobile'], 'statuses' => MZC_Crm::$statuses, 'builds' => $outB, 'jobs' => $outJ, 'catalog' => MZC_Crm::software_catalog()));
+        return self::ok(array('name' => $c['name'], 'mobile' => (string) $c['mobile'], 'statuses' => MZC_Crm::$statuses, 'builds' => $outB, 'jobs' => $outJ, 'invoices' => MZC_Acc::portal_invoices($cid), 'catalog' => MZC_Crm::software_catalog()));
     }
 
     /** The hands-on checks for the customer: each part with its verdict before and after the service ('' where it was not checked). */

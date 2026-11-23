@@ -164,6 +164,15 @@
 
   function empty(text) { return add(el('div', 'mzcp-empty'), el('p', '', text)); }
 
+  // a final sale or return invoice of the customer's own (no buy prices: the server never sends them)
+  function invoiceCard(v) {
+    var c = el('article', 'mzcp-card'), head = add(el('header', 'mzcp-head'), el('h3', '', v.kindText + ' ' + v.no), el('span', 'mzcp-lat', v.date));
+    var rows = el('ul', 'mzcp-list');
+    v.items.forEach(function (l) { rows.appendChild(el('li', '', l.name + ' × ' + l.qty.toLocaleString('fa-IR') + ' — ' + money(l.price * l.qty) + (l.months ? ' — گارانتی ' + l.months.toLocaleString('fa-IR') + ' ماه' : ''))); });
+    var left = v.total - v.paid, foot = add(el('footer', 'mzcp-foot'), v.discount ? el('span', '', 'تخفیف ' + money(v.discount)) : null, v.tax ? el('span', '', 'مالیات ' + money(v.tax)) : null, el('b', '', 'جمع ' + money(v.total)), el('span', left > 0 ? 'mzcp-due' : '', left > 0 ? 'مانده ' + money(left) : 'تسویه'));
+    return add(c, head, rows, foot);
+  }
+
   function history_() {
     var card = shell('سوابق من', 'در حال دریافت…');
     card.setAttribute('aria-busy', 'true');
@@ -182,7 +191,7 @@
       stats.setAttribute('aria-label', 'خلاصه');
 
       // tabs: systems, services, and the software form when something is still open
-      var soft = softForm(me), tabs = [['jobs', 'سرویس‌ها', me.jobs.length], ['builds', 'سیستم‌ها', me.builds.length]].concat(soft ? [['soft', 'نرم‌افزار', null]] : []);
+      var soft = softForm(me), tabs = [['jobs', 'سرویس‌ها', me.jobs.length], ['builds', 'سیستم‌ها', me.builds.length]].concat(me.invoices && me.invoices.length ? [['invoices', 'فاکتورها', me.invoices.length]] : []).concat(soft ? [['soft', 'نرم‌افزار', null]] : []);
       var bar = el('div', 'mzcp-tabs'), panes = {}, btns = [];
       bar.setAttribute('role', 'tablist');
       var pick = function (k, focus) {
@@ -199,6 +208,7 @@
       });
       if (me.jobs.length) me.jobs.forEach(function (j) { panes.jobs.appendChild(jobCard(j, me.statuses || {})); }); else panes.jobs.appendChild(empty('هنوز سرویسی برای شما ثبت نشده است.'));
       if (me.builds.length) me.builds.forEach(function (b) { panes.builds.appendChild(buildCard(b)); }); else panes.builds.appendChild(empty('هنوز سیستمی برای شما ثبت نشده است.'));
+      if (panes.invoices) me.invoices.forEach(function (v) { panes.invoices.appendChild(invoiceCard(v)); });
       if (soft) panes.soft.appendChild(soft);
 
       add(root, who, stats, bar); tabs.forEach(function (t) { root.appendChild(panes[t[0]]); });
