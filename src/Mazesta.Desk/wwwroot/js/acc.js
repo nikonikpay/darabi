@@ -1,7 +1,7 @@
 // The accounting screens: sales invoices, returns, proformas and ready-made invoices (templates), payments, cheques, a customer's account, the period's money.
 // F1–F12 work on every screen once signed in (F1 lists them); on an invoice they act on that invoice. The site decides what each person may do (the "accounting" area).
-NAV.push(['#/invoices', 'فاکتورها', () => can('accounting')], ['#/payments', 'دریافت و پرداخت', () => can('accounting')], ['#/cheques', 'چک‌ها', () => can('accounting')], ['#/acc', 'خلاصهٔ مالی', () => can('accounting')]);
-routes.push([/^\/invoices$/, (m, q) => viewInvoices(q)], [/^\/invoice\/(new|\d+)$/, (m, q) => viewInvoice(m[1], q)], [/^\/payments$/, (m, q) => viewPayments(q)], [/^\/cheques$/, (m, q) => viewCheques(q)], [/^\/acc$/, (m, q) => viewAccSummary(q)]);
+NAV.push(['#/invoices', 'فاکتورها', () => can('accounting')], ['#/payments', 'دریافت و پرداخت', () => can('accounting')], ['#/cheques', 'چک‌ها', () => can('accounting')], ['#/acc', 'خلاصهٔ مالی', () => can('accounting')], ['#/ledger', 'دفتر کل', () => can('ledger')]);
+routes.push([/^\/invoices$/, (m, q) => viewInvoices(q)], [/^\/invoice\/(new|\d+)$/, (m, q) => viewInvoice(m[1], q)], [/^\/payments$/, (m, q) => viewPayments(q)], [/^\/cheques$/, (m, q) => viewCheques(q)], [/^\/acc$/, (m, q) => viewAccSummary(q)], [/^\/ledger$/, (m, q) => viewLedger(q)]);
 
 const A = () => S.cfg.acc;
 const kindPill = v => pill(v.kindText + (v.no ? ' ' + v.no : ''), v.kind === 'proforma' ? '' : v.kind === 'return' ? 'bad' : 'ok');
@@ -298,4 +298,18 @@ async function viewAccSummary(q) {
       h('section', { class: 'panel' }, h('h3', {}, 'بیشترین بدهی مشتریان'), table(['مشتری', 'موبایل', 'بدهی'], r.debtors.map(x => clickRow('#/customer/' + x.customer_id, [x.name, h('span', { class: 'lat' }, x.mobile), money(x.balance)]))))),
     r.cheques.length ? h('section', { class: 'panel' }, h('h3', {}, 'چک‌های نزدیک سررسید'), chequesTable(r.cheques)) : null,
     h('p', { class: 'muted' }, 'سود فاکتورها = فروش − قیمت خرید ردیف‌ها − تخفیف (بدون مالیات). موجودی حساب‌ها از همهٔ دریافت‌ها و پرداخت‌ها و پرداخت‌های سرویس است؛ چک تا پاس نشود در حساب نیست.'));
+}
+
+/* ---------- the ledger (trial balance, worked out from the documents; its own "ledger" area) ---------- */
+async function viewLedger(q) {
+  const r = await GET('staff/acc/ledger' + qs({ from: q.get('from'), to: q.get('to'), entries: 1 }));
+  const m = v => Number(v).toLocaleString('en-US'), acct = {};
+  r.rows.forEach(x => { acct[x.code] = x.name; });
+  return h('div', {}, title('دفتر کل و تراز آزمایشی', h('span', { class: 'muted' }, (r.from_j ? r.from_j + ' تا ' : 'تا ') + r.to_j), h('span', { class: 'pill' }, 'مبالغ به تومان'),
+    r.balanced ? pill('بدهکار = بستانکار', 'ok') : pill('تراز نیست: ' + r.unbalanced.join('، '), 'bad')),
+    h('section', { class: 'panel' }, table(['کد', 'حساب', 'بدهکار', 'بستانکار', 'مانده (بدهکار − بستانکار)'], r.rows.map(x => h('tr', {}, h('td', { class: 'lat' }, x.code), h('td', {}, x.name), h('td', { class: 'lat' }, m(x.debit)), h('td', { class: 'lat' }, m(x.credit)), h('td', { class: 'lat' }, m(x.balance)))
+      ).concat([h('tr', {}, h('td', {}), h('td', {}, h('b', {}, 'جمع')), h('td', { class: 'lat' }, m(r.debit)), h('td', { class: 'lat' }, m(r.credit)), h('td', {}))]))),
+    h('section', { class: 'panel' }, h('h3', {}, 'اسناد (۳۰۰ سند آخر)'), table(['تاریخ', 'سند', 'ردیف‌ها'], (r.entries || []).slice().reverse().map(e => h('tr', {}, h('td', {}, e.at_j), h('td', {}, e.text),
+      h('td', { class: 'lat' }, e.lines.map(l => (l[1] ? 'بد ' + l[0] + ' ' + m(l[1]) : 'بس ' + l[0] + ' ' + m(l[2]))).join(' | ')))))),
+    h('p', { class: 'muted' }, 'دفتر کل از خود فاکتورها، پرداخت‌ها، چک‌ها و فاکتورهای خرید حساب می‌شود و چیزی جدا ذخیره نمی‌کند. سرویس‌های قدیمی (پرداخت‌های سرویس) در آن نیست و چک به وضعیت امروزش حساب می‌شود.'));
 }

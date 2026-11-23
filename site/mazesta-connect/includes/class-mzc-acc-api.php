@@ -18,7 +18,7 @@ final class MZC_Acc_Api
             array('/staff/payments', 'GET', 'payments'), array('/staff/payments', 'POST', 'payment_save'), array('/staff/payments/delete', 'POST', 'payment_delete'),
             array('/staff/cheques', 'GET', 'cheques'), array('/staff/cheques', 'POST', 'cheque_save'),
             array('/staff/customers/(?P<id>\d+)/account', 'GET', 'customer_account'), array('/staff/suppliers/(?P<id>\d+)/account', 'GET', 'supplier_account'),
-            array('/staff/acc/summary', 'GET', 'summary'), array('/staff/acc/due', 'GET', 'due'),
+            array('/staff/acc/summary', 'GET', 'summary'), array('/staff/acc/ledger', 'GET', 'ledger'), array('/staff/acc/due', 'GET', 'due'),
         );
         foreach ($r as $x) { register_rest_route(Mazesta_Connect::NS, $x[0], array('methods' => $x[1], 'callback' => array(__CLASS__, 'rest_' . $x[2]), 'permission_callback' => '__return_true')); }
     }
@@ -300,6 +300,17 @@ final class MZC_Acc_Api
         $s['from_j'] = self::jd($from); $s['to_j'] = self::jd($to); $s['cheques'] = array_map(array(__CLASS__, 'cheque_out'), $s['cheques']);
         $s['periods'] = array_map(function ($x) { return array('label' => $x[0], 'from' => $x[1], 'to' => $x[2]); }, $per);
         return MZC_Api::ok($s);
+    }
+
+    /** The trial balance (and the entries when ?entries=1) up to ?to= (default today), from ?from= (default the start). Its own area: "ledger". */
+    public static function rest_ledger($req)
+    {
+        $a = MZC_Staff::auth($req, 'ledger', 1); if ($a instanceof WP_REST_Response) { return $a; }
+        $from = MZC_Crm::gdate((string) $req->get_param('from')) ?: null; $to = MZC_Crm::gdate((string) $req->get_param('to')) ?: gmdate('Y-m-d');
+        $e = MZC_Ledger::entries($from, $to); if ($e === null) { return self::fail(MZC_Crm_Db::error(), 503); }
+        $o = MZC_Ledger::trial($e); $o['to_j'] = self::jd($to); $o['from_j'] = $from ? self::jd($from) : '';
+        if ($req->get_param('entries')) { $o['entries'] = array_map(function ($x) { $x['at_j'] = MZC_Acc_Api::jd($x['at']); return $x; }, array_slice($e, -300)); }
+        return MZC_Api::ok($o);
     }
 
     /** The cheques to remind of (the home screen asks this once a sign-in). */

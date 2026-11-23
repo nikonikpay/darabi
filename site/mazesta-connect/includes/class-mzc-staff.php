@@ -19,6 +19,7 @@ final class MZC_Staff
         'customers' => 'مشتریان', 'builds' => 'سیستم‌های نو (فروش و اسمبل)', 'jobs' => 'سرویس‌ها', 'tests' => 'گزارش و نتیجهٔ تست',
         'ships' => 'ارسال به گارانتی', 'stock' => 'انبار، کالاها و فاکتور خرید', 'payments' => 'قیمت‌ها و پرداخت‌ها', 'reports' => 'آمار و گزارش مالی', 'sms' => 'فرستادن پیامک',
         'accounting' => 'حسابداری (فاکتور فروش، پیش‌فاکتور، دریافت و پرداخت، چک)',
+        'ledger' => 'دفتر کل و تراز آزمایشی',
     );
     public static $levels = array(0 => 'ندارد', 1 => 'دیدن', 2 => 'دیدن و ویرایش');
 
@@ -31,7 +32,7 @@ final class MZC_Staff
             'test' => array('label' => 'تست', 'p' => array('customers' => 1, 'builds' => 1, 'jobs' => 1, 'tests' => 2)),
             'warehouse' => array('label' => 'انبار', 'p' => array('builds' => 1, 'jobs' => 1, 'ships' => 2, 'stock' => 2)),
             'service' => array('label' => 'سرویس', 'p' => array('customers' => 1, 'jobs' => 2, 'tests' => 2, 'ships' => 2, 'stock' => 1)),
-            'accountant' => array('label' => 'حسابدار', 'p' => array('customers' => 2, 'builds' => 1, 'jobs' => 1, 'stock' => 2, 'payments' => 2, 'reports' => 1, 'accounting' => 2)),
+            'accountant' => array('label' => 'حسابدار', 'p' => array('customers' => 2, 'builds' => 1, 'jobs' => 1, 'stock' => 2, 'payments' => 2, 'reports' => 1, 'accounting' => 2, 'ledger' => 1)),
         );
     }
 
