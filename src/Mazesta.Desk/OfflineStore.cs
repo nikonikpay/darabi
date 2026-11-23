@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace Mazesta.Desk;
 
 /// <summary>A call that could not reach the site and waits to be sent: its own id (the site books a repeated id once), the route, the body, and the site's refusal when it said no.</summary>
-public sealed record QueuedCall(string Id, string Path, string Body, DateTime At, string? Error = null);
+public sealed record QueuedCall(string Id, string Path, string Body, DateTime At, string? Error = null, string User = "");
 
 /// <summary>Calls made while the site cannot be reached, kept in one file next to the program (sealed with the Windows user's key; no database, nothing to install). Only a new payment and a
 /// draft invoice may wait: finalising, voiding and deleting need the site's numbering and checks, so they are refused offline instead of queued.</summary>
@@ -36,9 +36,9 @@ public sealed class OfflineQueue
     public int Pending { get { lock (_lock) return _items.Count(x => x.Error is null); } }
     public IReadOnlyList<QueuedCall> Refused { get { lock (_lock) return _items.Where(x => x.Error is not null).ToList(); } }
 
-    public QueuedCall Add(string path, string body)
+    public QueuedCall Add(string path, string body, string user = "")
     {
-        var q = new QueuedCall(Guid.NewGuid().ToString("N"), path, body, DateTime.Now);
+        var q = new QueuedCall(Guid.NewGuid().ToString("N"), path, body, DateTime.Now, null, user);
         lock (_lock) { _items.Add(q); Save(); }
         return q;
     }
@@ -48,12 +48,13 @@ public sealed class OfflineQueue
 
     /// <summary>Sends the waiting calls oldest first with <paramref name="send"/> (status, error). A call that got through leaves the queue; one the site refused (4xx) stays, marked, for the
     /// person to see; the run stops at the first call that could not reach the site (status 0), whose sign-in ran out (401) or that failed on the site's side (5xx): the rest wait, in order.</summary>
-    public async Task<(int Sent, int Refused, bool Stopped)> FlushAsync(Func<QueuedCall, Task<(int Status, string? Error)>> send)
+    public async Task<(int Sent, int Refused, bool Stopped)> FlushAsync(Func<QueuedCall, Task<(int Status, string? Error)>> send, string owner = "")
     {
         int sent = 0, refused = 0;
         while (true)
         {
-            QueuedCall? next; lock (_lock) next = _items.FirstOrDefault(x => x.Error is null);
+            // a call goes out only under the person who made it (the site checks the roles of whoever is signed in); an old call with no name goes under anyone
+            QueuedCall? next; lock (_lock) next = _items.FirstOrDefault(x => x.Error is null && (x.User == "" || x.User == owner));
             if (next is null) return (sent, refused, false);
             var (status, error) = await send(next);
             if (status is 0 or 401 || status >= 500) return (sent, refused, true);

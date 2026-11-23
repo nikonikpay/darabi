@@ -32,6 +32,17 @@ public class OfflineStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_call_goes_out_only_under_the_person_who_made_it()
+    {
+        var q = new OfflineQueue(Path.Combine(_dir, "q.json")); var a = q.Add("staff/payments", "{}", "ali"); var b = q.Add("staff/payments", "{}", "sara"); var old = q.Add("staff/payments", "{}");
+        var seen = new List<string>();
+        var r = await q.FlushAsync(c => { seen.Add(c.Id); return Task.FromResult((200, (string?)null)); }, "sara");
+        Assert.Equal([b.Id, old.Id], seen); Assert.Equal((2, 0, false), r); Assert.Equal(1, q.Pending);
+        await q.FlushAsync(c => { seen.Add(c.Id); return Task.FromResult((200, (string?)null)); }, "ali");
+        Assert.Equal(a.Id, seen[^1]); Assert.Equal(0, q.Pending);
+    }
+
+    [Fact]
     public async Task A_dead_line_stops_the_run_and_keeps_every_call_in_order()
     {
         var q = new OfflineQueue(Path.Combine(_dir, "q.json")); q.Add("staff/payments", "{}"); q.Add("staff/payments", "{}");

@@ -10,7 +10,7 @@ internal sealed class SiteSession : IDisposable
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
     private readonly string _file;
     private Uri _server = new(DeskRules.DefaultServer + "/");
-    private string _token = "";
+    private string _token = "", _user = "";
 
     public SiteSession(string dataDir)
     {
@@ -21,6 +21,7 @@ internal sealed class SiteSession : IDisposable
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(_file));
             if (doc.RootElement.TryGetProperty("server", out var s) && DeskRules.Server(s.GetString()) is { } u) _server = u;
+            if (doc.RootElement.TryGetProperty("user", out var us) && us.GetString() is { } who) _user = who;
             if (doc.RootElement.TryGetProperty("token", out var t) && t.GetString() is { Length: > 0 } sealedToken) _token = Unseal(sealedToken);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or CryptographicException) { }
@@ -38,7 +39,7 @@ internal sealed class SiteSession : IDisposable
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
             string temp = _file + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(new { server = _server.GetLeftPart(UriPartial.Authority), token = _token.Length == 0 ? "" : Seal(_token) }));
+            File.WriteAllText(temp, JsonSerializer.Serialize(new { server = _server.GetLeftPart(UriPartial.Authority), user = _user, token = _token.Length == 0 ? "" : Seal(_token) }));
             File.Move(temp, _file, overwrite: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
@@ -47,7 +48,7 @@ internal sealed class SiteSession : IDisposable
     public bool SetServer(string typed)
     {
         if (DeskRules.Server(typed) is not { } u) return false;
-        if (u != _server) { _server = u; _token = ""; }   // another site: the old sign-in is not for it
+        if (u != _server) { _server = u; _token = ""; _user = ""; }   // another site: the old sign-in is not for it
         Save(); return true;
     }
 
@@ -68,7 +69,7 @@ internal sealed class SiteSession : IDisposable
         }
         if (OfflineQueue.Queueable(method, path, body))
         {
-            var q = Queue.Add(path, string.IsNullOrEmpty(body) ? "{}" : body);
+            var q = Queue.Add(path, string.IsNullOrEmpty(body) ? "{}" : body, _user);
             using var doc = JsonDocument.Parse(JsonSerializer.Serialize(new { queued = true, id = q.Id, pending = Queue.Pending }));
             return (202, doc.RootElement.Clone(), null);
         }
@@ -81,7 +82,7 @@ internal sealed class SiteSession : IDisposable
         var r = await SendAsync("POST", q.Path, q.Body, q.Id, ct);
         string? err = r.Data is { } d && d.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : r.Error;
         return (r.Status, err);
-    });
+    }, _user);
 
     private async Task<(int Status, JsonElement? Data, string? Error, string Raw)> SendAsync(string method, string path, string? body, string? opId, CancellationToken ct)
     {
@@ -113,7 +114,7 @@ internal sealed class SiteSession : IDisposable
         var r = await CallAsync("POST", "staff/login", body, ct);
         if (r.Status == 200 && r.Data is { } d && d.TryGetProperty("token", out var t) && t.GetString() is { Length: > 0 } tok)
         {
-            _token = tok; Save();
+            _token = tok; _user = user.Trim().ToLowerInvariant(); Save();
             using var doc = JsonDocument.Parse(JsonSerializer.Serialize(d.EnumerateObject().Where(p => p.Name != "token").ToDictionary(p => p.Name, p => p.Value)));
             return (200, doc.RootElement.Clone(), null);
         }
@@ -123,7 +124,7 @@ internal sealed class SiteSession : IDisposable
     public async Task LogoutAsync(CancellationToken ct)
     {
         if (_token.Length > 0) await CallAsync("POST", "staff/logout", null, ct);
-        _token = ""; Save(); _cache.Clear();   // the next person may see less than this one did
+        _token = ""; _user = ""; Save(); _cache.Clear();   // the next person may see less than this one did
     }
 
     public void Dispose() => _http.Dispose();
