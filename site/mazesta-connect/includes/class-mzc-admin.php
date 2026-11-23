@@ -6,7 +6,7 @@ final class MZC_Admin
 {
     private static $pages = array(
         'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-installs' => array('نصب‌ها', 'installs'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-problems' => array('سیستم‌های مشکل‌دار', 'problems'), 'mzc-logkinds' => array('خلاصهٔ خطاهای لاگ', 'logkinds'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-tuning' => array('آندرولت و اورکلاک', 'tuning'), 'mzc-messages' => array('پیام‌ها', 'messages'), 'mzc-access' => array('اشتراک و حساب‌ها', 'access'),
-        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-acc' => array('حسابداری', 'acc'), 'mzc-report' => array('گزارش مالی و آمار', 'report'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
+        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-acc' => array('حسابداری', 'acc'), 'mzc-ledger' => array('دفتر کل', 'ledger'), 'mzc-report' => array('گزارش مالی و آمار', 'report'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
 
@@ -15,7 +15,7 @@ final class MZC_Admin
         'نمای کلی' => array('mzc-overview'),
         'سیستم‌ها' => array('mzc-systems', 'mzc-installs', 'mzc-problems', 'mzc-logkinds', 'mzc-events', 'mzc-tuning', 'mazesta-connect'),
         'مشتریان' => array('mzc-customers', 'mzc-messages', 'mzc-access', 'mzc-builds', 'mzc-jobs', 'mzc-ships'),
-        'مالی و انبار' => array('mzc-acc', 'mzc-report', 'mzc-stock', 'mzc-purchases'),
+        'مالی و انبار' => array('mzc-acc', 'mzc-ledger', 'mzc-report', 'mzc-stock', 'mzc-purchases'),
         'مدیریت' => array('mzc-staff', 'mzc-settings'),
     );
 
