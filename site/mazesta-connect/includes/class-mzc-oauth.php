@@ -182,7 +182,8 @@ final class MZC_Oauth
         $type = $g('grant_type');
         if ($type === 'authorization_code') {
             $code = $g('code'); $row = preg_match('/^[a-f0-9]{64}$/', $code) ? $db->get_row($db->prepare('SELECT * FROM `' . self::t('oauth_codes') . '` WHERE code_hash = %s', self::hash($code)), ARRAY_A) : null;
-            if ($row) { $db->delete(self::t('oauth_codes'), array('code_hash' => $row['code_hash'])); }   // a code works once, right or wrong
+            // a code works once, right or wrong: of two exchanges at once only the one whose delete took the row goes on
+            if ($row && !$db->delete(self::t('oauth_codes'), array('code_hash' => $row['code_hash']))) { $row = null; }
             if (!$row || $row['client_id'] !== $c['client_id'] || $row['expires'] < self::now() || $row['redirect_uri'] !== $g('redirect_uri')) { return self::err('invalid_grant', 'The code is wrong, used or expired.'); }
             if (!hash_equals((string) $row['challenge'], self::b64url(hash('sha256', $g('code_verifier'), true)))) { return self::err('invalid_grant', 'PKCE check failed.'); }
             return self::issue($c, (int) $row['user_id']);
@@ -190,7 +191,7 @@ final class MZC_Oauth
         if ($type === 'refresh_token') {
             $rt = $g('refresh_token'); $row = preg_match('/^[a-f0-9]{64}$/', $rt) ? $db->get_row($db->prepare('SELECT * FROM `' . self::t('oauth_refresh') . '` WHERE token_hash = %s', self::hash($rt)), ARRAY_A) : null;
             if (!$row || $row['client_id'] !== $c['client_id'] || $row['expires'] < self::now()) { return self::err('invalid_grant', 'The refresh token is wrong or expired.'); }
-            $db->delete(self::t('oauth_refresh'), array('token_hash' => $row['token_hash']));   // rotated: each refresh token works once
+            if (!$db->delete(self::t('oauth_refresh'), array('token_hash' => $row['token_hash']))) { return self::err('invalid_grant', 'The refresh token is wrong or expired.'); }   // rotated: each works once, also when two refreshes race
             return self::issue($c, (int) $row['user_id']);
         }
         return self::err('unsupported_grant_type', 'Only authorization_code and refresh_token.');

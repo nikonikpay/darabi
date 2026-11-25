@@ -8,6 +8,8 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Sms
 {
+    const CODES_PER_HOUR = 200;
+
     public static function settings()
     {
         $c = Mazesta_Connect::config();
@@ -22,6 +24,8 @@ final class MZC_Sms
     /** Sends $text (for a login code also $code, the template's token) to $mobile; true, or an error text. */
     public static function send($mobile, $text, $code = '')
     {
+        // login codes are asked for by anyone: a cap for the whole site, so many addresses and numbers together cannot run up the SMS bill (the staff's own messages are not counted)
+        if ($code !== '' && Mazesta_Connect::hit('sms:codes', 3600) > self::CODES_PER_HOUR) { return 'سقف پیامک کد در این ساعت پر شده است.'; }
         $s = self::settings();
         $args = array('timeout' => 15, 'redirection' => 0);
         if ($s['driver'] === 'kavenegar') {

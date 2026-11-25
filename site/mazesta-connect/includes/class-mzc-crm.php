@@ -494,12 +494,12 @@ final class MZC_Crm
         $cid = self::customer_of_form();
         if (!is_int($cid)) { MZC_Admin::back('mzc-jobs', 'err:' . $cid, $id ? array('edit' => $id) : array('add' => 1)); }
         $status = isset($_POST['status'], self::$statuses[$_POST['status']]) ? (string) $_POST['status'] : 'received';
-        $closed = self::date('closed_at'); if ($status === 'delivered' && $closed === null) { $closed = gmdate('Y-m-d'); }
+        $closed = self::date('closed_at'); if ($status === 'delivered' && $closed === null) { $closed = self::ymd(); }
         $labor = (int) preg_replace('/[^\d]/', '', self::digits(self::post('labor_price', 15)));
         $was = $id ? $db->get_var($db->prepare('SELECT soft FROM `' . self::t('jobs') . '` WHERE id = %d', $id)) : null;
         $row = array('customer_id' => $cid, 'device' => self::post('device', 190) ?: null, 'device_serial' => self::post('device_serial', 120) ?: null, 'paid_note' => self::post('paid_note', 255) ?: null,
             'soft' => self::soft_in(self::posted_soft(), self::post_long('soft_note', 2000), $was),
-            'device_type' => isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : null, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'received_at' => self::date('received_at') ?: gmdate('Y-m-d'),
+            'device_type' => isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : null, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'received_at' => self::date('received_at') ?: self::ymd(),
             'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
             'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'diagnosis' => self::post_long('diagnosis'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());

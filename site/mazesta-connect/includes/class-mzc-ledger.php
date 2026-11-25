@@ -42,6 +42,8 @@ final class MZC_Ledger
     {
         $amount = (int) $p['amount']; $in = $p['direction'] === 'in';
         if ($chequeStatus !== null && in_array($chequeStatus, array('bounced', 'cancelled'), true)) { return array(); }
+        // a customer's payment taken by a supplier for us: the customer owes less, and so do we to that supplier; none of our own accounts is touched
+        if ($in && !empty($p['via_id']) && !empty($p['customer_id'])) { return array(self::line('2010', $amount, 0), self::line('1100', 0, $amount)); }
         if ($p['method'] === 'cheque') { $asset = $chequeStatus === 'cleared' ? '1020' : ($in ? '1030' : '2020'); }
         else { $asset = $p['method'] === 'cash' ? '1010' : '1020'; }
         $other = !empty($p['customer_id']) ? '1100' : (!empty($p['vendor_id']) ? '2010' : ($in ? '4900' : '6000'));
@@ -62,7 +64,7 @@ final class MZC_Ledger
         }
         foreach ($db->get_results($db->prepare("SELECT y.*, q.status AS cheque_status FROM `$py` y LEFT JOIN `$ch` q ON q.id = y.cheque_id WHERE y.at BETWEEN %s AND %s", $from, $to), ARRAY_A) ?: array() as $p) {
             $lines = self::post_payment($p, $p['cheque_status']); if (!$lines) { continue; }
-            $out[] = array('at' => (string) $p['at'], 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => ($p['direction'] === 'in' ? 'دریافت ' : 'پرداخت ') . MZC_Acc::$methods[$p['method']], 'lines' => $lines);
+            $out[] = array('at' => (string) $p['at'], 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => ($p['direction'] === 'in' ? 'دریافت ' : 'پرداخت ') . (isset(MZC_Acc::$methods[$p['method']]) ? MZC_Acc::$methods[$p['method']] : $p['method']), 'lines' => $lines);
         }
         foreach ($db->get_results($db->prepare("SELECT u.id, u.invoice_no, u.bought_at, (SELECT COALESCE(SUM(x.qty * x.unit_cost), 0) FROM `$pi` x WHERE x.purchase_id = u.id) AS total FROM `$pu` u WHERE u.bought_at BETWEEN %s AND %s", $from, $to), ARRAY_A) ?: array() as $u) {
             $lines = self::post_purchase($u['total']); if (!$lines) { continue; }

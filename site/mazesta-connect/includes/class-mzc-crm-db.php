@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 17;
+    const SCHEMA = 18;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -180,6 +180,10 @@ final class MZC_Crm_Db
         // schema 17: each call to the customer about a service (why, what came of it, who called)
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('job_calls')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, job_id BIGINT UNSIGNED NOT NULL, at DATETIME NOT NULL, reason VARCHAR(20) NOT NULL, result VARCHAR(20) NOT NULL,
             note VARCHAR(500) NULL, user_id BIGINT UNSIGNED NULL, who VARCHAR(120) NULL, KEY job_id (job_id)) $engine";
+        // schema 18: parts the shop is short of (asked for by staff, answered by whoever buys), and a payment taken by someone else on the shop's behalf (via_id, a vendor)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('shortages')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(190) NOT NULL, qty INT NOT NULL DEFAULT 1, kind VARCHAR(10) NOT NULL DEFAULT 'other',
+            ref VARCHAR(60) NULL, customer_id BIGINT UNSIGNED NULL, status VARCHAR(10) NOT NULL DEFAULT 'open', note VARCHAR(255) NULL, vendor_id BIGINT UNSIGNED NULL, asked_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            who VARCHAR(120) NOT NULL DEFAULT '', created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY status (status, created), KEY customer_id (customer_id)) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }
@@ -209,6 +213,7 @@ final class MZC_Crm_Db
         $cols['builds'] += array('checks' => 'TEXT NULL'); $cols['jobs'] += array('checks' => 'TEXT NULL');
         // schema 17: the test report from before the service (report_id stays the one after it, as it always was)
         $cols['jobs'] += array('report_pre' => 'VARCHAR(64) NULL', 'hands' => 'TEXT NULL', 'diagnosis' => 'TEXT NULL');
+        $cols['payments'] = array('via_id' => 'BIGINT UNSIGNED NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {

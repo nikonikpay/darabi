@@ -76,8 +76,16 @@ final class MZC_Staff
         return $out;
     }
 
-    /** The roles in use: the saved ones (read from the file, so a save is seen at once), else the defaults. */
+    private static $roles_now = null;   // read once per request: a check calls this several times, and the file is read and decoded each time
+
+    /** The roles in use: the saved ones (read from the file, so a save is seen by the next request), else the defaults. */
     public static function roles()
+    {
+        if (self::$roles_now !== null) { return self::$roles_now; }
+        return self::$roles_now = self::roles_read();
+    }
+
+    private static function roles_read()
     {
         $c = Mazesta_Connect::read('config');
         if (!isset($c['staffRoles']) || !is_array($c['staffRoles'])) { return self::default_roles(); }
@@ -91,7 +99,7 @@ final class MZC_Staff
 
     public static function save_roles($roles)
     {
-        $roles = self::clean_roles($roles);
+        $roles = self::clean_roles($roles); self::$roles_now = null;
         Mazesta_Connect::config();
         Mazesta_Connect::locked(function () use ($roles) { $c = Mazesta_Connect::read('config'); $c['staffRoles'] = $roles; $c['staffRolesStock'] = 1; $c['staffRolesAcc'] = 1; Mazesta_Connect::write('config', $c); });
     }

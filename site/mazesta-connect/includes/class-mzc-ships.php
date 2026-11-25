@@ -49,7 +49,7 @@ final class MZC_Ships
         $db = self::db(); if (!$db) { return array(array(), 0); }
         $where = array('1=1'); $args = array();
         if ($customer) { $where[] = 's.customer_id = %d'; $args[] = (int) $customer; }
-        if ($status === 'sent') { $where[] = 's.received_at IS NULL'; } elseif ($status === 'back') { $where[] = 's.received_at IS NOT NULL'; }
+        if ($status === 'open') { $where[] = 's.picked_up = 0'; } elseif ($status === 'sent') { $where[] = 's.received_at IS NULL'; } elseif ($status === 'back') { $where[] = 's.received_at IS NOT NULL'; }
         if ($vendor) { $where[] = 's.vendor_id = %d'; $args[] = (int) $vendor; }
         if ($q !== '') {
             $l = '%' . $db->esc_like($q) . '%';
@@ -98,6 +98,32 @@ final class MZC_Ships
         if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-ships', 'err:ذخیره نشد: ' . $db->last_error, $back); } }
         else { $row['created'] = $row['updated']; if (!$db->insert($t, $row)) { MZC_Admin::back('mzc-ships', 'err:ذخیره نشد: ' . $db->last_error, $back); } }
         MZC_Admin::back('mzc-ships', 'ok:ثبت شد.');
+    }
+
+    /** The staff program's save of a shipment ($p: the same fields as the admin form; a key left out keeps its value). Returns the id or an error text. */
+    public static function api_save($id, $p)
+    {
+        $db = self::db(); if (!$db) { return MZC_Crm_Db::error(); }
+        $old = $id ? self::ship($id) : null; if ($id && !$old) { return 'ارسال پیدا نشد.'; }
+        $has = function ($k) use ($p) { return array_key_exists($k, $p); };
+        $s = function ($k, $max) use ($p, $old, $has) { return $has($k) ? MZC_Api::s($p, $k, $max) : ($old ? (string) $old[$k] : ''); };
+        $dt = function ($k) use ($p, $old, $has) { return $has($k) ? (MZC_Api::d($p, $k) ?: null) : ($old && $old[$k] ? $old[$k] : null); };
+        $part = $s('part_name', 190); if ($part === '') { return 'نام و مدل قطعه را بنویسید.'; }
+        $owner = ($has('owner') ? $p['owner'] : ($old ? $old['owner'] : 'mazesta')) === 'customer' ? 'customer' : 'mazesta'; $cid = null; $job = null; $ref = $s('ref', 60);
+        if ($owner === 'customer') {
+            $r = self::owner_of($db, $has('customer_id') ? MZC_Api::n($p, 'customer_id') : ($old ? (int) $old['customer_id'] : 0), $ref);
+            if (!is_array($r)) { return $r; }
+            list($cid, $job) = $r; $job = $job ?: null;
+        }
+        $vid = !empty($p['vendor_new']) ? self::vendor_id(MZC_Api::s($p, 'vendor_new', 120)) : ($has('vendor_id') ? MZC_Api::n($p, 'vendor_id') : ($old ? (int) $old['vendor_id'] : 0));
+        $row = array('vendor_id' => $vid ?: null, 'part_name' => $part, 'serial' => $s('serial', 120) ?: null, 'problem' => $s('problem', 2000) ?: null, 'sent_at' => $dt('sent_at'), 'tracking' => $s('tracking', 80) ?: null,
+            'vendor_reply' => $s('vendor_reply', 2000) ?: null, 'received_at' => $dt('received_at'), 'fix_notes' => $s('fix_notes', 2000) ?: null, 'back_part' => $s('back_part', 190) ?: null, 'back_serial' => $s('back_serial', 120) ?: null,
+            'shelf' => $s('shelf', 60) ?: null, 'picked_up' => ($has('picked_up') ? !empty($p['picked_up']) : ($old && $old['picked_up'])) ? 1 : 0, 'owner' => $owner, 'customer_id' => $cid, 'job_id' => $job, 'ref' => $ref ?: null,
+            'customer_reply' => $s('customer_reply', 2000) ?: null, 'updated' => gmdate('Y-m-d H:i:s'));
+        $t = self::t('shipments');
+        if ($id) { return $db->update($t, $row, array('id' => (int) $id)) === false ? 'ذخیره نشد: ' . $db->last_error : (int) $id; }
+        $row['created'] = $row['updated'];
+        return $db->insert($t, $row) ? (int) $db->insert_id : 'ذخیره نشد: ' . $db->last_error;
     }
 
     public static function act_ship_delete()

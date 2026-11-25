@@ -161,7 +161,7 @@ final class MZC_Acc
         $title = $has('title') ? self::clip($d['title'], 190) : ($old ? (string) $old['title'] : '');
         if ($kind === 'template' && $title === '') { return 'برای فاکتور آماده یک نام بنویسید (مثلاً «سیستم گیمینگ اقتصادی»).'; }
         $sum = self::totals($lines, $has('discount') ? self::m($d['discount']) : ($old ? $old['discount'] : 0), $has('tax_pct') ? (float) MZC_Crm::digits((string) $d['tax_pct']) : ($old ? $old['tax_pct'] : self::settings()['tax']));
-        $row = array('customer_id' => $cid ?: null, 'title' => $title !== '' ? $title : null, 'at' => $has('at') ? self::date_in($d['at'], gmdate('Y-m-d')) : ($old ? $old['at'] : gmdate('Y-m-d')),
+        $row = array('customer_id' => $cid ?: null, 'title' => $title !== '' ? $title : null, 'at' => $has('at') ? self::date_in($d['at'], MZC_Crm::ymd()) : ($old ? $old['at'] : MZC_Crm::ymd()),
             'valid_until' => $kind === 'proforma' ? ($has('valid_until') ? self::date_in($d['valid_until']) : ($old ? $old['valid_until'] : gmdate('Y-m-d', time() + 3 * 86400))) : null,
             'notes' => $has('notes') ? mb_substr(trim(sanitize_textarea_field((string) $d['notes'])), 0, 2000) : ($old ? $old['notes'] : null), 'updated' => self::now()) + $sum;
         if (!$old) { $row += array('kind' => $kind, 'status' => 'draft', 'created_by' => (int) $uid, 'created' => self::now(), 'ref_id' => !empty($d['ref_id']) ? (int) $d['ref_id'] : null, 'build_id' => !empty($d['build_id']) ? (int) $d['build_id'] : null); }
@@ -199,7 +199,7 @@ final class MZC_Acc
                     if ($p && (int) $p['stock'] < (int) $l['qty']) { $warn[] = 'موجودی «' . $p['name'] . '» ' . (int) $p['stock'] . ' است و ' . (int) $l['qty'] . ' عدد فروخته شد.'; }
                 }
             }
-            $no = self::next_no($db, $v['kind']); $date = $at ? $at : ($v['at'] ?: gmdate('Y-m-d'));
+            $no = self::next_no($db, $v['kind']); $date = $at ? $at : ($v['at'] ?: MZC_Crm::ymd());
             $db->query('START TRANSACTION');
             $row = array('no' => $no, 'status' => 'final', 'at' => $date, 'updated' => self::now());
             // the cost of each line is fixed now (a later purchase must not change this sale's profit)
@@ -271,7 +271,7 @@ final class MZC_Acc
             $items[] = array('product_id' => $l['product_id'], 'category' => $l['category'], 'name' => $l['name'], 'qty' => $l['qty'], 'unit_price' => $p && $p['sell_price'] !== null ? $p['sell_price'] : $l['unit_price'],
                 'buy_price' => $kind === 'return' ? $l['buy_price'] : null, 'serials' => $kind === 'return' ? $l['serials'] : null, 'warranty_months' => $l['warranty_months']);
         }
-        $d = array('kind' => $kind, 'items' => $items, 'discount' => $v['discount'], 'tax_pct' => $v['tax_pct'], 'customer_id' => $customer ?: (int) $v['customer_id'], 'at' => gmdate('Y-m-d'),
+        $d = array('kind' => $kind, 'items' => $items, 'discount' => $v['discount'], 'tax_pct' => $v['tax_pct'], 'customer_id' => $customer ?: (int) $v['customer_id'], 'at' => MZC_Crm::ymd(),
             'title' => $kind === 'template' ? ($v['title'] ?: 'فاکتور آماده') : null, 'notes' => $kind === 'return' ? 'برگشت از فاکتور ' . $v['no'] : null,
             'ref_id' => in_array($v['kind'], array('proforma', 'sale'), true) && $kind !== 'template' ? (int) $v['id'] : null, 'build_id' => $kind === 'return' && $v['build_id'] ? (int) $v['build_id'] : null);
         return self::save_invoice(0, $d, $uid);
@@ -285,7 +285,7 @@ final class MZC_Acc
         if ($have) { return $have; }
         $items = array();
         foreach ($b['parts'] as $x) { $items[] = array('product_id' => $x['product_id'], 'category' => $x['category'], 'name' => $x['model'], 'qty' => 1, 'unit_price' => $x['sell_price'], 'buy_price' => $x['buy_price'], 'serials' => $x['serial'], 'warranty_months' => $x['warranty_months']); }
-        return self::save_invoice(0, array('kind' => 'sale', 'customer_id' => (int) $b['customer_id'], 'build_id' => (int) $bid, 'at' => $b['sold_at'] ?: gmdate('Y-m-d'), 'items' => $items), $uid);
+        return self::save_invoice(0, array('kind' => 'sale', 'customer_id' => (int) $b['customer_id'], 'build_id' => (int) $bid, 'at' => $b['sold_at'] ?: MZC_Crm::ymd(), 'items' => $items), $uid);
     }
 
     /* ---------- payments ---------- */
@@ -293,7 +293,7 @@ final class MZC_Acc
     public static function payment($id)
     {
         $db = MZC_Crm_Db::db(); if (!$db) { return null; }
-        return $db->get_row($db->prepare('SELECT y.*, q.no AS cheque_no, q.bank AS cheque_bank, q.due_at AS cheque_due, q.status AS cheque_status FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id WHERE y.id = %d', (int) $id), ARRAY_A);
+        return $db->get_row($db->prepare('SELECT y.*, x.name AS via_name, q.no AS cheque_no, q.bank AS cheque_bank, q.due_at AS cheque_due, q.status AS cheque_status FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('vendors') . '` x ON x.id = y.via_id LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id WHERE y.id = %d', (int) $id), ARRAY_A);
     }
 
     /** A page of payments. $f: direction, customer, vendor, invoice, method, account, category, expense (only expenses), from, to, q. Newest first, with the party's name. */
@@ -302,13 +302,13 @@ final class MZC_Acc
         $db = MZC_Crm_Db::db(); if (!$db) { return array(array(), 0); }
         $where = array('1=1'); $args = array();
         foreach (array('direction' => 'y.direction = %s', 'method' => 'y.method = %s', 'account' => 'y.account = %s', 'category' => 'y.category = %s', 'from' => 'y.at >= %s', 'to' => 'y.at <= %s') as $k => $sql) { if (!empty($f[$k])) { $where[] = $sql; $args[] = (string) $f[$k]; } }
-        foreach (array('customer' => 'y.customer_id', 'vendor' => 'y.vendor_id', 'invoice' => 'y.invoice_id') as $k => $col) { if (!empty($f[$k])) { $where[] = "$col = %d"; $args[] = (int) $f[$k]; } }
+        foreach (array('customer' => 'y.customer_id', 'vendor' => 'y.vendor_id', 'invoice' => 'y.invoice_id', 'via' => 'y.via_id') as $k => $col) { if (!empty($f[$k])) { $where[] = "$col = %d"; $args[] = (int) $f[$k]; } }
         if (!empty($f['expense'])) { $where[] = "y.direction = 'out' AND y.customer_id IS NULL AND y.vendor_id IS NULL"; }
         if (isset($f['q']) && $f['q'] !== '') { $l = '%' . $db->esc_like(MZC_Crm::digits($f['q'])) . '%'; $where[] = '(c.name LIKE %s OR w.name LIKE %s OR y.tx LIKE %s OR y.notes LIKE %s OR y.category LIKE %s)'; array_push($args, $l, $l, $l, $l, $l); }
-        $from = 'FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('customers') . '` c ON c.id = y.customer_id LEFT JOIN `' . self::t('vendors') . '` w ON w.id = y.vendor_id LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id LEFT JOIN `'
+        $from = 'FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('customers') . '` c ON c.id = y.customer_id LEFT JOIN `' . self::t('vendors') . '` w ON w.id = y.vendor_id LEFT JOIN `' . self::t('vendors') . '` x ON x.id = y.via_id LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id LEFT JOIN `'
             . self::t('invoices') . '` v ON v.id = y.invoice_id WHERE ' . implode(' AND ', $where);
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) $from", $args) : "SELECT COUNT(*) $from");
-        $rows = $db->get_results($db->prepare("SELECT y.*, c.name AS customer_name, w.name AS vendor_name, q.no AS cheque_no, q.status AS cheque_status, q.due_at AS cheque_due, v.no AS invoice_no, v.kind AS invoice_kind $from ORDER BY y.at DESC, y.id DESC LIMIT %d OFFSET %d",
+        $rows = $db->get_results($db->prepare("SELECT y.*, c.name AS customer_name, w.name AS vendor_name, x.name AS via_name, q.no AS cheque_no, q.status AS cheque_status, q.due_at AS cheque_due, v.no AS invoice_no, v.kind AS invoice_kind $from ORDER BY y.at DESC, y.id DESC LIMIT %d OFFSET %d",
             array_merge($args, array((int) $per, (int) (($page - 1) * $per)))), ARRAY_A);
         return array($rows ?: array(), $total);
     }
@@ -342,10 +342,17 @@ final class MZC_Acc
             if ($vp === null) { return 'فاکتور خرید پیدا نشد.'; }
             if (!$vid) { $vid = (int) $vp; } if ((int) $vp !== $vid) { return 'این فاکتور خرید مال فروشندهٔ دیگری است.'; }
         }
+        // taken by someone else for the shop (the customer paid a supplier's account for us): only money in, from a customer, and never a cheque (it would sit in no account of ours)
+        $via = (int) $g('via_id', 0);
+        if ($via) {
+            if ($dir !== 'in' || !$cid) { return 'دریافت به حساب دیگران فقط برای پولی است که از مشتری می‌آید.'; }
+            if ($method === 'cheque') { return 'چک را به نام خودمان ثبت کنید؛ «حساب دیگران» برای چک نیست.'; }
+            if (!$db->get_var($db->prepare('SELECT id FROM `' . self::t('vendors') . '` WHERE id = %d', $via))) { return 'طرف حساب پیدا نشد.'; }
+        }
         $cat = $cid || $vid ? null : (self::clip($g('category', ''), 60) ?: 'سایر');
         if (!$cid && !$vid && $dir === 'in') { $cat = self::clip($g('category', ''), 60) ?: 'دریافت متفرقه'; }
-        $row = array('direction' => $dir, 'amount' => $amount, 'method' => $method, 'account' => self::clip($g('account', ''), 120) ?: null, 'at' => self::date_in($g('at'), gmdate('Y-m-d')),
-            'customer_id' => $cid ?: null, 'vendor_id' => $vid ?: null, 'invoice_id' => $iid ?: null, 'purchase_id' => $pid ?: null, 'category' => $cat,
+        $row = array('direction' => $dir, 'amount' => $amount, 'method' => $method, 'account' => self::clip($g('account', ''), 120) ?: null, 'at' => self::date_in($g('at'), MZC_Crm::ymd()),
+            'customer_id' => $cid ?: null, 'vendor_id' => $vid ?: null, 'invoice_id' => $iid ?: null, 'purchase_id' => $pid ?: null, 'via_id' => $via ?: null, 'category' => $cat,
             'tx' => self::clip($g('tx', ''), 80) ?: null, 'notes' => self::clip($g('notes', ''), 255) ?: null, 'updated' => self::now());
         $db->query('START TRANSACTION'); $ok = true; $chq = $old ? (int) $old['cheque_id'] : 0;
         if ($method === 'cheque') {
@@ -426,7 +433,7 @@ final class MZC_Acc
             $pay = $old ? (int) $old['payment_id'] : 0;
             if ($pay) { $db->update(self::t('payments'), array('amount' => $amount, 'customer_id' => $cid ?: null, 'vendor_id' => $vid ?: null, 'direction' => $row['direction'], 'updated' => self::now()), array('id' => $pay)); }
             elseif (!empty($d['pay']) && ($cid || $vid)) {
-                $r = self::save_payment(0, array('direction' => $row['direction'], 'amount' => $amount, 'method' => 'cash', 'at' => $row['issued_at'] ?: gmdate('Y-m-d'), 'customer_id' => $cid, 'vendor_id' => $vid, 'notes' => 'چک ' . $no), $uid);
+                $r = self::save_payment(0, array('direction' => $row['direction'], 'amount' => $amount, 'method' => 'cash', 'at' => $row['issued_at'] ?: MZC_Crm::ymd(), 'customer_id' => $cid, 'vendor_id' => $vid, 'notes' => 'چک ' . $no), $uid);
                 if (is_int($r)) { $db->update(self::t('payments'), array('method' => 'cheque', 'cheque_id' => (int) $id), array('id' => $r)); }
             }
         }
@@ -451,11 +458,13 @@ final class MZC_Acc
             $rows[] = array('at' => $j['closed_at'] ?: $j['received_at'], 'kind' => 'job', 'ref' => 'job', 'id' => (int) $j['id'], 'text' => 'سرویس ' . $j['service_no'], 'debit' => max(0, (int) $j['total']), 'credit' => 0);
             foreach ($j['pays'] as $p) { $rows[] = array('at' => $p['paid_at'] ?: $j['received_at'], 'kind' => 'job_pay', 'ref' => 'job', 'id' => (int) $j['id'], 'text' => 'پرداخت سرویس ' . $j['service_no'] . ($p['account'] ? ' — ' . $p['account'] : ''), 'debit' => 0, 'credit' => (int) $p['amount']); }
         }
-        foreach ($db->get_results($db->prepare('SELECT y.*, q.status AS cheque_status, q.no AS cheque_no, v.no AS invoice_no FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id LEFT JOIN `' . self::t('invoices') . '` v ON v.id = y.invoice_id WHERE y.customer_id = %d', (int) $cid), ARRAY_A) ?: array() as $p) {
+        foreach ($db->get_results($db->prepare('SELECT y.*, x.name AS via_name, q.status AS cheque_status, q.no AS cheque_no, v.no AS invoice_no FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('vendors') . '` x ON x.id = y.via_id LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id LEFT JOIN `' . self::t('invoices') . '` v ON v.id = y.invoice_id WHERE y.customer_id = %d', (int) $cid), ARRAY_A) ?: array() as $p) {
             $dead = $p['cheque_status'] !== null && in_array($p['cheque_status'], array('bounced', 'cancelled'), true);
-            $txt = ($p['direction'] === 'in' ? 'دریافت ' : 'پرداخت به مشتری ') . self::$methods[$p['method']] . ($p['cheque_no'] ? ' ' . $p['cheque_no'] : '') . ($p['invoice_no'] ? ' (فاکتور ' . $p['invoice_no'] . ')' : '') . ($dead ? ' — ' . self::$cheque_statuses[$p['cheque_status']] . '، حساب نمی‌شود' : '');
-            $rows[] = array('at' => $p['at'], 'kind' => 'pay', 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => $txt, 'debit' => !$dead && $p['direction'] === 'out' ? (int) $p['amount'] : 0, 'credit' => !$dead && $p['direction'] === 'in' ? (int) $p['amount'] : 0, 'dead' => $dead);
+            $txt = ($p['direction'] === 'in' ? 'دریافت ' : 'پرداخت به مشتری ') . self::$methods[$p['method']] . ($p['cheque_no'] ? ' ' . $p['cheque_no'] : '') . ($p['via_name'] ? ' — به حساب «' . $p['via_name'] . '»' : '') . ($p['invoice_no'] ? ' (فاکتور ' . $p['invoice_no'] . ')' : '') . ($dead ? ' — ' . self::$cheque_statuses[$p['cheque_status']] . '، حساب نمی‌شود' : '');
+            $rows[] = array('at' => $p['at'], 'kind' => 'pay', 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => $txt, 'debit' => !$dead && $p['direction'] === 'out' ? (int) $p['amount'] : 0, 'credit' => !$dead && $p['direction'] === 'in' ? (int) $p['amount'] : 0, 'dead' => $dead,
+                'type' => $p['direction'] === 'in' ? ($p['via_name'] ? 'دریافت به حساب دیگران' : 'دریافت') : 'پرداخت به مشتری', 'how' => self::$methods[$p['method']] . ($p['account'] ? ' — ' . $p['account'] : '') . ($p['via_name'] ? ' — به حساب «' . $p['via_name'] . '»' : ''), 'tx' => (string) $p['tx']);
         }
+        foreach ($rows as &$r) { if (!isset($r['type'])) { $r['type'] = $r['kind'] === 'sale' ? 'فروش' : ($r['kind'] === 'return' ? 'برگشت از فروش' : ($r['kind'] === 'job' ? 'سرویس' : 'دریافت (سرویس)')); } } unset($r);
         return self::run($rows);
     }
 
@@ -479,12 +488,18 @@ final class MZC_Acc
         $db = MZC_Crm_Db::db(); if (!$db) { return array('rows' => array(), 'balance' => 0); }
         $rows = array();
         foreach ($db->get_results($db->prepare('SELECT u.id, u.invoice_no, u.bought_at, (SELECT COALESCE(SUM(i.qty * i.unit_cost), 0) FROM `' . self::t('purchase_items') . '` i WHERE i.purchase_id = u.id) AS total FROM `' . self::t('purchases') . '` u WHERE u.vendor_id = %d', (int) $vid), ARRAY_A) ?: array() as $u) {
-            $rows[] = array('at' => $u['bought_at'], 'kind' => 'purchase', 'ref' => 'purchase', 'id' => (int) $u['id'], 'text' => 'فاکتور خرید ' . ($u['invoice_no'] ?: '#' . $u['id']), 'debit' => (int) $u['total'], 'credit' => 0);
+            $rows[] = array('at' => $u['bought_at'], 'kind' => 'purchase', 'ref' => 'purchase', 'id' => (int) $u['id'], 'text' => 'فاکتور خرید ' . ($u['invoice_no'] ?: '#' . $u['id']), 'debit' => (int) $u['total'], 'credit' => 0, 'type' => 'خرید', 'how' => '', 'tx' => '');
         }
-        foreach ($db->get_results($db->prepare('SELECT y.*, q.status AS cheque_status, q.no AS cheque_no FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id WHERE y.vendor_id = %d', (int) $vid), ARRAY_A) ?: array() as $p) {
+        foreach ($db->get_results($db->prepare('SELECT y.*, c.name AS customer_name, q.status AS cheque_status, q.no AS cheque_no FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('customers') . '` c ON c.id = y.customer_id LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id WHERE y.vendor_id = %d AND y.via_id IS NULL', (int) $vid), ARRAY_A) ?: array() as $p) {
             $dead = $p['cheque_status'] !== null && in_array($p['cheque_status'], array('bounced', 'cancelled'), true);
             $rows[] = array('at' => $p['at'], 'kind' => 'pay', 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => ($p['direction'] === 'out' ? 'پرداخت ' : 'دریافت از فروشنده ') . self::$methods[$p['method']] . ($p['cheque_no'] ? ' ' . $p['cheque_no'] : '') . ($dead ? ' — ' . self::$cheque_statuses[$p['cheque_status']] . '، حساب نمی‌شود' : ''),
-                'debit' => !$dead && $p['direction'] === 'in' ? (int) $p['amount'] : 0, 'credit' => !$dead && $p['direction'] === 'out' ? (int) $p['amount'] : 0, 'dead' => $dead);
+                'debit' => !$dead && $p['direction'] === 'in' ? (int) $p['amount'] : 0, 'credit' => !$dead && $p['direction'] === 'out' ? (int) $p['amount'] : 0, 'dead' => $dead,
+                'type' => $p['direction'] === 'out' ? 'پرداخت ما' : 'دریافت از فروشنده', 'how' => self::$methods[$p['method']] . ($p['account'] ? ' — ' . $p['account'] : ''), 'tx' => (string) $p['tx']);
+        }
+        // money a customer paid to this party instead of to us: it settles what we owe them
+        foreach ($db->get_results($db->prepare('SELECT y.*, c.name AS customer_name FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('customers') . '` c ON c.id = y.customer_id WHERE y.via_id = %d', (int) $vid), ARRAY_A) ?: array() as $p) {
+            $rows[] = array('at' => $p['at'], 'kind' => 'pay', 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => 'دریافت از مشتری «' . $p['customer_name'] . '» به جای ما — ' . self::$methods[$p['method']], 'debit' => 0, 'credit' => (int) $p['amount'], 'dead' => false,
+                'type' => 'مشتری به حساب ایشان واریز کرد', 'how' => self::$methods[$p['method']] . ' — مشتری: ' . $p['customer_name'], 'tx' => (string) $p['tx']);
         }
         return self::run($rows);
     }
@@ -507,10 +522,10 @@ final class MZC_Acc
         $s = $db->get_results($db->prepare("SELECT kind, COUNT(*) AS n, COALESCE(SUM(total), 0) AS total, COALESCE(SUM(discount), 0) AS discount, COALESCE(SUM(tax), 0) AS tax FROM `$iv` WHERE status = 'final' AND kind IN ('sale','return') AND at BETWEEN %s AND %s GROUP BY kind", $from, $to), OBJECT_K);
         $p = $db->get_row($db->prepare("SELECT COALESCE(SUM(CASE v.kind WHEN 'sale' THEN 1 ELSE -1 END * i.qty * (i.unit_price - i.buy_price)), 0) AS profit, SUM(i.buy_price IS NULL) AS missing FROM `$ii` i JOIN `$iv` v ON v.id = i.invoice_id WHERE v.status = 'final' AND v.kind IN ('sale','return') AND v.at BETWEEN %s AND %s", $from, $to), ARRAY_A);
         $live = "(y.cheque_id IS NULL OR NOT EXISTS (SELECT 1 FROM `$ch` q WHERE q.id = y.cheque_id AND q.status IN (" . self::DEAD_CHEQUE . ')))';
-        $flow = $db->get_results($db->prepare("SELECT y.direction, y.method, COALESCE(SUM(y.amount), 0) AS amount FROM `$py` y WHERE $live AND y.at BETWEEN %s AND %s GROUP BY y.direction, y.method", $from, $to), ARRAY_A) ?: array();
+        $flow = $db->get_results($db->prepare("SELECT y.direction, y.method, COALESCE(SUM(y.amount), 0) AS amount FROM `$py` y WHERE $live AND y.via_id IS NULL AND y.at BETWEEN %s AND %s GROUP BY y.direction, y.method", $from, $to), ARRAY_A) ?: array();
         $exp = $db->get_results($db->prepare("SELECT y.category, COALESCE(SUM(y.amount), 0) AS amount FROM `$py` y WHERE $live AND y.direction = 'out' AND y.customer_id IS NULL AND y.vendor_id IS NULL AND y.at BETWEEN %s AND %s GROUP BY y.category ORDER BY amount DESC", $from, $to), ARRAY_A) ?: array();
         // an account holds a cheque's money only once the cheque has cleared
-        $acc = $db->get_results("SELECT COALESCE(y.account, '') AS account, SUM(CASE y.direction WHEN 'in' THEN y.amount ELSE -y.amount END) AS balance FROM `$py` y WHERE (y.cheque_id IS NULL OR EXISTS (SELECT 1 FROM `$ch` q WHERE q.id = y.cheque_id AND q.status = 'cleared')) GROUP BY y.account ORDER BY balance DESC", ARRAY_A) ?: array();
+        $acc = $db->get_results("SELECT COALESCE(y.account, '') AS account, SUM(CASE y.direction WHEN 'in' THEN y.amount ELSE -y.amount END) AS balance FROM `$py` y WHERE y.via_id IS NULL AND (y.cheque_id IS NULL OR EXISTS (SELECT 1 FROM `$ch` q WHERE q.id = y.cheque_id AND q.status = 'cleared')) GROUP BY y.account ORDER BY balance DESC", ARRAY_A) ?: array();
         $jp = $db->get_results('SELECT COALESCE(account, \'\') AS account, SUM(amount) AS amount FROM `' . self::t('job_pays') . '` GROUP BY account', OBJECT_K) ?: array();
         foreach ($acc as &$a) { if (isset($jp[$a['account']])) { $a['balance'] += (int) $jp[$a['account']]->amount; unset($jp[$a['account']]); } } unset($a);
         foreach ($jp as $k => $x) { $acc[] = array('account' => (string) $k, 'balance' => (int) $x->amount); }

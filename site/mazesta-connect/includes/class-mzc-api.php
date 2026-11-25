@@ -296,7 +296,7 @@ final class MZC_Api
             if ($dup) { return self::fail('شمارهٔ فاکتور ' . $inv . ' قبلاً برای سیستم دیگری (' . ($dup['service_no'] ?: '#' . $dup['id']) . ') ثبت شده است.', 409, array('duplicate' => array('id' => (int) $dup['id'], 'service_no' => (string) $dup['service_no']))); }
         }
         $rid = self::s($p, 'report_id', 64);
-        $row = array('customer_id' => $cid, 'invoice_no' => $inv !== '' ? $inv : ($old ? $old['invoice_no'] : null), 'soft' => self::soft_save($p, $old), 'sold_at' => array_key_exists('sold_at', $p) ? self::d($p, 'sold_at') : ($old ? $old['sold_at'] : gmdate('Y-m-d')),
+        $row = array('customer_id' => $cid, 'invoice_no' => $inv !== '' ? $inv : ($old ? $old['invoice_no'] : null), 'soft' => self::soft_save($p, $old), 'sold_at' => array_key_exists('sold_at', $p) ? self::d($p, 'sold_at') : ($old ? $old['sold_at'] : MZC_Crm::ymd()),
             'notes' => array_key_exists('notes', $p) ? self::s($p, 'notes', 4000) : ($old ? $old['notes'] : ''), 'status' => $st, 'delivered' => $st === 'delivered' ? 1 : 0, 'updated' => self::now(),
             'device_type' => isset($p['device_type'], MZC_Crm::$device_types[$p['device_type']]) ? (string) $p['device_type'] : ($old ? $old['device_type'] : 'system'),
             'media' => array_key_exists('media', $p) ? (implode("\n", MZC_Crm::media_list($p['media'])) ?: null) : ($old ? $old['media'] : null));
@@ -369,12 +369,12 @@ final class MZC_Api
         if ($cid instanceof WP_REST_Response) { return $cid; }
         $st = isset($p['status']) && isset(MZC_Crm::$statuses[$p['status']]) ? (string) $p['status'] : ($old ? $old['status'] : 'received');
         $closed = array_key_exists('closed_at', $p) ? self::d($p, 'closed_at') : ($old ? $old['closed_at'] : null);
-        if ($st === 'delivered' && $closed === null) { $closed = gmdate('Y-m-d'); }
+        if ($st === 'delivered' && $closed === null) { $closed = MZC_Crm::ymd(); }
         $row = array('customer_id' => $cid, 'device' => array_key_exists('device', $p) ? (self::s($p, 'device', 190) ?: null) : ($old ? $old['device'] : null),
             'device_serial' => array_key_exists('device_serial', $p) ? (self::s($p, 'device_serial', 120) ?: null) : ($old ? $old['device_serial'] : null), 'soft' => self::soft_save($p, $old),
             'device_type' => isset($p['device_type'], MZC_Crm::$device_types[$p['device_type']]) ? (string) $p['device_type'] : ($old ? $old['device_type'] : null),
             'media' => array_key_exists('media', $p) ? (implode("\n", MZC_Crm::media_list($p['media'])) ?: null) : ($old ? $old['media'] : null),
-            'received_at' => array_key_exists('received_at', $p) ? (self::d($p, 'received_at') ?: gmdate('Y-m-d')) : ($old ? $old['received_at'] : gmdate('Y-m-d')), 'closed_at' => $closed,
+            'received_at' => array_key_exists('received_at', $p) ? (self::d($p, 'received_at') ?: MZC_Crm::ymd()) : ($old ? $old['received_at'] : MZC_Crm::ymd()), 'closed_at' => $closed,
             'due_at' => array_key_exists('due_at', $p) ? self::d($p, 'due_at') : ($old ? $old['due_at'] : null), 'invoice_no' => array_key_exists('invoice_no', $p) ? (self::s($p, 'invoice_no', 60) ?: null) : ($old ? $old['invoice_no'] : null),
             'is_mazesta' => array_key_exists('is_mazesta', $p) ? self::flag($p, 'is_mazesta') : ($old ? (int) $old['is_mazesta'] : 0), 'has_warranty' => array_key_exists('has_warranty', $p) ? self::flag($p, 'has_warranty') : ($old ? (int) $old['has_warranty'] : 0),
             'service_done' => in_array($st, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $st, 'complaint' => array_key_exists('complaint', $p) ? self::s($p, 'complaint', 4000) : ($old ? $old['complaint'] : ''),
@@ -429,7 +429,7 @@ final class MZC_Api
         if ($busy = self::locked_by_other($a, 'job', $id)) { return $busy; }
         if (isset($p['updated']) && (string) $p['updated'] !== (string) $j['updated']) { return self::fail('این سرویس در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($j, false, self::money_seen($a)))); }
         $row = array('status' => $st, 'service_done' => in_array($st, array('ready', 'delivered'), true) ? 1 : 0, 'updated' => self::now());
-        if ($st === 'delivered' && !$j['closed_at']) { $row['closed_at'] = gmdate('Y-m-d'); }
+        if ($st === 'delivered' && !$j['closed_at']) { $row['closed_at'] = MZC_Crm::ymd(); }
         $db->update(self::t('jobs'), $row, array('id' => $id));
         self::log($a, 'status', 'job', $id, $j['status'] . ' → ' . $st);
         return self::ok(self::job_out(MZC_Crm::job($id), false, self::money_seen($a)));

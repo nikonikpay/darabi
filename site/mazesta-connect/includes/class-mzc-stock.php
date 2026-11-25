@@ -206,7 +206,7 @@ final class MZC_Stock
                 'sell' => isset($x['sell_price']) && $x['sell_price'] !== '' && $x['sell_price'] !== null ? self::money_in($x['sell_price']) : null, 'serials' => $serials);
         }
         if (!$items) { return 'دست‌کم یک کالا در فاکتور بنویسید.'; }
-        $date = isset($d['bought_at']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $d['bought_at']) ? (string) $d['bought_at'] : gmdate('Y-m-d');
+        $date = isset($d['bought_at']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $d['bought_at']) ? (string) $d['bought_at'] : MZC_Crm::ymd();
         $row = array('vendor_id' => $vid, 'invoice_no' => $inv !== '' ? $inv : null, 'bought_at' => $date, 'notes' => isset($d['notes']) ? mb_substr(trim(wp_strip_all_tags((string) $d['notes'])), 0, 2000) : null, 'updated' => self::now());
         $before = $id ? ($db->get_col($db->prepare('SELECT product_id FROM `' . self::t('purchase_items') . '` WHERE purchase_id = %d', (int) $id)) ?: array()) : array();   // their counts change too
         $db->query('START TRANSACTION'); $ok = true; $err = '';

@@ -15,9 +15,9 @@ final class MZC_Report
     /** The quick periods the pages offer: key => array(label, from, to), in the Persian calendar's months and years. */
     public static function periods()
     {
-        $j = MZC_Crm::jdate(gmdate('Y-m-d')); list($y, $m) = array((int) substr($j, 0, 4), (int) substr($j, 5, 2));
+        $j = MZC_Crm::jdate(MZC_Crm::ymd()); list($y, $m) = array((int) substr($j, 0, 4), (int) substr($j, 5, 2));
         $start = function ($yy, $mm) { return MZC_Crm::gdate(sprintf('%04d/%02d/01', $yy, $mm)); };
-        $py = $m === 1 ? $y - 1 : $y; $pm = $m === 1 ? 12 : $m - 1; $today = gmdate('Y-m-d');
+        $py = $m === 1 ? $y - 1 : $y; $pm = $m === 1 ? 12 : $m - 1; $today = MZC_Crm::ymd();
         return array(
             'month' => array('این ماه', $start($y, $m), $today),
             'last' => array('ماه قبل', $start($py, $pm), gmdate('Y-m-d', strtotime($start($y, $m) . ' -1 day'))),

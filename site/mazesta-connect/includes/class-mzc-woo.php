@@ -137,7 +137,7 @@ final class MZC_Woo
         if ((float) $o->get_shipping_total() > 0) { $items[] = array('name' => 'هزینهٔ ارسال (' . $o->get_shipping_method() . ')', 'qty' => 1, 'unit_price' => $t($o->get_shipping_total())); }
         if ((float) $o->get_total_tax() > 0) { $items[] = array('name' => 'مالیات سفارش سایت', 'qty' => 1, 'unit_price' => $t($o->get_total_tax())); }
         if (!$items) { return 'سفارش ردیفی ندارد.'; }
-        $paid = $o->get_date_paid() ?: $o->get_date_created(); $at = $paid ? $paid->date('Y-m-d') : gmdate('Y-m-d');
+        $paid = $o->get_date_paid() ?: $o->get_date_created(); $at = $paid ? $paid->date('Y-m-d') : MZC_Crm::ymd();
         $id = MZC_Acc::save_invoice(0, array('kind' => 'sale', 'customer_id' => $cid, 'at' => $at, 'tax_pct' => 0, 'items' => $items, 'notes' => 'سفارش سایت #' . $o->get_order_number()));
         if (!is_int($id)) { return $id; }
         $db->update(MZC_Crm_Db::t('invoices'), array('wc_order_id' => (int) $o->get_id()), array('id' => $id));
@@ -171,7 +171,7 @@ final class MZC_Woo
         $id = (int) $db->get_var($db->prepare('SELECT id FROM `' . MZC_Crm_Db::t('invoices') . "` WHERE wc_order_id = %d AND status = 'final'", (int) $o->get_id())); if (!$id) { return; }
         $v = MZC_Acc::invoice($id);
         MZC_Acc::void_invoice($id, 'سفارش سایت ' . ($o->get_status() === 'refunded' ? 'مسترد شد' : 'لغو شد'));
-        if ((int) $v['paid'] > 0) { MZC_Acc::save_payment(0, array('direction' => 'out', 'amount' => (int) $v['paid'], 'method' => 'online', 'account' => 'درگاه سایت', 'at' => gmdate('Y-m-d'), 'customer_id' => (int) $v['customer_id'], 'invoice_id' => $id, 'notes' => 'بازپرداخت سفارش سایت #' . $o->get_order_number())); }
+        if ((int) $v['paid'] > 0) { MZC_Acc::save_payment(0, array('direction' => 'out', 'amount' => (int) $v['paid'], 'method' => 'online', 'account' => 'درگاه سایت', 'at' => MZC_Crm::ymd(), 'customer_id' => (int) $v['customer_id'], 'invoice_id' => $id, 'notes' => 'بازپرداخت سفارش سایت #' . $o->get_order_number())); }
     }
 
     /** Brings in the paid orders not yet in the CRM (newest first, at most $limit, from $after). Returns array(made, errors). */
