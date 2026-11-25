@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 18;
+    const SCHEMA = 19;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -214,6 +214,8 @@ final class MZC_Crm_Db
         // schema 17: the test report from before the service (report_id stays the one after it, as it always was)
         $cols['jobs'] += array('report_pre' => 'VARCHAR(64) NULL', 'hands' => 'TEXT NULL', 'diagnosis' => 'TEXT NULL');
         $cols['payments'] = array('via_id' => 'BIGINT UNSIGNED NULL');
+        // schema 19: a version saved offline (offline = 1) at its own time; applied = 0 when an older offline save lost to a later change and is kept in the history only
+        $cols['revisions'] = array('applied' => 'TINYINT NOT NULL DEFAULT 1', 'offline' => 'TINYINT NOT NULL DEFAULT 0');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {

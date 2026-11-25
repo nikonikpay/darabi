@@ -68,7 +68,7 @@ final class MZC_Desk_Api
         $now = gmdate('Y-m-d H:i:s'); $t = self::t('shortages');
         if ($old) {
             if (!self::buyer($a['id'])) { return self::fail('جواب دادن به درخواست قطعه با انبار یا حسابداری است.', 403); }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این درخواست در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409); }
+            if (MZC_Rev::stale('shortage', $id, $p, $old['updated'])) { return self::fail('این درخواست در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409); }
             $row = array('updated' => $now);
             if (isset($p['status'])) { if (!isset(self::$short_statuses[(string) $p['status']])) { return self::fail('وضعیت درست نیست.', 422); } $row['status'] = (string) $p['status']; }
             if (array_key_exists('note', $p)) { $row['note'] = MZC_Api::s($p, 'note', 255) ?: null; }
@@ -122,7 +122,7 @@ final class MZC_Desk_Api
     {
         $a = MZC_Staff::auth($req, 'ships', 2); if ($a instanceof WP_REST_Response) { return $a; }
         $p = MZC_Api::body($req); $id = MZC_Api::n($p, 'id'); $old = $id ? MZC_Ships::ship($id) : null;
-        if ($old && isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این مورد در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409); }
+        if ($old && MZC_Rev::stale('ship', $id, $p, $old['updated'])) { return self::fail('این مورد در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409); }
         $r = MZC_Ships::api_save($id, $p); if (!is_int($r)) { return self::fail($r, 422); }
         MZC_Api::log($a, $id ? 'update' : 'create', 'ship', $r, (string) (isset($p['part_name']) ? $p['part_name'] : ''));
         return MZC_Api::ok(self::ship_out(MZC_Ships::ship($r)), $id ? 200 : 201);

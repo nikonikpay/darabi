@@ -253,7 +253,7 @@ final class MZC_Api
         $p = self::body($req); $id = self::n($p, 'id');
         if ($id) {
             $old = MZC_Crm::customer($id); if (!$old) { return self::fail('مشتری پیدا نشد.', 404); }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این مشتری در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::customer_out($old))); }
+            if (MZC_Rev::stale('customer', $id, $p, $old['updated'])) { return self::fail('این مشتری در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::customer_out($old))); }
         }
         $nid = self::s($p, 'national_id', 20); $email = self::s($p, 'email', 190);
         // `mobiles` (every number, the main one first) wins over mobile/mobile2 when sent
@@ -283,7 +283,7 @@ final class MZC_Api
         if ($id) {
             $old = MZC_Crm::build($id); if (!$old) { return self::fail('سیستم پیدا نشد.', 404); }
             if ($busy = self::locked_by_other($a, 'build', $id)) { return $busy; }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سیستم در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::build_out($old, true, $a))); }
+            if (MZC_Rev::stale('build', $id, $p, $old['updated'])) { return self::fail('این سیستم در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::build_out($old, true, $a))); }
         }
         $cid = $id && empty($p['customer_id']) && empty($p['c_mobile']) ? (int) $old['customer_id'] : self::customer_for($p, $a);
         if ($cid instanceof WP_REST_Response) { return $cid; }
@@ -363,7 +363,7 @@ final class MZC_Api
         if ($id) {
             $old = MZC_Crm::job($id); if (!$old) { return self::fail('سرویس پیدا نشد.', 404); }
             if ($busy = self::locked_by_other($a, 'job', $id)) { return $busy; }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سرویس در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($old, true, self::money_seen($a), self::cost_seen($a)))); }
+            if (MZC_Rev::stale('job', $id, $p, $old['updated'])) { return self::fail('این سرویس در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($old, true, self::money_seen($a), self::cost_seen($a)))); }
         }
         $cid = $id && empty($p['customer_id']) && empty($p['c_mobile']) ? (int) $old['customer_id'] : self::customer_for($p, $a);
         if ($cid instanceof WP_REST_Response) { return $cid; }
@@ -486,7 +486,7 @@ final class MZC_Api
         $p = self::body($req); $id = self::n($p, 'id'); $d = array();
         if ($id) {
             $old = MZC_Stock::product($id); if (!$old) { return self::fail('کالا پیدا نشد.', 404); }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این کالا در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::product_out($old, $a))); }
+            if (MZC_Rev::stale('product', $id, $p, $old['updated'])) { return self::fail('این کالا در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::product_out($old, $a))); }
         }
         foreach (array('name', 'category', 'brand', 'sku', 'notes', 'warranty_months', 'sell_price', 'wc_id') as $k) { if (array_key_exists($k, $p)) { $d[$k] = is_scalar($p[$k]) || $p[$k] === null ? (string) $p[$k] : ''; } }
         if (array_key_exists('buy_price', $p) && self::cost_edit($a)) { $d['buy_price'] = is_scalar($p['buy_price']) ? (string) $p['buy_price'] : ''; }
