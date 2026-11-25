@@ -4449,4 +4449,94 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Files_Menu_resize" xml:space="preserve"><value>کوچک کردن تصویر (مازستا)</value></data>
   <data name="Files_Menu_rename" xml:space="preserve"><value>تغییر نام گروهی (مازستا)</value></data>
   <data name="Files_Menu_Note" xml:space="preserve"><value>در منوی کلیک راست Explorer هم هست (در ویندوز ۱۱ زیر «نمایش گزینه‌های بیشتر»): فایل‌ها را انتخاب کنید، راست‌کلیک کنید و همین بخش با آن‌ها باز می‌شود.</value></data>
+  <data name="DriveLevel_Good" xml:space="preserve"><value>خوب</value></data>
+  <data name="DriveLevel_Watch" xml:space="preserve"><value>نیاز به توجه</value></data>
+  <data name="DriveLevel_Fail" xml:space="preserve"><value>بحرانی</value></data>
+  <data name="DriveIssue_WindowsUnhealthy" xml:space="preserve"><value>ویندوز از روی اطلاعات SMART این دیسک را معیوب گزارش کرده است.</value></data>
+  <data name="DriveIssue_WindowsWarning" xml:space="preserve"><value>ویندوز از روی اطلاعات SMART برای این دیسک هشدار داده است.</value></data>
+  <data name="DriveIssue_Worn" xml:space="preserve"><value>سلامت آن به {0}٪ رسیده است و به پایان عمرش نزدیک است.</value></data>
+  <data name="DriveIssue_Wearing" xml:space="preserve"><value>سلامت آن به {0}٪ رسیده است و بخش زیادی از عمرش مصرف شده است.</value></data>
+  <data name="DriveIssue_NvmeBit0" xml:space="preserve"><value>بلوک‌های یدکی آن از حدی که خود دیسک تعیین کرده کمتر شده‌اند.</value></data>
+  <data name="DriveIssue_NvmeBit1" xml:space="preserve"><value>خود دیسک اعلام کرده که دمایش از حد مجاز گذشته است.</value></data>
+  <data name="DriveIssue_NvmeBit2" xml:space="preserve"><value>خود دیسک اعلام کرده که به‌خاطر خطاهای حافظه یا خطاهای داخلی دیگر قابل اطمینان نیست.</value></data>
+  <data name="DriveIssue_NvmeBit3" xml:space="preserve"><value>دیسک خودش را فقط‌خواندنی کرده است.</value></data>
+  <data name="DriveIssue_NvmeBit4" xml:space="preserve"><value>پشتیبان حافظه‌ی موقت دیسک از کار افتاده است.</value></data>
+  <data name="DriveIssue_NvmeBit5" xml:space="preserve"><value>ناحیه‌ی حافظه‌ی ماندگار دیسک فقط‌خواندنی شده است.</value></data>
+  <data name="DriveIssue_MediaErrors" xml:space="preserve"><value>{0} خطای داده ثبت کرده که نتوانسته اصلاح کند.</value></data>
+  <data name="DriveIssue_CriticalTempTime" xml:space="preserve"><value>{0} دقیقه بالاتر از دمای بحرانی خودش کار کرده است.</value></data>
+  <data name="DriveIssue_AttrFailing" xml:space="preserve"><value>پارامتر «{0}» (ID {1}) به آستانه‌ی خرابی‌ای که خود دیسک تعیین کرده رسیده است.</value></data>
+  <data name="DriveIssue_BadSectors" xml:space="preserve"><value>{0} سکتور خراب روی سطح دیسک هست (جایگزین‌شده، در انتظار یا غیرقابل‌خواندن).</value></data>
+  <data name="DriveIssue_Hot" xml:space="preserve"><value>دمای آن {0} درجه است و بیش از حد داغ است. خنک‌کاری و جریان هوای آن را بررسی کنید.</value></data>
+  <data name="DriveIssue_Warm" xml:space="preserve"><value>دمای آن {0} درجه است و از حد مناسب گرم‌تر است.</value></data>
+  <data name="DriveNvme_CriticalWarning" xml:space="preserve"><value>هشدار بحرانی</value></data>
+  <data name="DriveNvme_Temperature" xml:space="preserve"><value>دما</value></data>
+  <data name="DriveNvme_Spare" xml:space="preserve"><value>فضای یدکی موجود</value></data>
+  <data name="DriveNvme_SpareThreshold" xml:space="preserve"><value>آستانه‌ی فضای یدکی</value></data>
+  <data name="DriveNvme_Used" xml:space="preserve"><value>درصد عمر مصرف‌شده</value></data>
+  <data name="DriveNvme_DataRead" xml:space="preserve"><value>داده‌ی خوانده‌شده</value></data>
+  <data name="DriveNvme_DataWritten" xml:space="preserve"><value>داده‌ی نوشته‌شده</value></data>
+  <data name="DriveNvme_HostReads" xml:space="preserve"><value>دستورهای خواندن</value></data>
+  <data name="DriveNvme_HostWrites" xml:space="preserve"><value>دستورهای نوشتن</value></data>
+  <data name="DriveNvme_BusyTime" xml:space="preserve"><value>زمان مشغول بودن کنترلر</value></data>
+  <data name="DriveNvme_PowerCycles" xml:space="preserve"><value>دفعات روشن شدن</value></data>
+  <data name="DriveNvme_PowerOnHours" xml:space="preserve"><value>ساعت کارکرد</value></data>
+  <data name="DriveNvme_UnsafeShutdowns" xml:space="preserve"><value>خاموشی‌های ناگهانی</value></data>
+  <data name="DriveNvme_MediaErrors" xml:space="preserve"><value>خطاهای حافظه و درستی داده</value></data>
+  <data name="DriveNvme_ErrorLog" xml:space="preserve"><value>ورودی‌های لاگ خطا</value></data>
+  <data name="DriveNvme_WarnTempTime" xml:space="preserve"><value>زمان کار بالای دمای هشدار</value></data>
+  <data name="DriveNvme_CritTempTime" xml:space="preserve"><value>زمان کار بالای دمای بحرانی</value></data>
+  <data name="DriveNvme_Tmt1Count" xml:space="preserve"><value>دفعات کاهش سرعت از گرما (مرحله ۱)</value></data>
+  <data name="DriveNvme_Tmt2Count" xml:space="preserve"><value>دفعات کاهش سرعت از گرما (مرحله ۲)</value></data>
+  <data name="DriveNvme_Tmt1Time" xml:space="preserve"><value>زمان کاهش سرعت از گرما (مرحله ۱)</value></data>
+  <data name="DriveNvme_Tmt2Time" xml:space="preserve"><value>زمان کاهش سرعت از گرما (مرحله ۲)</value></data>
+  <data name="DriveNvme_WarnThreshold" xml:space="preserve"><value>دمای هشدار خود دیسک</value></data>
+  <data name="DriveNvme_CritThreshold" xml:space="preserve"><value>دمای بحرانی خود دیسک</value></data>
+  <data name="DriveAttr_1" xml:space="preserve"><value>نرخ خطای خواندن</value></data>
+  <data name="DriveAttr_3" xml:space="preserve"><value>زمان راه‌اندازی موتور</value></data>
+  <data name="DriveAttr_4" xml:space="preserve"><value>دفعات روشن و خاموش شدن موتور</value></data>
+  <data name="DriveAttr_5" xml:space="preserve"><value>سکتورهای جایگزین‌شده</value></data>
+  <data name="DriveAttr_7" xml:space="preserve"><value>نرخ خطای جابه‌جایی هد</value></data>
+  <data name="DriveAttr_9" xml:space="preserve"><value>ساعت کارکرد</value></data>
+  <data name="DriveAttr_10" xml:space="preserve"><value>تلاش دوباره برای چرخش</value></data>
+  <data name="DriveAttr_12" xml:space="preserve"><value>دفعات روشن شدن</value></data>
+  <data name="DriveAttr_187" xml:space="preserve"><value>خطاهای اصلاح‌نشده‌ی گزارش‌شده</value></data>
+  <data name="DriveAttr_188" xml:space="preserve"><value>دستورهای بی‌پاسخ</value></data>
+  <data name="DriveAttr_190" xml:space="preserve"><value>دمای جریان هوا</value></data>
+  <data name="DriveAttr_192" xml:space="preserve"><value>خاموشی‌های اضطراری</value></data>
+  <data name="DriveAttr_193" xml:space="preserve"><value>دفعات پارک هد</value></data>
+  <data name="DriveAttr_194" xml:space="preserve"><value>دما</value></data>
+  <data name="DriveAttr_196" xml:space="preserve"><value>رویدادهای جایگزینی سکتور</value></data>
+  <data name="DriveAttr_197" xml:space="preserve"><value>سکتورهای در انتظار جایگزینی</value></data>
+  <data name="DriveAttr_198" xml:space="preserve"><value>سکتورهای غیرقابل‌اصلاح</value></data>
+  <data name="DriveAttr_199" xml:space="preserve"><value>خطاهای انتقال (کابل)</value></data>
+  <data name="DriveAttr_Vendor" xml:space="preserve"><value>مخصوص سازنده (ID {0})</value></data>
+  <data name="DriveWhy_CriticalWarning" xml:space="preserve"><value>پرچم‌های هشدار بحرانی خود دیسک. هر پرچمی که روشن باشد یعنی خود دیسک خرابی گزارش کرده است (کدام، بالای جدول آمده). از اطلاعات پشتیبان بگیرید و برای تعویض دیسک برنامه بریزید.</value></data>
+  <data name="DriveWhy_Temp" xml:space="preserve"><value>دمای دیسک بیشتر از حد مناسب است. گرما به مرور عمر دیسک را کم می‌کند و دیسک داغ سرعتش را پایین می‌آورد. جریان هوای کیس، فن‌ها و برای دیسک M.2 هیت‌سینک آن را بررسی کنید.</value></data>
+  <data name="DriveWhy_Spare" xml:space="preserve"><value>بلوک‌های یدکی جای بلوک‌های فرسوده را می‌گیرند. وقتی از آستانه‌ی خود دیسک کمتر شوند، دیگر جایگزین کافی برای بلوک‌های خراب ندارد و ممکن است اطلاعات از بین برود.</value></data>
+  <data name="DriveWhy_Used" xml:space="preserve"><value>درصدی از عمر نوشتنی که سازنده برای دیسک تعیین کرده و مصرف شده است. بعد از ۱۰۰٪ ممکن است کار کند ولی دیگر در محدوده‌ی دوام سازنده نیست.</value></data>
+  <data name="DriveWhy_MediaErrors" xml:space="preserve"><value>خطاهایی که دیسک هنگام خواندن یا نوشتن نتوانسته اصلاح کند. حتی چند مورد یعنی ممکن است بخشی از اطلاعات خراب شده باشد.</value></data>
+  <data name="DriveWhy_TempTime" xml:space="preserve"><value>دقیقه‌هایی که دیسک در طول عمرش بالاتر از دمای هشدار یا بحرانی خودش کار کرده است. اگر این عدد مدام بیشتر شود یعنی هنگام کار داغ می‌کند.</value></data>
+  <data name="DriveWhy_AtaThreshold" xml:space="preserve"><value>مقدار فعلی (که خود دیسک تعیین می‌کند و هرچه بیشتر بهتر) به آستانه‌ای رسیده که خود دیسک برای خرابی تعیین کرده است؛ یعنی طبق تست خود دیسک در حال خراب شدن است.</value></data>
+  <data name="DriveWhy_Sectors" xml:space="preserve"><value>سکتورهایی از سطح دیسک که درست خوانده نشده‌اند. وقتی در هارد دیسک پیدا شوند معمولاً بیشتر می‌شوند: پشتیبان بگیرید و این عدد را زیر نظر داشته باشید.</value></data>
+  <data name="DriveWhy_Crc" xml:space="preserve"><value>خطاهای مسیر بین دیسک و مادربرد، نه خود دیسک. معمولاً کابل یا پورت SATA شل یا معیوب است: کابل را جابه‌جا یا عوض کنید.</value></data>
+  <data name="Web_Drive_Title" xml:space="preserve"><value>سلامت دیسک‌ها</value></data>
+  <data name="Web_Drive_Health" xml:space="preserve"><value>سلامت</value></data>
+  <data name="Web_Drive_Temp" xml:space="preserve"><value>دما</value></data>
+  <data name="Web_Drive_TempLimits" xml:space="preserve"><value>زرد از {0} و قرمز از {1} درجه</value></data>
+  <data name="Web_Drive_Backup" xml:space="preserve"><value>برای جلوگیری از از دست رفتن اطلاعات، همین حالا از آن نسخه‌ی پشتیبان بگیرید.</value></data>
+  <data name="Web_Drive_Fine" xml:space="preserve"><value>در گزارش خود دیسک مشکلی دیده نمی‌شود.</value></data>
+  <data name="Web_Drive_NoHealth" xml:space="preserve"><value>شمارنده‌ی سلامت ندارد</value></data>
+  <data name="Web_Drive_Params" xml:space="preserve"><value>پارامترها</value></data>
+  <data name="Web_Drive_Flagged" xml:space="preserve"><value>{0} مورد نیاز به بررسی</value></data>
+  <data name="Web_Drive_Col_Name" xml:space="preserve"><value>پارامتر</value></data>
+  <data name="Web_Drive_Col_Cur" xml:space="preserve"><value>فعلی</value></data>
+  <data name="Web_Drive_Col_Worst" xml:space="preserve"><value>بدترین</value></data>
+  <data name="Web_Drive_Col_Thr" xml:space="preserve"><value>آستانه</value></data>
+  <data name="Web_Drive_Col_Raw" xml:space="preserve"><value>مقدار خام</value></data>
+  <data name="Web_Drive_Col_Value" xml:space="preserve"><value>مقدار</value></data>
+  <data name="Web_Drive_Loading" xml:space="preserve"><value>در حال خواندن گزارش خود دیسک‌ها…</value></data>
+  <data name="Web_Drive_None" xml:space="preserve"><value>هیچ دیسکی گزارش سلامت نداد (دیسک‌های USB خوانده نمی‌شوند).</value></data>
+  <data name="Web_Drive_Error" xml:space="preserve"><value>گزارش دیسک‌ها خوانده نشد: {0}</value></data>
+  <data name="Help_Web_Drive_Title" xml:space="preserve"><value>سلامت هر دیسک همان‌طور که خود دیسک گزارش می‌دهد، مثل Hard Disk Sentinel و CrystalDiskInfo: درصد سلامت روی یک نوار، دما (با بالا رفتن زرد و بعد قرمز می‌شود؛ SSD از ۶۰ و ۷۰ درجه، هارد دیسک از ۵۰ و ۵۵ درجه، یا حد پایین‌تر خود دیسک)، اشکال‌ها با توضیح ساده و هشدار پشتیبان‌گیری، و همه‌ی پارامترهای SMART یا NVMe. سطر پارامتری که مشکل دارد رنگی است؛ روی آن کلیک کنید تا معنی آن و کاری که باید کرد را ببینید.</value></data>
+  <data name="HelpHow_Web_Drive_Title" xml:space="preserve"><value>صفحه ذخیره‌سازی را باز کنید و در کادر سلامت دیسک‌ها نوار سلامت و دمای هر دیسک را ببینید.|اگر کادر رنگی اشکالی را نوشته، آن را بخوانید؛ کادر قرمز یعنی همین حالا از اطلاعات دیسک پشتیبان بگیرید.|«پارامترها» را باز کنید و روی سطر رنگی کلیک کنید تا معنی آن و کاری که باید کرد را ببینید.|برنامه‌ی کنار ساعت (tray) هم همین اشکال‌ها را در پنجره‌ی خلاصه‌اش نشان می‌دهد و هر اشکال تازه را یک بار اعلام می‌کند.</value></data>
 </root>

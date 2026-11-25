@@ -430,6 +430,7 @@ export async function call(m, p, emit) {
     case "tuning.state": return tuning();
     case "tuning.set": if (p.field === "curve") { form.core = p.core; form.coreValue = +p.core; form.capValue = +p.cap; form.maxClock = p.cap; } return null;
     case "reports.state": return reports();
+    case "drives.health": await new Promise((r) => setTimeout(r, 300)); return { drives: demoDrives() };
     case "bitlocker.get": return { known: true, volumes: [{ letter: "C:", state: "WaitingForActivation", canLock: true, recovery: false }, { letter: "D:", state: "Off", canLock: false, recovery: null }] };
     case "tools.state": return { busy: false, status: strings.Tools_Result_Healthy, percent: 100, canCancel: false,
       output: ["Beginning system scan.  This process will take some time.", "", "Beginning verification phase of system scan.", "Verification 100% complete.", "", "Windows Resource Protection did not find any integrity violations."],
@@ -440,4 +441,23 @@ export async function call(m, p, emit) {
       overlayVisible: false, overlayCorner: "TopLeft", overlayCorners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })), hotkey: "Ctrl+Shift+O" };
     default: return null;
   }
+}
+
+// The storage page's drive health box in the preview: a warm NVMe drive (amber, one row marked) and a failing hard disk, so both branches can be seen.
+function demoDrives() {
+  const s = (k, ...a) => a.reduce((x, v, i) => x.replace(`{${i}}`, v), strings[k]);
+  const p = (name, value, level = "Good", why = null, extra = {}) => ({ id: null, name: strings[name] || name, value, level, why: why && strings[why], cur: null, worst: null, thr: null, ...extra });
+  const a = (id, key, cur, worst, thr, raw, level = "Good", why = null) => ({ ...p(key, raw, level, why), id, cur, worst, thr });
+  return [
+    { name: "Samsung SSD 980 PRO 1TB", letters: "C:", media: "SSD", bus: "NVMe", health: 97, level: "Watch", verdict: strings.DriveLevel_Watch, temp: 63, tempLevel: "Watch", watchC: 60, failC: 70, backup: false, ata: false,
+      issues: [{ text: s("DriveIssue_Warm", "63"), level: "Watch" }],
+      params: [p("DriveNvme_CriticalWarning", "0x00"), p("DriveNvme_Temperature", "63 °C", "Watch", "DriveWhy_Temp"), p("DriveNvme_Spare", "100 %"), p("DriveNvme_SpareThreshold", "10 %"), p("DriveNvme_Used", "3 %"),
+        p("DriveNvme_DataRead", "48.2 TB"), p("DriveNvme_DataWritten", "31.7 TB"), p("DriveNvme_PowerOnHours", "6,214 h"), p("DriveNvme_UnsafeShutdowns", "87"), p("DriveNvme_MediaErrors", "0"),
+        p("DriveNvme_ErrorLog", "12"), p("DriveNvme_WarnTempTime", "0 min"), p("DriveNvme_CritTempTime", "0 min"), p("DriveNvme_WarnThreshold", "82 °C"), p("DriveNvme_CritThreshold", "85 °C")] },
+    { name: "WDC WD20PURZ-85GU6Y0", letters: "D:", media: "HDD", bus: "SATA", health: 6, level: "Fail", verdict: strings.DriveLevel_Fail, temp: 41, tempLevel: "Good", watchC: 50, failC: 55, backup: true, ata: true,
+      issues: [{ text: s("DriveIssue_AttrFailing", strings.DriveAttr_5, "05"), level: "Fail" }, { text: s("DriveIssue_Worn", "6"), level: "Fail" }, { text: s("DriveIssue_BadSectors", "976"), level: "Watch" }],
+      params: [a("01", "DriveAttr_1", 200, 200, 51, "0"), a("03", "DriveAttr_3", 175, 172, 21, "4225"), a("05", "DriveAttr_5", 1, 1, 140, "976", "Fail", "DriveWhy_AtaThreshold"),
+        a("09", "DriveAttr_9", 61, 61, 0, "28775"), a("C2", "DriveAttr_194", 106, 99, 0, "41 °C"), a("C5", "DriveAttr_197", 200, 200, 0, "14", "Watch", "DriveWhy_Sectors"),
+        a("C6", "DriveAttr_198", 200, 200, 0, "0"), a("C7", "DriveAttr_199", 200, 200, 0, "3", "Watch", "DriveWhy_Crc")] },
+  ];
 }

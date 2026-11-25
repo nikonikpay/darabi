@@ -1971,3 +1971,46 @@ div.findings { max-height: none; overflow: visible; }
 .chk-usb-row.bad { background: color-mix(in oklab, var(--fail) 14%, transparent); }
 .chk-usb-row svg { width: 18px; height: 18px; flex: none; stroke: var(--pass); }
 .chk-usb-row.bad svg { stroke: var(--fail); }
+
+/* ——— Drive health (storage page): the health on a bar and the temperature in its level's colour, the findings, the parameter table. Fine is plain white, never the storage hue: its orange reads as the amber of a caution. ——— */
+.dh-panel { --hue: var(--c-storage); margin: 14px 0 4px; }
+.dh-list { display: grid; gap: 16px; }
+.dh-drive + .dh-drive { border-top: 1px solid var(--rule); padding-top: 14px; }
+.dh-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.dh-name { font-weight: 700; font-size: 14px; }
+.dh-head .pill { margin-inline-start: auto; }
+.dh-read { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.dh-cell { --c: var(--paper); display: grid; gap: 6px; align-content: start; background: var(--well); border-radius: 4px; padding: 10px 12px; }
+.dh-cell.lv-Watch { --c: var(--warn); } .dh-cell.lv-Fail { --c: var(--fail); }
+.dh-cell .k { font-size: 12px; color: var(--paper-3); }
+.dh-big { font-size: 28px; font-weight: 700; line-height: 1; color: var(--c); }
+.dh-cell .bar { height: 10px; border-radius: 1px; background: var(--ticks), var(--ink-4); overflow: hidden; }
+.dh-cell .bar i { display: block; height: 100%; width: 100%; background: var(--c); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 700ms var(--ease); }
+[dir="ltr"] .dh-cell .bar i { --from: left; }
+.dh-alert { margin-top: 12px; padding: 10px 12px; border-inline-start: 3px solid currentColor; border-radius: 3px; background: color-mix(in oklab, currentColor 10%, transparent); }
+.dh-alert.fail { color: var(--fail); } .dh-alert.warn { color: var(--warn); }
+.dh-alert ul { margin: 0; padding-inline-start: 18px; color: var(--paper); line-height: 1.9; }
+.dh-alert li.fail::marker { color: var(--fail); } .dh-alert li.warn::marker { color: var(--warn); }
+.dh-backup { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-weight: 700; }
+.dh-backup svg { width: 14px; height: 14px; stroke: currentColor; fill: none; flex: none; }
+.dh-fine { margin: 10px 0 0; }
+.dh-params { margin-top: 10px; }
+.dh-params summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; padding: 4px 0; }
+.dh-table tr.flag { color: var(--warn); } .dh-table tr.flag.fail { color: var(--fail); }
+.dh-table tr.flag td { background: color-mix(in oklab, currentColor 10%, transparent); }
+.dh-table tr.flag td:first-child { border-inline-start: 3px solid currentColor; }
+.dh-table tr.why td { color: var(--paper-2); background: var(--well); padding: 8px 12px; line-height: 1.8; white-space: normal; }
+.dh-why { all: unset; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 700; }
+.dh-why:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.dh-why svg { width: 12px; height: 12px; stroke: currentColor; fill: none; transition: transform 160ms var(--ease); }
+.dh-why[aria-expanded="true"] svg { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .dh-cell .bar i, .dh-why svg { transition: none; } }
+/* The dashboard's drive rows: the health as a figure you can read across the room, with its bar; the temperature amber or red past the drive's limits. */
+.dash-health .row { align-items: baseline; justify-content: flex-start; gap: 10px; }
+.dash-health .row .num { font-size: 18px; font-weight: 700; color: var(--paper); }
+.dash-health .bar i { background: var(--paper-2); }
+.dash-health .bar { height: 8px; }
+.dash-health[data-level="Watch"] .row .num { color: var(--warn); } .dash-health[data-level="Watch"] .bar i { background: var(--warn); }
+.dash-health[data-level="Fail"] .row .num { color: var(--fail); } .dash-health[data-level="Fail"] .bar i { background: var(--fail); }
+.unit-row .vals [data-level="Watch"] { color: var(--warn); font-weight: 700; } .unit-row .vals [data-level="Fail"] { color: var(--fail); font-weight: 700; }
+.meter.dash-health[hidden] { display: none; }

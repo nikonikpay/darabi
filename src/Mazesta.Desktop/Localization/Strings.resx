@@ -4449,4 +4449,94 @@ Cancel: stop.</value></data>
   <data name="Files_Menu_resize" xml:space="preserve"><value>Make pictures smaller (Mazesta)</value></data>
   <data name="Files_Menu_rename" xml:space="preserve"><value>Rename together (Mazesta)</value></data>
   <data name="Files_Menu_Note" xml:space="preserve"><value>Also in Explorer's right-click menu (on Windows 11 under Show more options): select the files, right-click, and this box opens with them.</value></data>
+  <data name="DriveLevel_Good" xml:space="preserve"><value>Good</value></data>
+  <data name="DriveLevel_Watch" xml:space="preserve"><value>Needs attention</value></data>
+  <data name="DriveLevel_Fail" xml:space="preserve"><value>Critical</value></data>
+  <data name="DriveIssue_WindowsUnhealthy" xml:space="preserve"><value>Windows reports this drive as failing from its SMART data.</value></data>
+  <data name="DriveIssue_WindowsWarning" xml:space="preserve"><value>Windows warns about this drive from its SMART data.</value></data>
+  <data name="DriveIssue_Worn" xml:space="preserve"><value>Its health is down to {0}%: it is near the end of its life.</value></data>
+  <data name="DriveIssue_Wearing" xml:space="preserve"><value>Its health is down to {0}%: it has used a good part of its life.</value></data>
+  <data name="DriveIssue_NvmeBit0" xml:space="preserve"><value>Its spare blocks have fallen below the drive's own limit.</value></data>
+  <data name="DriveIssue_NvmeBit1" xml:space="preserve"><value>The drive reports its temperature beyond its own limit.</value></data>
+  <data name="DriveIssue_NvmeBit2" xml:space="preserve"><value>The drive reports its reliability degraded by media or internal errors.</value></data>
+  <data name="DriveIssue_NvmeBit3" xml:space="preserve"><value>The drive has switched itself to read-only.</value></data>
+  <data name="DriveIssue_NvmeBit4" xml:space="preserve"><value>The drive's volatile memory backup has failed.</value></data>
+  <data name="DriveIssue_NvmeBit5" xml:space="preserve"><value>The drive's persistent memory region has become read-only.</value></data>
+  <data name="DriveIssue_MediaErrors" xml:space="preserve"><value>It has logged {0} data errors it could not correct.</value></data>
+  <data name="DriveIssue_CriticalTempTime" xml:space="preserve"><value>It has run {0} minutes above its own critical temperature.</value></data>
+  <data name="DriveIssue_AttrFailing" xml:space="preserve"><value>Parameter «{0}» (ID {1}) has reached the threshold the drive set for failure.</value></data>
+  <data name="DriveIssue_BadSectors" xml:space="preserve"><value>There are {0} bad sectors on the disk surface (replaced, pending or unreadable).</value></data>
+  <data name="DriveIssue_Hot" xml:space="preserve"><value>It is at {0} °C: too hot. Check its cooling and airflow.</value></data>
+  <data name="DriveIssue_Warm" xml:space="preserve"><value>It is at {0} °C: warmer than it should be.</value></data>
+  <data name="DriveNvme_CriticalWarning" xml:space="preserve"><value>Critical warning</value></data>
+  <data name="DriveNvme_Temperature" xml:space="preserve"><value>Temperature</value></data>
+  <data name="DriveNvme_Spare" xml:space="preserve"><value>Available spare</value></data>
+  <data name="DriveNvme_SpareThreshold" xml:space="preserve"><value>Available spare threshold</value></data>
+  <data name="DriveNvme_Used" xml:space="preserve"><value>Percentage used</value></data>
+  <data name="DriveNvme_DataRead" xml:space="preserve"><value>Data read</value></data>
+  <data name="DriveNvme_DataWritten" xml:space="preserve"><value>Data written</value></data>
+  <data name="DriveNvme_HostReads" xml:space="preserve"><value>Host read commands</value></data>
+  <data name="DriveNvme_HostWrites" xml:space="preserve"><value>Host write commands</value></data>
+  <data name="DriveNvme_BusyTime" xml:space="preserve"><value>Controller busy time</value></data>
+  <data name="DriveNvme_PowerCycles" xml:space="preserve"><value>Power cycles</value></data>
+  <data name="DriveNvme_PowerOnHours" xml:space="preserve"><value>Power-on hours</value></data>
+  <data name="DriveNvme_UnsafeShutdowns" xml:space="preserve"><value>Unsafe shutdowns</value></data>
+  <data name="DriveNvme_MediaErrors" xml:space="preserve"><value>Media and data integrity errors</value></data>
+  <data name="DriveNvme_ErrorLog" xml:space="preserve"><value>Error log entries</value></data>
+  <data name="DriveNvme_WarnTempTime" xml:space="preserve"><value>Time above warning temperature</value></data>
+  <data name="DriveNvme_CritTempTime" xml:space="preserve"><value>Time above critical temperature</value></data>
+  <data name="DriveNvme_Tmt1Count" xml:space="preserve"><value>Thermal throttling count (level 1)</value></data>
+  <data name="DriveNvme_Tmt2Count" xml:space="preserve"><value>Thermal throttling count (level 2)</value></data>
+  <data name="DriveNvme_Tmt1Time" xml:space="preserve"><value>Thermal throttling time (level 1)</value></data>
+  <data name="DriveNvme_Tmt2Time" xml:space="preserve"><value>Thermal throttling time (level 2)</value></data>
+  <data name="DriveNvme_WarnThreshold" xml:space="preserve"><value>The drive's warning temperature</value></data>
+  <data name="DriveNvme_CritThreshold" xml:space="preserve"><value>The drive's critical temperature</value></data>
+  <data name="DriveAttr_1" xml:space="preserve"><value>Raw read error rate</value></data>
+  <data name="DriveAttr_3" xml:space="preserve"><value>Spin-up time</value></data>
+  <data name="DriveAttr_4" xml:space="preserve"><value>Start/stop count</value></data>
+  <data name="DriveAttr_5" xml:space="preserve"><value>Reallocated sectors</value></data>
+  <data name="DriveAttr_7" xml:space="preserve"><value>Seek error rate</value></data>
+  <data name="DriveAttr_9" xml:space="preserve"><value>Power-on hours</value></data>
+  <data name="DriveAttr_10" xml:space="preserve"><value>Spin retry count</value></data>
+  <data name="DriveAttr_12" xml:space="preserve"><value>Power cycle count</value></data>
+  <data name="DriveAttr_187" xml:space="preserve"><value>Reported uncorrectable errors</value></data>
+  <data name="DriveAttr_188" xml:space="preserve"><value>Command timeout</value></data>
+  <data name="DriveAttr_190" xml:space="preserve"><value>Airflow temperature</value></data>
+  <data name="DriveAttr_192" xml:space="preserve"><value>Emergency power-off count</value></data>
+  <data name="DriveAttr_193" xml:space="preserve"><value>Load/unload cycle count</value></data>
+  <data name="DriveAttr_194" xml:space="preserve"><value>Temperature</value></data>
+  <data name="DriveAttr_196" xml:space="preserve"><value>Reallocation events</value></data>
+  <data name="DriveAttr_197" xml:space="preserve"><value>Current pending sectors</value></data>
+  <data name="DriveAttr_198" xml:space="preserve"><value>Offline uncorrectable sectors</value></data>
+  <data name="DriveAttr_199" xml:space="preserve"><value>Interface CRC errors (cable)</value></data>
+  <data name="DriveAttr_Vendor" xml:space="preserve"><value>Vendor specific (ID {0})</value></data>
+  <data name="DriveWhy_CriticalWarning" xml:space="preserve"><value>The drive's own critical-warning flags. Any flag set means the drive itself reports a fault (which one is listed above the table). Back up and plan to replace it.</value></data>
+  <data name="DriveWhy_Temp" xml:space="preserve"><value>The drive is warmer than it should be. Over time heat shortens its life, and a hot drive slows itself down. Check the case airflow, the fans and, on an M.2 drive, its heatsink.</value></data>
+  <data name="DriveWhy_Spare" xml:space="preserve"><value>Spare blocks take the place of worn-out ones. Below the threshold the drive set, it has little left to replace failing blocks with, and data can be lost.</value></data>
+  <data name="DriveWhy_Used" xml:space="preserve"><value>The share of the write life its maker rates it for that the drive has used. Past 100 % it may go on working but is beyond the maker's endurance.</value></data>
+  <data name="DriveWhy_MediaErrors" xml:space="preserve"><value>Errors the drive could not correct while reading or writing data. Even a few mean some data may already be damaged.</value></data>
+  <data name="DriveWhy_TempTime" xml:space="preserve"><value>Minutes the drive has run above its own warning or critical temperature, counted over its whole life. If the number keeps growing, it overheats in use.</value></data>
+  <data name="DriveWhy_AtaThreshold" xml:space="preserve"><value>The current value (set by the drive itself, higher is better) has fallen to the threshold the drive set for failure: by the drive's own test it is failing.</value></data>
+  <data name="DriveWhy_Sectors" xml:space="preserve"><value>Sectors of the disk surface it could not read reliably. Once they appear on a hard disk more usually follow: back up and keep an eye on the count.</value></data>
+  <data name="DriveWhy_Crc" xml:space="preserve"><value>Errors on the way between the drive and the motherboard, not in the drive itself. Usually a loose or poor SATA cable or port: reseat or replace the cable.</value></data>
+  <data name="Web_Drive_Title" xml:space="preserve"><value>Drive health</value></data>
+  <data name="Web_Drive_Health" xml:space="preserve"><value>Health</value></data>
+  <data name="Web_Drive_Temp" xml:space="preserve"><value>Temperature</value></data>
+  <data name="Web_Drive_TempLimits" xml:space="preserve"><value>amber from {0} °C, red from {1} °C</value></data>
+  <data name="Web_Drive_Backup" xml:space="preserve"><value>Back up its data now to prevent data loss.</value></data>
+  <data name="Web_Drive_Fine" xml:space="preserve"><value>The drive's own report shows no problem.</value></data>
+  <data name="Web_Drive_NoHealth" xml:space="preserve"><value>no health counter</value></data>
+  <data name="Web_Drive_Params" xml:space="preserve"><value>Parameters</value></data>
+  <data name="Web_Drive_Flagged" xml:space="preserve"><value>{0} to look at</value></data>
+  <data name="Web_Drive_Col_Name" xml:space="preserve"><value>Parameter</value></data>
+  <data name="Web_Drive_Col_Cur" xml:space="preserve"><value>Current</value></data>
+  <data name="Web_Drive_Col_Worst" xml:space="preserve"><value>Worst</value></data>
+  <data name="Web_Drive_Col_Thr" xml:space="preserve"><value>Threshold</value></data>
+  <data name="Web_Drive_Col_Raw" xml:space="preserve"><value>Raw value</value></data>
+  <data name="Web_Drive_Col_Value" xml:space="preserve"><value>Value</value></data>
+  <data name="Web_Drive_Loading" xml:space="preserve"><value>Reading the drives' own reports…</value></data>
+  <data name="Web_Drive_None" xml:space="preserve"><value>No drive gave a health report (USB drives are not read).</value></data>
+  <data name="Web_Drive_Error" xml:space="preserve"><value>The drives' reports could not be read: {0}</value></data>
+  <data name="Help_Web_Drive_Title" xml:space="preserve"><value>Each drive's health as the drive itself reports it, the way Hard Disk Sentinel and CrystalDiskInfo show it: the health in percent on a bar, the temperature (amber and then red as it climbs; an SSD from 60 and 70 °C, a hard disk from 50 and 55, or the drive's own lower limit), what is wrong in plain words with a backup warning, and every SMART or NVMe parameter. A faulty parameter's row is coloured; click it to read what it means and what to do.</value></data>
+  <data name="HelpHow_Web_Drive_Title" xml:space="preserve"><value>Open the Storage page and read each drive's health bar and temperature in the Drive health box.|If a coloured box lists problems, read them; a red one means back up the drive's data now.|Open Parameters and click a coloured row to read what it means and what to do.|The tray shows the same findings in its summary window and announces a new one once.</value></data>
 </root>
