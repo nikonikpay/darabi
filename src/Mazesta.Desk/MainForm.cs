@@ -11,7 +11,7 @@ internal sealed class MainForm : Form
 {
     private const string Host = "mazesta-desk.local";
     private readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.FromArgb(0xF4, 0xF5, 0xF7) };
-    private readonly SiteSession _site;
+    private readonly SiteSession _site; private readonly PcBackup _backup; private readonly System.Windows.Forms.Timer _tick;
     private readonly string _data = Path.Combine(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), "Data");
     private readonly string? _selftest;
     private readonly CancellationTokenSource _closing = new();
@@ -19,13 +19,15 @@ internal sealed class MainForm : Form
 
     public MainForm(string? selftest)
     {
-        _selftest = selftest; _site = new SiteSession(_data);
+        _selftest = selftest; _site = new SiteSession(_data); _backup = new PcBackup(_data, _site);
+        // the daily backup on this PC: checked every ten minutes, taken once a day while someone is signed in (a failure waits an hour)
+        _tick = new System.Windows.Forms.Timer { Interval = 600_000 }; _tick.Tick += async (_, _) => { if (_selftest is null && _backup.Due) await _backup.RunAsync(_closing.Token); }; _tick.Start();
         Text = "مازستا — میز کار"; ClientSize = new Size(1280, 800); MinimumSize = new Size(980, 600); StartPosition = FormStartPosition.CenterScreen;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Controls.Add(_web);
         Shown += async (_, _) => await StartAsync();
         FormClosing += (_, _) => _closing.Cancel();
-        FormClosed += (_, _) => { _closing.Dispose(); _site.Dispose(); };
+        FormClosed += (_, _) => { _tick.Dispose(); _closing.Dispose(); _site.Dispose(); };
     }
 
     private async Task StartAsync()
@@ -72,6 +74,9 @@ internal sealed class MainForm : Form
                 case "logout": await _site.LogoutAsync(_closing.Token); reply = new { status = 200 }; break;
                 case "session": reply = new { status = 200, data = new { server = _site.Server.GetLeftPart(UriPartial.Authority), signedIn = _site.SignedIn, machine = Environment.MachineName } }; break;
                 case "server": reply = _site.SetServer(Str("server")) ? new { status = 200, data = new { server = _site.Server.GetLeftPart(UriPartial.Authority) } } : new { status = 400, error = "نشانی سایت درست نیست (باید https باشد)." }; break;
+                case "backup": reply = new { status = 200, data = _backup.State() }; break;
+                case "backup-set": { string e = _backup.Set(Str("dir"), msg.TryGetProperty("keep", out var kp) && kp.TryGetInt32(out int kk) ? kk : 14); reply = e.Length == 0 ? (object)new { status = 200, data = _backup.State() } : new { status = 422, data = _backup.State(), error = e }; break; }
+                case "backup-run": { string e = await _backup.RunAsync(_closing.Token); reply = e.Length == 0 ? (object)new { status = 200, data = _backup.State() } : new { status = 422, data = _backup.State(), error = e }; break; }
                 case "selftest-done" when _selftest is not null: _selftestDone.TrySetResult(Str("result")); reply = new { status = 200 }; break;
                 case "print": _web.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.System); reply = new { status = 200 }; break;
                 default: reply = new { status = 400, error = "درخواست ناشناخته." }; break;

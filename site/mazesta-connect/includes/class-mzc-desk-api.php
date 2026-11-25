@@ -16,7 +16,7 @@ final class MZC_Desk_Api
     {
         $r = array(array('/staff/shortages', 'GET', 'shortages'), array('/staff/shortages', 'POST', 'shortage_save'), array('/staff/shortages/count', 'GET', 'shortage_count'),
             array('/staff/ships', 'GET', 'ships'), array('/staff/ships/(?P<id>\d+)', 'GET', 'ship'), array('/staff/ships', 'POST', 'ship_save'),
-            array('/staff/backup', 'GET', 'backup'), array('/staff/backup', 'POST', 'backup_save'), array('/staff/backup/run', 'POST', 'backup_run'));
+            array('/staff/backup', 'GET', 'backup'), array('/staff/backup', 'POST', 'backup_save'), array('/staff/backup/run', 'POST', 'backup_run'), array('/staff/backup/pull', 'POST', 'backup_pull'));
         foreach ($r as $x) { register_rest_route(Mazesta_Connect::NS, $x[0], array('methods' => $x[1], 'callback' => array(__CLASS__, 'rest_' . $x[2]), 'permission_callback' => '__return_true')); }
     }
 
@@ -152,6 +152,15 @@ final class MZC_Desk_Api
         return MZC_Api::ok(MZC_Backup::state());
     }
 
+    /** The backup for a PC: the program keeps it in the folder the manager chose there. */
+    public static function rest_backup_pull($req)
+    {
+        $a = self::backup_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $r = MZC_Backup::pull(); if (is_string($r)) { return self::fail($r, 422); }
+        MZC_Api::log($a, 'create', 'backup', 0, $r['name'] . ' (PC)');
+        return MZC_Api::ok($r);
+    }
+
     public static function rest_backup_run($req)
     {
         $a = self::backup_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
@@ -213,19 +222,40 @@ final class MZC_Backup
 
     private static function lit($db, $v) { return $v === null ? 'NULL' : "'" . mysqli_real_escape_string($db->dbh, (string) $v) . "'"; }
 
+    /** The dump as the program on a PC takes it (the backup is kept on that PC): array(name, size, data = base64 of the .sql.gz) or an error text. */
+    public static function pull()
+    {
+        $db = MZC_Crm_Db::db(); if (!$db) { return MZC_Crm_Db::error(); }
+        $tmp = tempnam(get_temp_dir(), 'mzcbk'); $e = self::dump($db, $tmp);
+        if ($e !== '') { @unlink($tmp); return $e; }
+        $raw = file_get_contents($tmp); @unlink($tmp);
+        return array('name' => 'mazesta-crm-' . wp_date('Ymd-His') . '.sql.gz', 'size' => strlen($raw), 'data' => base64_encode($raw));
+    }
+
     /** Writes one dump file; returns array(name, size) or an error text (also kept for the page). */
     public static function run()
     {
         $db = MZC_Crm_Db::db(); if (!$db) { return MZC_Crm_Db::error(); }
         $s = self::meta(); $e = self::check($s['dir']); if ($e !== '') { return self::fail($s, $e); }
-        @set_time_limit(600);
         $dir = rtrim(realpath($s['dir']), "\\/") . DIRECTORY_SEPARATOR; $name = 'mazesta-crm-' . wp_date('Ymd-His') . '.sql.gz'; $tmp = $dir . $name . '.part';
-        $gz = @gzopen($tmp, 'wb6'); if (!$gz) { return self::fail($s, 'فایل پشتیبان ساخته نشد.'); }
+        $e = self::dump($db, $tmp); if ($e !== '') { @unlink($tmp); return self::fail($s, $e); }
+        if (!@rename($tmp, $dir . $name)) { @unlink($tmp); return self::fail($s, 'فایل پشتیبان در پوشه گذاشته نشد.'); }
+        $old = glob($dir . 'mazesta-crm-*.sql.gz') ?: array(); rsort($old);
+        foreach (array_slice($old, max(1, (int) $s['keep'])) as $f) { @unlink($f); }
+        $s['last'] = gmdate('c'); $s['error'] = ''; self::put($s);
+        return array('name' => $name, 'size' => (int) filesize($dir . $name));
+    }
+
+    /** Writes the gzipped SQL of every table of the CRM to $tmp; '' or an error text. */
+    private static function dump($db, $tmp)
+    {
+        @set_time_limit(600);
+        $gz = @gzopen($tmp, 'wb6'); if (!$gz) { return 'فایل پشتیبان ساخته نشد.'; }
         $prefix = MZC_Crm_Db::prefix(); $skip = array_map(function ($x) use ($prefix) { return $prefix . $x; }, explode(' ', self::SKIP));
         $tables = array_values(array_diff($db->get_col($db->prepare('SHOW TABLES LIKE %s', $db->esc_like($prefix) . '%')) ?: array(), $skip));
         gzwrite($gz, "-- Mazesta CRM backup " . gmdate('c') . "\nSET NAMES utf8mb4; SET FOREIGN_KEY_CHECKS=0;\n");
         foreach ($tables as $tb) {
-            $c = $db->get_row("SHOW CREATE TABLE `$tb`", ARRAY_N); if (!$c) { gzclose($gz); @unlink($tmp); return self::fail($s, 'ساختار جدول ' . $tb . ' خوانده نشد.'); }
+            $c = $db->get_row("SHOW CREATE TABLE `$tb`", ARRAY_N); if (!$c) { gzclose($gz); return 'ساختار جدول ' . $tb . ' خوانده نشد.'; }
             gzwrite($gz, "\nDROP TABLE IF EXISTS `$tb`;\n" . $c[1] . ";\n");
             for ($off = 0; ; $off += 500) {
                 $rows = $db->get_results("SELECT * FROM `$tb` ORDER BY 1 LIMIT 500 OFFSET $off", ARRAY_N); if (!$rows) { break; }
@@ -233,11 +263,7 @@ final class MZC_Backup
             }
         }
         gzwrite($gz, "\nSET FOREIGN_KEY_CHECKS=1;\n"); gzclose($gz);
-        if (!@rename($tmp, $dir . $name)) { @unlink($tmp); return self::fail($s, 'فایل پشتیبان در پوشه گذاشته نشد.'); }
-        $old = glob($dir . 'mazesta-crm-*.sql.gz') ?: array(); rsort($old);
-        foreach (array_slice($old, max(1, (int) $s['keep'])) as $f) { @unlink($f); }
-        $s['last'] = gmdate('c'); $s['error'] = ''; self::put($s);
-        return array('name' => $name, 'size' => (int) filesize($dir . $name));
+        return '';
     }
 
     private static function fail($s, $msg) { $s['error'] = $msg; self::put($s); return $msg; }

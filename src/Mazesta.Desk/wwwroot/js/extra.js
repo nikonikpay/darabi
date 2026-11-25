@@ -127,14 +127,18 @@ async function viewAccounts(q) {
 
 /* ---------- backup ---------- */
 async function viewBackup() {
-  const r = await GET('staff/backup');
+  // the copies are kept on THIS PC: the program fetches the database dump from the site once a day (while someone is signed in) and keeps the newest few
+  const r0 = await bridge.pcBackup('');
+  if (r0.status !== 200) return h('div', {}, title('پشتیبان‌گیری از پایگاه داده'), h('p', { class: 'panel err' }, r0.error || 'پشتیبان‌گیری فقط در خود برنامه کار می‌کند.'));
+  const r = r0.data;
   const dir = text('dir', r.dir, { dir: 'ltr', placeholder: 'D:\\Backups', style: 'min-width:320px' }), keep = text('keep', r.keep, { dir: 'ltr' });
-  const save = async () => { try { await POST('staff/backup', { dir: dir.value, keep: digits(keep.value) }); toast('ذخیره شد؛ هر شبانه‌روز یک نسخه گرفته می‌شود.'); route(); } catch (e) { fail(e); } };
-  const run = async () => { try { toast('در حال پشتیبان‌گیری…'); await POST('staff/backup/run', {}); toast('پشتیبان گرفته شد.'); route(); } catch (e) { fail(e); route(); } };
+  const redraw = () => route();
+  const save = async () => { const x = await bridge.pcBackup('-set', { dir: dir.value, keep: +digits(keep.value) || 14 }); if (x.status === 200) { toast('ذخیره شد؛ هر روز یک نسخه گرفته می‌شود (برنامه باید باز و وارد شده باشد).'); redraw(); } else toast(x.error, 'err'); };
+  const run = async () => { toast('در حال پشتیبان‌گیری…'); const x = await bridge.pcBackup('-run'); if (x.status === 200) toast('پشتیبان گرفته شد.'); else toast(x.error, 'err'); redraw(); };
   return h('div', {}, title('پشتیبان‌گیری از پایگاه داده'),
-    h('section', { class: 'panel grid' }, field('پوشه یا درایو ذخیره', dir, 'مسیر کامل روی کامپیوتری که سایت روی آن اجراست؛ خارج از پوشهٔ سایت.'), field('چند نسخهٔ آخر بماند', keep),
+    h('section', { class: 'panel grid' }, field('پوشه یا درایو ذخیره روی این کامپیوتر', dir, 'مسیر کامل، مثلاً D:\\Backups'), field('چند نسخهٔ آخر بماند', keep),
       h('div', { class: 'row wide' }, h('button', { class: 'btn primary', onclick: save }, 'ذخیره'), r.dir ? h('button', { class: 'btn', onclick: run }, 'همین حالا پشتیبان بگیر') : null)),
     r.error ? h('p', { class: 'panel err' }, 'آخرین خطا: ' + r.error) : null,
-    h('p', { class: 'muted' }, r.last ? 'آخرین پشتیبان موفق: ' + latDate(r.last) + (r.next ? ' — بعدی: ' + latDate(r.next) : '') : 'هنوز پشتیبانی گرفته نشده.'),
-    table(['فایل', 'اندازه', 'زمان'], r.files.map(f => h('tr', {}, h('td', { class: 'lat' }, f.name), h('td', { class: 'lat' }, (f.size / 1024).toFixed(0) + ' KB'), h('td', { class: 'lat' }, latDate(f.at)))), 'فایلی نیست.'));
+    h('p', { class: 'muted' }, r.last ? 'آخرین پشتیبان موفق: ' + r.last : 'هنوز پشتیبانی گرفته نشده.'),
+    table(['فایل', 'اندازه', 'زمان'], r.files.map(f => h('tr', {}, h('td', { class: 'lat' }, f.name), h('td', { class: 'lat' }, (f.size / 1024).toFixed(0) + ' KB'), h('td', { class: 'lat' }, f.at))), 'فایلی نیست.'));
 }
