@@ -158,12 +158,18 @@ internal sealed class TrayContext : ApplicationContext
         try
         {
             var raw = await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2));
-            var drives = raw
-                .Select(d => new TrayDrive(d.Name, DriveAttention.Verdict(d.Status, d.WearPercent), d.WearPercent, d.TemperatureC, DriveAttention.Needs(d) || DriveAttention.Verdict(d.Status, d.WearPercent) == "Unhealthy", d.Letters)).ToList();
-            var problems = drives.Where(d => d.NeedsAttention || d.Status == "Warning").Select(TrayText.DriveProblem).ToList();
+            // Each drive's report, as the app's storage page shows it; its heat is left to the temperature rule (HealthAlerts), which watches it over time.
+            var drives = raw.Select(d =>
+            {
+                var r = DriveReport.Of(d); var issues = r.Issues.Where(i => i.Code is not ("Hot" or "Warm")).ToList();
+                return new TrayDrive(d.Name, DriveAttention.Verdict(d.Status, d.WearPercent), d.WearPercent, r.TempC, DriveAttention.Needs(d) || DriveAttention.Verdict(d.Status, d.WearPercent) == "Unhealthy",
+                    d.Letters, issues.Count == 0 ? "Good" : issues.Max(i => i.Level).ToString(), r.TempLevel?.ToString(), [.. issues.Select(TrayText.DriveIssue)]);
+            }).ToList();
+            static bool Flagged(TrayDrive d) => d.NeedsAttention || d.Status == "Warning" || d.Issues is { Count: > 0 };
+            var problems = drives.Where(Flagged).Select(TrayText.DriveProblem).ToList();
             // A drive's problem is announced once; it is announced again only after it has cleared and come back.
             foreach (var d in drives)
-                if (!d.NeedsAttention && d.Status != "Warning") _drivesAnnounced.Remove(d.Name);
+                if (!Flagged(d)) _drivesAnnounced.Remove(d.Name);
                 else if (_drivesAnnounced.Add(d.Name)) Notify(TrayText.DriveProblem(d));
             // The practical check besides SMART: can it be written to, does it read back what was written, is it far slower than a drive of its kind.
             foreach (var (i, p) in await ProbeDrivesAsync(raw))

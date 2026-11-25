@@ -294,7 +294,39 @@ internal static class TrayText
     public static string ProfileNotKept(string why) => T($"پروفایل اعمال شد ولی برای ورود بعدی ذخیره نشد: {why}", $"The profile was applied but not saved for the next sign-in: {why}");
     public static string ProfileMissing(string name) => T($"پروفایل «{name}» دیگر وجود ندارد؛ کارت در حالت کارخانه ماند.", $"Profile \"{name}\" no longer exists; the card stayed in its factory state.");
 
-    public static string DriveProblem(TrayDrive d) => DriveAttention.HealthPercent(d.WearPercent) is { } p && p < DriveAttention.WatchBelow
+    /// <summary>A drive's findings as one notice: the drive, each finding on its own, and "back up now" when it is failing. A check logged before
+    /// the findings were kept falls back to the verdict sentence below.</summary>
+    public static string DriveProblem(TrayDrive d) => d.Issues is { Count: > 0 } issues
+        ? $"{T("دیسک", "Drive")} {DriveName(d)}: {string.Join(" ", issues)}" + (d.Level == "Fail" ? " " + T("از اطلاعات آن همین حالا نسخه‌ی پشتیبان بگیرید.", "Back up its data now.") : "")
+        : DriveVerdictProblem(d);
+
+    /// <summary>One finding of the drive report in the tray's words (the app words the same findings from its string table).</summary>
+    public static string DriveIssue(DriveIssue i)
+    {
+        string n = (i.Count ?? 0).ToString("0", CultureInfo.InvariantCulture), id = ((int)(i.Count ?? 0)).ToString("X2", CultureInfo.InvariantCulture);
+        return i.Code switch
+        {
+            "WindowsUnhealthy" => T("ویندوز از روی اطلاعات SMART آن را معیوب گزارش کرده است.", "Windows reports it as failing from its SMART data."),
+            "WindowsWarning" => T("ویندوز از روی اطلاعات SMART برای آن هشدار داده است.", "Windows warns about it from its SMART data."),
+            "Worn" => T($"سلامت آن به {n}٪ رسیده و به پایان عمرش نزدیک است.", $"Its health is down to {n}%: it is near the end of its life."),
+            "Wearing" => T($"سلامت آن به {n}٪ رسیده و بخش زیادی از عمرش مصرف شده است.", $"Its health is down to {n}%: it has used a good part of its life."),
+            "NvmeBit0" => T("بلوک‌های یدکی آن از حد خود دیسک کمتر شده‌اند.", "Its spare blocks have fallen below the drive's own limit."),
+            "NvmeBit1" => T("خود دیسک اعلام کرده که دمایش از حد مجاز گذشته است.", "The drive reports its temperature beyond its own limit."),
+            "NvmeBit2" => T("خود دیسک اعلام کرده که به‌خاطر خطاهای حافظه یا خطاهای داخلی قابل اطمینان نیست.", "The drive reports its reliability degraded by media or internal errors."),
+            "NvmeBit3" => T("دیسک خودش را فقط‌خواندنی کرده است.", "The drive has switched itself to read-only."),
+            "NvmeBit4" => T("پشتیبان حافظه‌ی موقت دیسک از کار افتاده است.", "The drive's volatile memory backup has failed."),
+            "NvmeBit5" => T("ناحیه‌ی حافظه‌ی ماندگار دیسک فقط‌خواندنی شده است.", "The drive's persistent memory region has become read-only."),
+            "MediaErrors" => T($"{n} خطای داده ثبت کرده که نتوانسته اصلاح کند.", $"It has logged {n} data errors it could not correct."),
+            "CriticalTempTime" => T($"{n} دقیقه بالاتر از دمای بحرانی خودش کار کرده است.", $"It has run {n} minutes above its own critical temperature."),
+            "AttrFailing" => T($"پارامتر SMART با شناسه‌ی {id} به آستانه‌ی خرابی خود دیسک رسیده است.", $"SMART parameter {id} has reached the drive's own failure threshold."),
+            "BadSectors" => T($"{n} سکتور خراب روی سطح دیسک هست.", $"There are {n} bad sectors on the disk surface."),
+            "Hot" => T($"دمای آن {n} درجه است و بیش از حد داغ است.", $"It is at {n} °C: too hot."),
+            "Warm" => T($"دمای آن {n} درجه است و از حد مناسب گرم‌تر است.", $"It is at {n} °C: warmer than it should be."),
+            _ => i.Code,
+        };
+    }
+
+    private static string DriveVerdictProblem(TrayDrive d) => DriveAttention.HealthPercent(d.WearPercent) is { } p && p < DriveAttention.WatchBelow
         ? T($"دیسک {DriveName(d)}: سلامت آن به {p}٪ رسیده است ({(p < DriveAttention.FailBelow ? "خراب یا نزدیک به پایان عمر" : "رو به کاهش")}). از اطلاعات آن نسخه‌ی پشتیبان بگیرید.",
             $"Drive {DriveName(d)}: its health fell to {p}% ({(p < DriveAttention.FailBelow ? "failed or near the end of its life" : "declining")}). Back up its data.")
         : d.Status is "Warning" or "Unhealthy"

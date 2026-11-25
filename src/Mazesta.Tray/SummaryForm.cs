@@ -84,11 +84,19 @@ internal sealed class SummaryForm : Form
         if (health is null || health.Drives.Count == 0) { Write(g, TrayText.NoDrives, _body, Paper3, new Rectangle(pad, y, w - 2 * pad, bodyH)); y += bodyH + S(4); }
         else foreach (var d in health.Drives.Take(5))
         {
-            var status = TrayText.DriveHealth(d) + (d.TemperatureC is { } t ? $" · {TrayText.Num(t, "0")}°C" : "");
-            int statusW = S(170);
+            // The verdict in the drive report's colour, the temperature in its own level's (amber, then red past the drive's limits), then each finding on its own line.
+            int statusW = S(170), tempW = S(52);
+            Color Of(string? level, Color fine) => level switch { "Fail" => Fail, "Watch" => Yellow, _ => fine };
             Write(g, TrayText.DriveName(d), _body, Paper, new Rectangle(pad + statusW + S(8), y, w - 2 * pad - statusW - S(8), bodyH), latin: true);
-            Write(g, status, _body, d.NeedsAttention ? Fail : d.Status == "Warning" ? Yellow : d.Status == "Healthy" ? Pass : Paper2, new Rectangle(pad, y, statusW, bodyH), alignFar: true);
+            Write(g, TrayText.DriveHealth(d), _body, d.NeedsAttention ? Fail : Of(d.Level, d.Status == "Warning" ? Yellow : d.Status == "Healthy" ? Pass : Paper2), new Rectangle(pad + tempW, y, statusW - tempW, bodyH), alignFar: true);
+            if (d.TemperatureC is { } t) Write(g, $"{TrayText.Num(t, "0")}°C", _body, Of(d.TempLevel, Paper2), new Rectangle(pad, y, tempW - S(4), bodyH), latin: true);
             y += bodyH + S(4);
+            foreach (var issue in d.Issues ?? [])
+            {
+                var size = TextRenderer.MeasureText(g, "• " + issue, _small, new Size(w - 2 * pad - S(12), int.MaxValue), TextFormatFlags.WordBreak | (TrayText.Rtl ? TextFormatFlags.RightToLeft : 0));
+                Write(g, "• " + issue, _small, Of(d.Level, Paper2), new Rectangle(pad, y, w - 2 * pad - S(12), size.Height), wrap: true);
+                y += size.Height + S(2);
+            }
             using var rule = new Pen(Rule); g.DrawLine(rule, pad, y - S(2), w - pad, y - S(2));
         }
         y += S(10);

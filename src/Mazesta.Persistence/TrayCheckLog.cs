@@ -1,8 +1,10 @@
 using System.Text.Json; using System.Text.Json.Serialization;
 namespace Mazesta.Persistence;
 
-/// <summary>One drive as the tray's health check read it. Null where Windows reported nothing (never 0).</summary>
-public sealed record TrayDrive(string Name, string? Status, int? WearPercent, double? TemperatureC, bool NeedsAttention, string? Letters = null);
+/// <summary>One drive as the tray's health check read it. Null where Windows reported nothing (never 0). <see cref="Level"/> and <see cref="TempLevel"/>
+/// are the drive report's (Good, Watch, Fail) and <see cref="Issues"/> its findings in the tray's words; all three are absent in checks logged before them.</summary>
+public sealed record TrayDrive(string Name, string? Status, int? WearPercent, double? TemperatureC, bool NeedsAttention, string? Letters = null,
+    string? Level = null, string? TempLevel = null, IReadOnlyList<string>? Issues = null);
 
 /// <summary>One tray check: <see cref="Kind"/> is "temps" (a sensor poll) or "health" (the drives). <see cref="Problems"/> are the alerts it raised,
 /// in words; <see cref="Error"/> is why the check itself failed. A value the check could not read is null.</summary>
