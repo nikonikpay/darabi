@@ -186,6 +186,7 @@ async function viewHome() {
   if (can('builds')) out.append(cards('سیستم‌های نو در جریان', 'build', S.cfg.buildStatuses));
   if (can('jobs')) out.append(cards('سرویس‌ها', 'job', S.cfg.jobStatuses));
   if (can('accounting')) out.append(duePanel());   // acc.js: cheques near their due date
+  out.append(shortPanel());   // extra.js: parts waiting for an answer (the buyers' note) and the menu badge
   if (!can('builds') && !can('jobs') && !can('accounting')) out.append(h('p', { class: 'muted' }, 'برای کار از منوی کنار استفاده کنید.'));
   return out;
 }

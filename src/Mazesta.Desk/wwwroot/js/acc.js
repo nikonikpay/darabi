@@ -136,6 +136,7 @@ async function viewInvoice(id, q) {
     can2 && !tpl && !isNew ? h('button', { class: 'btn', onclick: () => act('staff/invoices/copy', { id: v.id, kind: 'template' }, 'به فاکتورهای آماده اضافه شد.') }, 'ذخیره به‌عنوان فاکتور آماده') : null,
     can2 && !isNew && (v.status === 'final' || (v.kind === 'proforma' && v.status === 'draft')) ? h('button', { class: 'btn', onclick: voidIt }, 'ابطال') : null,
     can2 && !isNew && (tpl || (draft && !v.no)) ? h('button', { class: 'btn', onclick: del }, 'حذف') : null,
+    !isNew && !tpl ? h('button', { class: 'btn', onclick: () => shortageAsk({ kind: 'invoice', ref: (v.kindText || '') + ' ' + (v.no || 'پیش‌نویس ' + v.id), customer_id: v.customer_id }) }, 'کسری قطعه') : null,
     !isNew ? h('button', { class: 'btn', onclick: () => historyDialog('invoice', v.id, 'accounting') }, 'تاریخچه') : null);
   const head = isNew ? A().kinds[kind0] + ' تازه' : v.kindText + ' ' + (v.no || (tpl ? v.title : '(پیش‌نویس)'));
   const el = h('div', {}, title(head, !isNew ? stPill(v) : null, actions),
@@ -172,9 +173,9 @@ function printInvoice(v) {
 }
 
 /* ---------- payments ---------- */
-const paymentsTable = items => table(['تاریخ', 'نوع', 'طرف حساب / سرفصل', 'روش', 'حساب', 'مبلغ', 'فاکتور'], items.map(p => h('tr', { class: can('accounting', 2) ? 'click' : '', onclick: () => can('accounting', 2) && paymentDialog({ payment: p }) },
-  h('td', { class: 'lat' }, p.at_j), h('td', {}, p.direction === 'in' ? pill('دریافت', 'ok') : pill('پرداخت', 'bad')), h('td', {}, p.customer_name || p.vendor_name || p.category), h('td', {}, p.methodText, p.cheque ? [' ', h('span', { class: 'lat' }, p.cheque.no), ' ', pill(p.cheque.statusText, p.cheque.status === 'bounced' ? 'bad' : '')] : null),
-  h('td', {}, p.account), h('td', { class: 'lat' }, money(p.amount)), h('td', {}, p.invoice_id ? h('a', { href: '#/invoice/' + p.invoice_id, onclick: e => e.stopPropagation() }, p.invoice_no || 'باز کردن') : ''))), 'پرداختی نیست.');
+const paymentsTable = items => table(['تاریخ', 'نوع', 'طرف حساب / سرفصل', 'روش', 'حساب', 'شمارهٔ پیگیری', 'مبلغ', 'فاکتور'], items.map(p => h('tr', { class: can('accounting', 2) ? 'click' : '', onclick: () => can('accounting', 2) && paymentDialog({ payment: p }) },
+  h('td', { class: 'lat' }, p.at_j), h('td', {}, p.direction === 'in' ? pill('دریافت', 'ok') : pill('پرداخت', 'bad')), h('td', {}, p.customer_name || p.vendor_name || p.category), h('td', {}, p.methodText, p.cheque ? [' ', h('span', { class: 'lat' }, p.cheque.no), ' ', pill(p.cheque.statusText, p.cheque.status === 'bounced' ? 'bad' : '')] : null, p.via_name ? [' ', pill('به حساب «' + p.via_name + '»', 'bad')] : null),
+  h('td', {}, p.via_name ? '—' : p.account), h('td', { class: 'lat' }, p.tx), h('td', { class: 'lat' }, money(p.amount)), h('td', {}, p.invoice_id ? h('a', { href: '#/invoice/' + p.invoice_id, onclick: e => e.stopPropagation() }, p.invoice_no || 'باز کردن') : ''))), 'پرداختی نیست.');
 
 async function viewPayments(q) {
   const page = Math.max(1, +q.get('page') || 1), r = await GET('staff/payments' + qs({ q: q.get('q'), direction: q.get('direction'), expense: q.get('expense'), page }));
@@ -201,13 +202,23 @@ async function paymentDialog(o) {
     const amount = text('amount', old ? old.amount : (inv ? Math.max(0, inv.total - inv.paid) : ''), { dir: 'ltr', required: true, autofocus: true }), amountWords = moneyInput(amount);
     const method = select('method', A().methods, old ? old.method : 'cash'), account = text('account', old ? old.account : '', { list: 'accl' }), accl = h('datalist', { id: 'accl' }, (S.cfg.accounts || []).map(x => h('option', { value: x })));
     const at = h('input', { type: 'date', value: old ? old.at : today() }), tx = text('tx', old ? old.tx : '', { dir: 'ltr' }), notes = text('notes', old ? old.notes : '');
+    // money from a customer can go to the shop's own accounts or to someone else's (a supplier the customer paid for us): then it is booked as paid to that party, with its tracking number
+    const dest = select('dest', { ours: 'حساب‌های شرکت', other: 'حساب دیگران (به جای ما)' }, old && old.via_id ? 'other' : 'ours'), via = select('via_id', Object.assign({ 0: '— طرف حساب را انتخاب کنید —' }, Object.fromEntries(vendors.map(x => [x.id, x.name]))), old ? old.via_id : 0);
+    const viaField = field('به حساب چه کسی ریخت', via), destBox = h('div', { class: 'wide grid' }, field('پول به کجا رفت', dest), viaField), accField = field('حساب / صندوق', account, 'کارتخوان، حساب بانکی یا صندوق'), txField = field('شمارهٔ پیگیری', tx);
     const cq = { no: text('cno', old && old.cheque ? old.cheque.no : '', { dir: 'ltr', placeholder: 'شمارهٔ صیادی یا سری' }), bank: text('cbank', ''), due: h('input', { type: 'date', value: old && old.cheque ? old.cheque.due_at : '' }) };
     const chequeBox = h('div', { class: 'three' }, field('شمارهٔ چک', cq.no), field('بانک', cq.bank), field('سررسید', cq.due));
     const boxes = { customer: h('div', {}, cust.el), vendor: field('فروشنده', vend), expense: field('سرفصل', cat) };
-    const show = () => { Object.entries(boxes).forEach(([k, el]) => { el.style.display = party.value === k ? '' : 'none'; }); chequeBox.style.display = method.value === 'cheque' ? '' : 'none'; };
-    party.addEventListener('change', show); method.addEventListener('change', show);
+    const toOther = () => party.value === 'customer' && dir.value === 'in' && dest.value === 'other';
+    const show = () => {
+      Object.entries(boxes).forEach(([k, el]) => { el.style.display = party.value === k ? '' : 'none'; }); chequeBox.style.display = method.value === 'cheque' ? '' : 'none';
+      destBox.style.display = party.value === 'customer' && dir.value === 'in' ? '' : 'none'; viaField.style.display = dest.value === 'other' ? '' : 'none'; accField.style.display = toOther() ? 'none' : '';
+      $('span', txField).textContent = method.value === 'pos' ? 'کد پوز (روی رسید دستگاه)' : method.value === 'cash' ? 'شمارهٔ پیگیری (اختیاری)' : 'شمارهٔ پیگیری واریز';
+    };
+    party.addEventListener('change', show); method.addEventListener('change', show); dest.addEventListener('change', show); dir.addEventListener('change', show);
     const save = async () => {
-      const body = { id: old ? old.id : 0, updated: old ? old.updated : undefined, direction: dir.value, amount: digits(amount.value), method: method.value, account: account.value, at: at.value, tx: digits(tx.value), notes: notes.value, invoice_id: inv ? inv.id : (old ? old.invoice_id : 0) };
+      if (toOther() && !+via.value) return toast('نام آن طرف را انتخاب کنید.', 'err');
+      if (toOther() && method.value !== 'cash' && !tx.value.trim()) return toast('شمارهٔ پیگیری را بنویسید؛ برای حساب‌وکتاب با آن طرف لازم است.', 'err');
+      const body = { id: old ? old.id : 0, updated: old ? old.updated : undefined, direction: dir.value, amount: digits(amount.value), method: method.value, account: toOther() ? '' : account.value, via_id: toOther() ? +via.value : 0, at: at.value, tx: digits(tx.value), notes: notes.value, invoice_id: inv ? inv.id : (old ? old.invoice_id : 0) };
       if (party.value === 'customer') { const cb = cust.body(); if (!cb.customer_id) return toast('مشتری را از فهرست انتخاب کنید.', 'err'); body.customer_id = cb.customer_id; body.vendor_id = 0; }
       else if (party.value === 'vendor') { body.vendor_id = +vend.value; body.customer_id = 0; if (!body.vendor_id) return toast('فروشنده را انتخاب کنید.', 'err'); }
       else { body.customer_id = 0; body.vendor_id = 0; body.category = cat.value; }
@@ -215,7 +226,7 @@ async function paymentDialog(o) {
       try { await POST('staff/payments', body); close(); toast('ثبت شد.'); route(); } catch (e) { fail(e); }
     };
     b.append(h('div', { class: 'grid' }, field('نوع', dir), field('طرف حساب', party), h('div', { class: 'wide' }, boxes.customer, boxes.vendor, boxes.expense), field('مبلغ (تومان)', amount, amountWords), field('روش', method),
-      h('div', { class: 'wide' }, chequeBox), field('حساب / صندوق', account, 'کارتخوان، حساب بانکی یا صندوق'), field('تاریخ', at), field('شمارهٔ پیگیری', tx), field('شرح', notes), expl, accl),
+      destBox, h('div', { class: 'wide' }, chequeBox), accField, field('تاریخ', at), txField, field('شرح', notes), expl, accl),
       h('div', { class: 'row end' }, old && can('accounting', 2) ? h('button', { class: 'btn', onclick: async () => { if (await ask('این پرداخت پاک شود؟', 'پاک کن')) { try { await POST('staff/payments/delete', { id: old.id }); close(); toast('پاک شد.'); route(); } catch (e) { fail(e); } } } }, 'حذف') : null,
         h('button', { class: 'btn', onclick: close }, 'انصراف'), h('button', { class: 'btn primary', onclick: save }, 'ثبت')));
     b.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); save(); } });
