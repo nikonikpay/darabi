@@ -13,7 +13,15 @@ public class OfflineStoreTests : IDisposable
     [InlineData("POST", "staff/payments", "{\"id\":0,\"amount\":5}", true)]
     [InlineData("POST", "staff/payments", "{\"id\":7,\"amount\":5}", false)]       // changing an old payment needs the site (it may have been changed meanwhile)
     [InlineData("POST", "staff/invoices", "{\"title\":\"x\"}", true)]
-    [InlineData("POST", "staff/invoices", "{\"id\":3}", false)]
+    [InlineData("POST", "staff/invoices", "{\"id\":3}", true)]                      // a change of a draft: both versions stay in its history
+    [InlineData("POST", "staff/customers", "{\"id\":4,\"name\":\"x\"}", true)]
+    [InlineData("POST", "staff/products", "{\"id\":4,\"name\":\"x\"}", true)]
+    [InlineData("POST", "staff/builds", "{\"id\":4}", true)]
+    [InlineData("POST", "staff/jobs", "{}", true)]
+    [InlineData("POST", "staff/ships", "{\"id\":2}", true)]
+    [InlineData("POST", "staff/shortages", "{\"id\":2,\"status\":\"bought\"}", true)]
+    [InlineData("POST", "staff/purchases", "{\"id\":2}", false)]                    // a purchase moves the stock
+    [InlineData("POST", "staff/builds/status", "{\"id\":2}", false)]
     [InlineData("POST", "staff/invoices/finalize", "{\"id\":3}", false)]            // numbering is the site's
     [InlineData("POST", "staff/invoices/void", "{}", false)]
     [InlineData("POST", "staff/payments/delete", "{\"id\":1}", false)]
@@ -62,11 +70,31 @@ public class OfflineStoreTests : IDisposable
     }
 
     [Fact]
-    public void The_read_cache_keeps_the_last_answer_and_forgets_on_clear()
+    public void The_local_store_keeps_the_last_answer_and_forgets_on_clear()
     {
-        string file = Path.Combine(_dir, "c.json"); var c = new ReadCache(file);
-        c.Put("staff/customers?q=a", "{\"n\":1}"); c.Put("staff/customers?q=a", "{\"n\":2}");
-        Assert.Equal("{\"n\":2}", new ReadCache(file).Get("staff/customers?q=a")!.Value.Json);
-        c.Clear(); Assert.Null(new ReadCache(file).Get("staff/customers?q=a"));
+        string file = Path.Combine(_dir, "c.db");
+        using (var c = new LocalStore(file)) { c.Put("staff/customers?q=a", "{\"n\":1}"); c.Put("staff/customers?q=a", "{\"n\":2}"); }
+        using (var again = new LocalStore(file)) { Assert.Equal("{\"n\":2}", again.Get("staff/customers?q=a")!.Value.Json); again.Clear(); Assert.Null(again.Get("staff/customers?q=a")); }
+        string f2 = Path.Combine(_dir, "sealed.db");
+        using (var s = new LocalStore(f2)) s.Put("staff/x", "{\"secret\":\"SECRETMARK\"}");
+        Assert.DoesNotContain("SECRETMARK", File.ReadAllText(f2, System.Text.Encoding.Latin1), StringComparison.Ordinal);   // the answer itself is sealed on disk
+    }
+
+    [Fact]
+    public void A_search_is_answered_from_the_kept_copy_with_persian_digits_and_paging_and_survives_a_restart()
+    {
+        string file = Path.Combine(_dir, "s.db");
+        using (var s = new LocalStore(file))
+        {
+            using var d = System.Text.Json.JsonDocument.Parse("[{\"id\":1,\"name\":\"Ryzen 5 7600\",\"brand\":\"AMD\",\"stock\":3},{\"id\":2,\"name\":\"کارت گرافیک RTX 4070\",\"brand\":\"MSI\",\"stock\":0},{\"id\":3,\"name\":\"SSD 1TB\",\"brand\":\"WD\",\"stock\":9}]");
+            s.Upsert("products", d.RootElement); Assert.Equal(3, s.Count("products"));
+        }
+        using var again = new LocalStore(file);
+        var all = again.List("products", "per=2&page=1")!.Value; Assert.Equal(3, all.GetProperty("total").GetInt32()); Assert.Equal(2, all.GetProperty("items").GetArrayLength()); Assert.True(all.GetProperty("offline").GetBoolean());
+        Assert.Equal(1, again.List("products", "q=" + Uri.EscapeDataString("۴۰۷۰"))!.Value.GetProperty("items").GetArrayLength());                 // Persian digits find the Latin number
+        Assert.Equal(2, again.List("products", "q=rtx&per=5")!.Value.GetProperty("items")[0].GetProperty("id").GetInt32());
+        Assert.Equal(0, again.List("products", "q=ryzen+4070")!.Value.GetProperty("total").GetInt32());                                         // every word must be there
+        Assert.Equal(1, again.List("products", "brand=WD")!.Value.GetProperty("total").GetInt32());                                             // a parameter naming a field filters on it
+        Assert.Null(again.List("customers", ""));                                                                                               // nothing kept: the caller says so
     }
 }

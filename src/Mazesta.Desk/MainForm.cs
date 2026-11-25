@@ -21,7 +21,7 @@ internal sealed class MainForm : Form
     {
         _selftest = selftest; _site = new SiteSession(_data); _backup = new PcBackup(_data, _site);
         // the daily backup on this PC: checked every ten minutes, taken once a day while someone is signed in (a failure waits an hour)
-        _tick = new System.Windows.Forms.Timer { Interval = 600_000 }; _tick.Tick += async (_, _) => { if (_selftest is null && _backup.Due) await _backup.RunAsync(_closing.Token); }; _tick.Start();
+        _tick = new System.Windows.Forms.Timer { Interval = 600_000 }; _tick.Tick += async (_, _) => { if (_selftest is null) { await _site.WarmAsync(_closing.Token); if (_backup.Due) await _backup.RunAsync(_closing.Token); } }; _tick.Start();
         Text = "مازستا — میز کار"; ClientSize = new Size(1280, 800); MinimumSize = new Size(980, 600); StartPosition = FormStartPosition.CenterScreen;
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         Controls.Add(_web);
@@ -53,6 +53,7 @@ internal sealed class MainForm : Form
         core.WebMessageReceived += async (_, a) => await OnMessageAsync(a);
         if (_selftest is not null) core.NavigationCompleted += async (_, _) => await RunSelfTestAsync();
         core.Navigate($"https://{Host}/index.html");
+        if (_selftest is null) _ = Task.Run(async () => { try { await Task.Delay(20_000, _closing.Token); await _site.WarmAsync(_closing.Token); } catch (OperationCanceledException) { } });   // the PC's own copy of stock, customers and suppliers, filled soon after the program opens
     }
 
     private async Task OnMessageAsync(CoreWebView2WebMessageReceivedEventArgs a)
@@ -67,10 +68,10 @@ internal sealed class MainForm : Form
             switch (Str("op"))
             {
                 case "api": reply = Pack(await _site.CallAsync(Str("method"), Str("path"), Str("body"), _closing.Token)); break;
-                case "queue": reply = new { status = 200, data = new { pending = _site.Queue.Pending, refused = _site.Queue.Refused.Select(q => new { q.Id, q.Path, q.Error, at = q.At.ToString("yyyy-MM-dd HH:mm") }) } }; break;
+                case "queue": reply = new { status = 200, data = new { pending = _site.Queue.Pending, conflicts = _site.TakeConflicts(), refused = _site.Queue.Refused.Select(q => new { q.Id, q.Path, q.Error, at = q.At.ToString("yyyy-MM-dd HH:mm") }) } }; break;
                 case "flush": { var f = await _site.FlushAsync(_closing.Token); reply = new { status = 200, data = new { f.Sent, f.Refused, f.Stopped, pending = _site.Queue.Pending } }; break; }
                 case "discard": _site.Queue.Discard(Str("queueId")); reply = new { status = 200 }; break;
-                case "login": reply = Pack(await _site.LoginAsync(Str("username"), Str("password"), _closing.Token)); break;
+                case "login": reply = Pack(await _site.LoginAsync(Str("username"), Str("password"), _closing.Token)); if (_site.SignedIn) _ = _site.WarmAsync(_closing.Token); break;
                 case "logout": await _site.LogoutAsync(_closing.Token); reply = new { status = 200 }; break;
                 case "session": reply = new { status = 200, data = new { server = _site.Server.GetLeftPart(UriPartial.Authority), signedIn = _site.SignedIn, machine = Environment.MachineName } }; break;
                 case "server": reply = _site.SetServer(Str("server")) ? new { status = 200, data = new { server = _site.Server.GetLeftPart(UriPartial.Authority) } } : new { status = 400, error = "نشانی سایت درست نیست (باید https باشد)." }; break;

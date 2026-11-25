@@ -136,19 +136,36 @@ function editLock(entity, id, el) {
 }
 window.addEventListener('beforeunload', dropLock);
 
-const ACTS = { create: 'ثبت', update: 'ویرایش', status: 'وضعیت', restore: 'بازگشت', base: 'نسخهٔ اولیه', final: 'قطعی', void: 'ابطال' };
+const ACTS = { create: 'ثبت', update: 'ویرایش', status: 'وضعیت', restore: 'بازگشت', base: 'نسخهٔ اولیه', final: 'قطعی', void: 'ابطال', pick: 'انتخاب فیلد' };
 function historyDialog(entity, id, area) {
   modal('تاریخچهٔ تغییرات', async (body, close) => {
     body.append(h('p', { class: 'muted' }, '…'));
     let r; try { r = await GET('staff/revisions' + qs({ entity, id })); } catch (e) { close(); return fail(e); }
     clear(body);
     if (!r.items.length) return body.append(h('p', { class: 'muted' }, 'هنوز نسخه‌ای ثبت نشده است.'));
-    body.append(table(['زمان', 'کاربر', 'کار', 'تغییرات', ''], r.items.map((v, i) => h('tr', {}, h('td', { class: 'lat' }, v.at), h('td', {}, v.who), h('td', {}, ACTS[v.action] || v.action),
-      h('td', {}, v.changes.length ? v.changes.map(c => h('div', {}, h('b', {}, c[0]), ': ', c[1], ' ← ', c[2])) : '—'),
-      h('td', {}, i === 0 ? h('small', { class: 'muted' }, 'نسخهٔ فعلی') : can(area, 2) ? h('button', { class: 'btn', onclick: async () => {
-        if (!await ask('پرونده به این نسخه برگردد؟ حالت فعلی هم به‌عنوان یک نسخه می‌ماند.', 'برگردان')) return;
-        try { await POST('staff/revisions/restore', { rev: v.id }); toast('به نسخهٔ انتخاب‌شده برگشت.'); close(); route(); } catch (e) { fail(e); }
-      } }, 'بازگشت به این نسخه') : null)))));
+    // newest by the time each was saved; a save made offline carries its own time. "current" is the version the record is in now; an older offline save that lost is kept here, never applied
+    body.append(h('p', { class: 'muted' }, 'هر ثبت با زمان خودش اینجا می‌ماند، حتی اگر کس دیگری همزمان (یا آفلاین) همان پرونده را عوض کرده باشد. آخرین زمان، حالت فعلی است؛ از «انتخاب فیلدها» می‌توانید از هر نسخه فقط فیلد دلخواه را بردارید.'),
+      table(['زمان', 'کاربر', 'کار', 'تغییرات', ''], r.items.map(v => h('tr', { class: v.applied ? '' : 'muted' }, h('td', { class: 'lat' }, v.at), h('td', {}, v.who, ' ', v.offline ? pill('آفلاین') : null), h('td', {}, ACTS[v.action] || v.action, !v.applied ? [' ', pill('اعمال نشد: تغییر جدیدتری بود', 'bad')] : null),
+        h('td', {}, v.changes.length ? v.changes.map(c => h('div', {}, h('b', {}, c[0]), ': ', c[1], ' ← ', c[2])) : '—'),
+        h('td', {}, v.current ? pill('نسخهٔ فعلی', 'ok') : can(area, 2) ? h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => { close(); pickDialog(v, entity, id, area); } }, 'انتخاب فیلدها'), h('button', { class: 'btn', onclick: async () => {
+          if (!await ask('پرونده به این نسخه برگردد؟ حالت فعلی هم به‌عنوان یک نسخه می‌ماند.', 'برگردان')) return;
+          try { await POST('staff/revisions/restore', { rev: v.id }); toast('به نسخهٔ انتخاب‌شده برگشت.'); close(); route(); } catch (e) { fail(e); }
+        } }, 'کل این نسخه')) : null)))));
+  }, true);
+}
+
+/** Field by field: for each field that differs between a version and the record now, which one to keep; the chosen ones of that version are written over the record (kept as a new version). */
+async function pickDialog(v, entity, id, area) {
+  let c; try { c = await GET('staff/revisions/compare' + qs({ rev: v.id })); } catch (e) { return fail(e); }
+  modal('مقایسهٔ نسخه ' + v.who + ' با حالت فعلی', (b, close) => {
+    if (!c.fields.length) return b.append(h('p', { class: 'muted' }, 'تفاوتی بین این نسخه و حالت فعلی نیست.'), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: () => { close(); historyDialog(entity, id, area); } }, 'بازگشت')));
+    const picks = c.fields.map(f => ({ key: f.key, box: h('input', { type: 'checkbox' }) }));
+    b.append(h('p', { class: 'muted' }, 'برای هر فیلد، تیک بزنید تا مقدار این نسخه (ستون «در آن نسخه») جایگزین مقدار فعلی شود. فیلد بدون تیک همان‌طور که هست می‌ماند.'),
+      table(['فیلد', 'الان در پرونده', 'در آن نسخه', 'برداشته شود'], c.fields.map((f, i) => h('tr', {}, h('td', {}, h('b', {}, f.label)), h('td', {}, f.now), h('td', {}, f.theirs), h('td', { class: 'c' }, picks[i].box)))),
+      h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: () => { close(); historyDialog(entity, id, area); } }, 'بازگشت به تاریخچه'), h('button', { class: 'btn primary', onclick: async () => {
+        const keys = picks.filter(p => p.box.checked).map(p => p.key); if (!keys.length) return toast('حداقل یک فیلد را تیک بزنید.', 'err');
+        try { await POST('staff/revisions/pick', { rev: v.id, fields: keys }); toast('فیلدهای انتخاب‌شده اعمال شد.'); close(); route(); } catch (e) { fail(e); }
+      } }, 'اعمال فیلدهای تیک‌خورده')));
   }, true);
 }
 
@@ -242,7 +259,8 @@ async function viewCustomer(id, q) {
     field('ایمیل', mk('email', '', { dir: 'ltr' })), field('گروه', f.group), field('آدرس', f.address, '', 'wide'), field('یادداشت', f.notes, '', 'wide'),
     ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره')));
   const out = h('div', {}, title(isNew ? 'مشتری تازه' : c.name,
-    !isNew && can('jobs', 2) ? h('a', { class: 'btn', href: '#/job/new?cid=' + c.id }, '+ سرویس') : null, !isNew && can('builds', 2) ? h('a', { class: 'btn', href: '#/build/new?cid=' + c.id }, '+ سیستم نو') : null), form);
+    !isNew && can('jobs', 2) ? h('a', { class: 'btn', href: '#/job/new?cid=' + c.id }, '+ سرویس') : null, !isNew && can('builds', 2) ? h('a', { class: 'btn', href: '#/build/new?cid=' + c.id }, '+ سیستم نو') : null,
+    !isNew ? h('button', { type: 'button', class: 'btn', onclick: () => historyDialog('customer', c.id, 'customers') }, 'تاریخچه') : null), form);
   if (builds.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سیستم‌های نو'), buildsTable(builds)));
   if (jobs.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سرویس‌ها'), jobsTable(jobs)));
   if (!isNew && (can('accounting') || can('payments'))) out.append(await accountSection(c));   // acc.js: invoices, deposits, the running balance
@@ -561,7 +579,7 @@ async function viewProduct(id) {
     if (f.buy && S.cfg.costEdit) body.buy_price = digits(f.buy.value);
     try { const s = await POST('staff/products', body); toast('ذخیره شد.'); if (isNew) location.hash = '#/product/' + s.id; else route(); } catch (err) { fail(err); }
   };
-  const out = h('div', {}, title(isNew ? 'کالای تازه' : p.name, !isNew && can('stock', 2) ? h('a', { class: 'btn', href: '#/purchase/new?pid=' + p.id }, '+ خرید این کالا') : null),
+  const out = h('div', {}, title(isNew ? 'کالای تازه' : p.name, !isNew && can('stock', 2) ? h('a', { class: 'btn', href: '#/purchase/new?pid=' + p.id }, '+ خرید این کالا') : null, !isNew ? h('button', { type: 'button', class: 'btn', onclick: () => historyDialog('product', p.id, 'stock') }, 'تاریخچه') : null),
     r.totals ? h('div', { class: 'cards' }, [['موجودی', stockPill(r.totals.stock)], ['خریده‌شده', r.totals.bought], ['به‌کاررفته', r.totals.used]].concat(r.totals.spent != null ? [['جمع خرید', money(r.totals.spent)]] : []).concat(r.totals.sold != null ? [['جمع فروش', money(r.totals.sold)]] : [])
       .map(([l, v]) => h('div', { class: 'card' }, h('b', {}, v), h('span', {}, l)))) : null,
     h('form', { class: 'panel grid', onsubmit: save }, field('نام کالا', f.name, '', 'wide'), field('دسته', f.category), field('برند', f.brand), field('پارت‌نامبر / بارکد', f.sku), field('قیمت فروش', f.sell), f.buy ? field('قیمت خرید', f.buy, 'با هر فاکتور خرید به‌روز می‌شود') : null,
