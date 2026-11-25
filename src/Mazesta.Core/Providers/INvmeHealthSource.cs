@@ -7,7 +7,9 @@ namespace Mazesta.Core.Providers;
 /// media (unrecovered data integrity) errors and error-log entries. The 128-bit counters are read as their low 64 bits.
 /// </summary>
 public sealed record NvmeHealthLog(byte CriticalWarning, double? TemperatureC, int AvailableSparePercent, int SpareThresholdPercent, int PercentageUsed,
-    ulong DataUnitsRead, ulong DataUnitsWritten, ulong PowerCycles, ulong PowerOnHours, ulong UnsafeShutdowns, ulong MediaErrors, ulong ErrorLogEntries)
+    ulong DataUnitsRead, ulong DataUnitsWritten, ulong PowerCycles, ulong PowerOnHours, ulong UnsafeShutdowns, ulong MediaErrors, ulong ErrorLogEntries,
+    ulong HostReadCommands = 0, ulong HostWriteCommands = 0, ulong ControllerBusyMinutes = 0, uint WarningTempMinutes = 0, uint CriticalTempMinutes = 0,
+    uint Tmt1Count = 0, uint Tmt2Count = 0, uint Tmt1Seconds = 0, uint Tmt2Seconds = 0)
 {
     public const int Size = 512;
 
@@ -15,10 +17,12 @@ public sealed record NvmeHealthLog(byte CriticalWarning, double? TemperatureC, i
     {
         if (page.Length < Size) throw new ArgumentException($"An NVMe health log is {Size} bytes; got {page.Length}.", nameof(page));
         static ulong U64(ReadOnlySpan<byte> p, int offset) => BinaryPrimitives.ReadUInt64LittleEndian(p[offset..]);
+        static uint U32(ReadOnlySpan<byte> p, int offset) => BinaryPrimitives.ReadUInt32LittleEndian(p[offset..]);
         int kelvin = BinaryPrimitives.ReadUInt16LittleEndian(page[1..]);
         double celsius = kelvin - 273.15;   // 0 K is "not reported"; a reading outside 0..150 °C is a drive's filler value, never a temperature
         return new(page[0], kelvin != 0 && celsius is > 0 and < Hardware.ReadingValidator.MaxDriveCelsius ? celsius : null, page[3], page[4], page[5],
-            U64(page, 32), U64(page, 48), U64(page, 112), U64(page, 128), U64(page, 144), U64(page, 160), U64(page, 176));
+            U64(page, 32), U64(page, 48), U64(page, 112), U64(page, 128), U64(page, 144), U64(page, 160), U64(page, 176),
+            U64(page, 64), U64(page, 80), U64(page, 96), U32(page, 192), U32(page, 196), U32(page, 216), U32(page, 220), U32(page, 224), U32(page, 228));
     }
 
     /// <summary>Data units are thousands of 512-byte blocks.</summary>

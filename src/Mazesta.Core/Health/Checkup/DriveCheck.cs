@@ -19,7 +19,8 @@ public static class DriveCheck
         long errors = (d.ReadErrorsUncorrected ?? 0) + (d.WriteErrorsUncorrected ?? 0);
         if (d.BusType == "NVMe" && errors > 0) m.Add(M("Check_M_MediaErrors", errors, None));
         Finding F(FindingCode c, FindingLevel lv) => new(c, lv, HardwareKind.Storage, m, d.Label);
-        if (d.Status == "Unhealthy") return F(FindingCode.DriveUnhealthy, FindingLevel.Problem);
+        // A failing finding of the drive's own (NVMe critical warning, media errors, an attribute at its threshold) is a problem, as on the storage page; heat and wear are judged below or by the tray.
+        if (d.Status == "Unhealthy" || DriveReport.Of(d).Issues.Any(i => i.Level == DriveLevel.Fail && i.Code is not ("Hot" or "Worn"))) return F(FindingCode.DriveUnhealthy, FindingLevel.Problem);
         if (DriveAttention.Needs(d)) return F(FindingCode.DriveUnhealthy, FindingLevel.Attention);
         if (life < DriveAttention.FailBelow) return F(FindingCode.DriveWorn, FindingLevel.Problem);       // the same limits as the tray and the SMART test: under 60 % red, under 80 % orange
         if (life < DriveAttention.WatchBelow) return F(FindingCode.DriveWorn, FindingLevel.Attention);

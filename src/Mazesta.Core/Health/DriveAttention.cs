@@ -18,7 +18,8 @@ public static class DriveAttention
     };
 
     public static bool Needs(DriveHealth d) => d.Status is "Warning" or "Unhealthy" || (d.BusType == "NVMe" && (d.ReadErrorsUncorrected > 0 || d.WriteErrorsUncorrected > 0))
-        || (d.Media == "HDD" && d.BadSectors > 0);   // Windows goes on calling a hard disk with replaced or unreadable sectors «Healthy»; an SSD retires blocks as it wears, so there they are evidence only
+        || (d.Media == "HDD" && d.BadSectors > 0)   // Windows goes on calling a hard disk with replaced or unreadable sectors «Healthy»; an SSD retires blocks as it wears, so there they are evidence only
+        || d.Nvme is { CriticalWarning: not 0 } or { MediaErrors: > 0 } || d.Smart?.Any(a => a.Failing) == true;   // the drive's own log and thresholds, as the SMART test reads them
 
     /// <summary>Life left, from the drive's own wear counter (100 − used); null for a drive without one (an HDD), never guessed.</summary>
     public static int? HealthPercent(int? wearPercent) => wearPercent is { } w ? Math.Clamp(100 - w, 0, 100) : null;
