@@ -18,7 +18,8 @@ public sealed partial class WebBridge
                 var provider = _sp.GetRequiredService<IDriveHealthProvider>();
                 _drivesAt = DateTimeOffset.UtcNow; _drives = Task.Run(() => (object)new { drives = provider.Read().Select(Drive).ToList() });
             }
-            return await _drives.ConfigureAwait(true);
+            try { return await _drives.ConfigureAwait(true); }
+            catch { _drives = null; throw; }   // a failed read is not kept: the next ask reads again
         });
     }
 

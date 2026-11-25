@@ -319,6 +319,8 @@ internal static class TrayText
             "MediaErrors" => T($"{n} خطای داده ثبت کرده که نتوانسته اصلاح کند.", $"It has logged {n} data errors it could not correct."),
             "CriticalTempTime" => T($"{n} دقیقه بالاتر از دمای بحرانی خودش کار کرده است.", $"It has run {n} minutes above its own critical temperature."),
             "AttrFailing" => T($"پارامتر SMART با شناسه‌ی {id} به آستانه‌ی خرابی خود دیسک رسیده است.", $"SMART parameter {id} has reached the drive's own failure threshold."),
+            "CableErrors" => T($"{n} خطای انتقال روی کابل یا پورت آن ثبت شده (نه خود دیسک): کابل SATA را جابه‌جا یا عوض کنید.", $"It has counted {n} transfer errors on its cable or port (not the drive itself): reseat or replace the SATA cable."),
+            "WarningTempTime" => T($"{n} دقیقه بالاتر از دمای هشدار خودش کار کرده است.", $"It has run {n} minutes above its own warning temperature."),
             "BadSectors" => T($"{n} سکتور خراب روی سطح دیسک هست.", $"There are {n} bad sectors on the disk surface."),
             "Hot" => T($"دمای آن {n} درجه است و بیش از حد داغ است.", $"It is at {n} °C: too hot."),
             "Warm" => T($"دمای آن {n} درجه است و از حد مناسب گرم‌تر است.", $"It is at {n} °C: warmer than it should be."),

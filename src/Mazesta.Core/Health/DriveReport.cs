@@ -51,10 +51,13 @@ public sealed record DriveReport(int? HealthPercent, DriveLevel Level, double? T
             for (int bit = 0; bit < 6; bit++) if ((l.CriticalWarning & (1 << bit)) != 0) issues.Add(new($"NvmeBit{bit}", bit == 1 ? DriveLevel.Watch : DriveLevel.Fail));
             if (l.MediaErrors > 0) issues.Add(new("MediaErrors", DriveLevel.Fail, l.MediaErrors));
             if (l.CriticalTempMinutes > 0) issues.Add(new("CriticalTempTime", DriveLevel.Watch, l.CriticalTempMinutes));
+            else if (l.WarningTempMinutes > 0) issues.Add(new("WarningTempTime", DriveLevel.Watch, l.WarningTempMinutes));
             Nvme(l, rows, health, temp, tl, d.WarnTempC, d.CritTempC);
         }
         else if (d.BusType == "NVMe" && (d.ReadErrorsUncorrected ?? 0) + (d.WriteErrorsUncorrected ?? 0) is > 0 and var e) issues.Add(new("MediaErrors", DriveLevel.Fail, e));
         foreach (var a in d.Smart ?? []) if (a.Failing) issues.Add(new("AttrFailing", DriveLevel.Fail, a.Id));
+        // Interface CRC errors are the cable's or the port's, not the drive's: a caution with its own advice, never a reason to back up.
+        if (d.Smart?.FirstOrDefault(a => a.Id == 199) is { Raw: > 0 } crc) issues.Add(new("CableErrors", DriveLevel.Watch, crc.Raw & 0xFFFFFFFF));
         if (d.Media == "HDD" && d.BadSectors > 0) issues.Add(new("BadSectors", DriveLevel.Watch, d.BadSectors));
         if (tl is DriveLevel.Fail) issues.Add(new("Hot", DriveLevel.Fail, Math.Round(temp!.Value)));
         else if (tl is DriveLevel.Watch) issues.Add(new("Warm", DriveLevel.Watch, Math.Round(temp!.Value)));

@@ -38,12 +38,12 @@ public class DriveReportTests
         Assert.True(DriveAttention.Needs(Nvme(Log(media: 1)))); Assert.True(DriveAttention.Needs(Nvme(Log(warning: 4))));
     }
 
-    [Fact] public void The_temperature_warning_bit_and_time_at_the_critical_limit_are_cautions_and_time_at_the_warning_limit_only_marks_its_row()
+    [Fact] public void The_temperature_warning_bit_and_time_past_the_drive_s_own_limits_are_cautions()
     {
         Assert.Equal(DriveLevel.Watch, DriveReport.Of(Nvme(Log(warning: 0b10, temp: 40))).Level);
         Assert.Equal("CriticalTempTime", DriveReport.Of(Nvme(Log(critMinutes: 3, temp: 40))).Issues.Single().Code);
         var w = DriveReport.Of(Nvme(Log(warnMinutes: 9, temp: 40)));
-        Assert.Equal(DriveLevel.Good, w.Level); Assert.Equal(DriveLevel.Watch, w.Params.Single(p => p.Name == "DriveNvme_WarnTempTime").Level);
+        Assert.Equal("WarningTempTime", w.Issues.Single().Code); Assert.Equal(DriveLevel.Watch, w.Params.Single(p => p.Name == "DriveNvme_WarnTempTime").Level);
     }
 
     [Fact] public void Wear_is_amber_under_80_percent_life_and_red_under_60()
@@ -62,6 +62,13 @@ public class DriveReportTests
         Assert.Equal(DriveLevel.Watch, sectors.Level); Assert.Equal("DriveWhy_Sectors", sectors.Params.Single().Why);
         Assert.Equal("DriveAttr_Vendor", DriveReport.Of(Hdd(new SmartAttribute(233, 100, 100, 5, 0))).Params.Single().Name);
         Assert.False(new SmartAttribute(5, 100, 100, 0, 0).Failing); Assert.False(new SmartAttribute(5, 100, 100, 0, null).Failing);   // threshold 0 or unknown never fails
+    }
+
+    [Fact] public void Cable_errors_are_a_caution_that_names_the_cable_and_never_ask_for_a_backup()   // the owner's WD10EZRX: 288237 CRC errors, worst 1
+    {
+        var r = DriveReport.Of(Hdd(new SmartAttribute(199, 200, 1, 288237, 0)));
+        Assert.Equal(DriveLevel.Watch, r.Level); Assert.Equal(("CableErrors", 288237.0), (r.Issues.Single().Code, r.Issues.Single().Count!.Value));
+        Assert.Equal("DriveWhy_Crc", r.Params.Single().Why);
     }
 
     [Fact] public void Smart_attributes_are_read_with_their_normalized_values_and_the_drive_s_thresholds()
