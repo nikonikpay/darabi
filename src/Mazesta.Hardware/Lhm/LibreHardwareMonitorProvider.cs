@@ -45,7 +45,8 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         int count = _nodes.Sum(n => n.Mapped.Sensors.Count);
         // A board whose Super I/O gave no fan is tried once more after the driver is started (it can come up late); either way the log says what was found and what may be in the way.
         bool fans = ReportDetection();
-        if (!fans && !_retried && _restart is not null && Probe(_elevated, "elevation"))
+        // Not when a CPU temperature already reads: the driver is then up, so a late start is not what hides the fans (an unsupported Super I/O is), and closing the sensors to open them again risked the CPU's own.
+        if (!fans && !_retried && _restart is not null && !HasCpuMsrEvidence() && Probe(_elevated, "elevation"))
         {
             _retried = true; Probe(_restart, "PawnIO restart");
             try { _computer.Close(); } catch (Exception ex) { _log.LogWarning(ex, "LHM close failed"); }

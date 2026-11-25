@@ -42,10 +42,21 @@ public static class PawnIoDriver
         return File.Exists(p);
     }
 
+    /// <summary>The version the setup next to the exe installs; the library's CPU modules are built against it.</summary>
+    public static readonly Version Carried = new(2, 2, 0);
+
+    /// <summary>True when an older PawnIO (put there by another monitoring program) is installed: "installed" alone left it in place, and the CPU temperature of newer chips then read nothing. An unreadable version counts as current.</summary>
+    public static bool IsOutdated()
+    {
+        try { using var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64); using var k = hklm.OpenSubKey(UninstallKey); return k?.GetValue("DisplayVersion") is string s && Version.TryParse(s, out var v) && v < Carried; }
+        catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException) { return false; }
+    }
+
     public static PawnIoInstallResult EnsureInstalled(bool elevated, ILogger log, string? setupPath = null)
     {
-        if (IsInstalled()) return PawnIoInstallResult.AlreadyInstalled;
-        if (!elevated) return PawnIoInstallResult.NotElevated;
+        bool upgrade = IsInstalled();
+        if (upgrade && !IsOutdated()) return PawnIoInstallResult.AlreadyInstalled;
+        if (!elevated) return upgrade ? PawnIoInstallResult.AlreadyInstalled : PawnIoInstallResult.NotElevated;
         setupPath ??= SetupPath;
         if (!File.Exists(setupPath)) { log.LogWarning("PawnIO is not installed and {Setup} is missing; CPU sensors will be empty", setupPath); return PawnIoInstallResult.SetupMissing; }
         string hash; using (var fs = File.OpenRead(setupPath)) hash = Convert.ToHexString(SHA256.HashData(fs));
@@ -55,6 +66,8 @@ public static class PawnIoDriver
         string marker = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(setupPath))!, "pawnio-failed.flag");
         if (File.Exists(marker) && DateTime.UtcNow - File.GetLastWriteTimeUtc(marker) < TimeSpan.FromDays(1)) { log.LogWarning("PawnIO setup failed less than a day ago; not retried yet"); return PawnIoInstallResult.Failed; }
         var result = Install(setupPath, log);
+        // An old driver that stays old (in use until a restart) still serves what it can: not a failure, tried again tomorrow.
+        if (upgrade && IsOutdated()) { log.LogWarning("PawnIO is older than {Carried} and the update did not take (a restart may be needed)", Carried); result = PawnIoInstallResult.AlreadyInstalled; try { File.WriteAllText(marker, DateTime.UtcNow.ToString("O")); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } return result; }
         try { if (result == PawnIoInstallResult.Installed) File.Delete(marker); else File.WriteAllText(marker, DateTime.UtcNow.ToString("O")); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         return result;
     }

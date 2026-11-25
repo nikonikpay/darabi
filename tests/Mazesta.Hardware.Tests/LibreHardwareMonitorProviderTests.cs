@@ -25,6 +25,14 @@ public class LibreHardwareMonitorProviderTests
         var (p, c, _) = Build(pawn: false); c.Roots.Add(CpuWithTemp()); c.Roots.Add(Gpu()); p.Start();
         Assert.Equal(ProviderState.Ready, p.Status.State);
     }
+    [Fact] public void A_board_with_no_fan_is_not_reopened_while_the_cpu_temperature_reads_and_is_when_it_does_not()
+    {
+        LibreHardwareMonitorProvider Make(FakeLhmComputer c) => new(c, () => true, () => true, _ => null, new FixedClock(T0), NullLogger<LibreHardwareMonitorProvider>.Instance, null, null, () => true);
+        var reads = new FakeLhmComputer(); reads.Roots.Add(CpuWithTemp()); Make(reads).Start();
+        Assert.False(reads.Closed);   // reopening a working CPU's sensors only risks them
+        var empty = new FakeLhmComputer(); var cpu = new FakeHardware(HardwareType.Cpu, "/intelcpu/0", "i7-14700K"); cpu.Add("CPU Package", SensorType.Temperature, 0, null); empty.Roots.Add(cpu); Make(empty).Start();
+        Assert.True(empty.Closed);    // the driver may have come up late: try once more
+    }
     [Fact] public void Start_degraded_when_pawnio_missing_and_cpu_has_no_temperatures()
     {
         var (p, c, _) = Build(pawn: false); var cpu = new FakeHardware(HardwareType.Cpu, "/intelcpu/0", "i9"); cpu.Add("CPU Total", SensorType.Load, 0, 5); c.Roots.Add(cpu); p.Start();

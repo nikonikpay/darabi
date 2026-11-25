@@ -21,11 +21,12 @@ New-Item -ItemType Directory -Force (Join-Path $target "Redist") | Out-Null
 Copy-Item $pawn.FullName (Join-Path $target "Redist")
 # OpenRGB (GPL-2.0, a separate program the app only talks to over a socket) rides along as its own folder. It is fetched once from the project's
 # release page into a cache outside the repository and checked against a pinned hash; its source is at the address in the NOTICE file.
-$cache = [IO.Path]::GetFullPath("../Mazesta-Redist/OpenRGB-1.1", $repo)
+# The pipeline build (OpenRGB's own development build of master, commit f899bc88, 2026-11-25) rather than release 1.1: it lists the newest boards and lighting controllers.
+$cache = [IO.Path]::GetFullPath("../Mazesta-Redist/OpenRGB-f899bc88", $repo)
 if (-not (Test-Path (Join-Path $cache "OpenRGB.exe"))) {
-    $zip = Join-Path ([IO.Path]::GetTempPath()) "openrgb-1.1.zip"
-    Invoke-WebRequest "https://codeberg.org/OpenRGB/OpenRGB/releases/download/release_1.1/OpenRGB_1.1_Windows_64_8e16de2.zip" -OutFile $zip
-    if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne "63291726C6FC84EB479EF2EE752E97E1187F6CE9C49FD27EEE40DED588A8172A") { Remove-Item $zip -Force; throw "The OpenRGB download does not match the pinned hash." }
+    $zip = Join-Path ([IO.Path]::GetTempPath()) "openrgb-f899bc88.zip"
+    Invoke-WebRequest "https://gitlab.com/CalcProgrammer1/OpenRGB/-/jobs/18331952696/artifacts/download" -OutFile $zip
+    if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne "D9C66F9CF9DB4D4D2BEB23620B3301A713E9C31DC6CD61676F3EF62CC4AECE04") { Remove-Item $zip -Force; throw "The OpenRGB download does not match the pinned hash." }
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "openrgb-unpack"
     if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
     Expand-Archive $zip $tmp
@@ -35,7 +36,7 @@ if (-not (Test-Path (Join-Path $cache "OpenRGB.exe"))) {
 }
 $rgb = Join-Path $target "OpenRGB"
 Copy-Item $cache $rgb -Recurse -Force
-Set-Content (Join-Path $rgb "NOTICE.txt") "OpenRGB 1.1, GPL-2.0-only, https://openrgb.org - source code: https://codeberg.org/OpenRGB/OpenRGB (tag release_1.1). Run as a separate program by Mazesta Test; not modified."
+Set-Content (Join-Path $rgb "NOTICE.txt") "OpenRGB pipeline build f899bc88 (development version of 1.1), GPL-2.0-only, https://openrgb.org - source code: https://gitlab.com/CalcProgrammer1/OpenRGB (commit f899bc88). Run as a separate program by Mazesta Test; not modified."
 Get-ChildItem $target -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
 Remove-Item $tray -Recurse -Force
 $exe = if ($Edition -eq "Client") { "Mazesta.exe" } else { "Mazesta-Admin.exe" }
