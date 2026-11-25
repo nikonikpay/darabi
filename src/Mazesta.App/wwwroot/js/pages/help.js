@@ -11,7 +11,7 @@ import { norm, mark } from "../search.js";
 const TOPICS = [
   ["dashboard", null, "Nav_Dashboard"],
   ["monitoring", null, "Nav_Monitoring"], ["system", null, "Nav_SystemInfo"], ["cpu", null, "Nav_Cpu"], ["gpu", null, "Nav_Gpu"], ["ram", null, "Dashboard_Ram"],
-  ["storage", null, "Nav_Storage"], ["storage", "drivehealth", "Web_Drive_Title"], ["storage", "bitlocker", "BitLocker_Title"], ["network", null, "Nav_Network"],
+  ["storage", null, "Nav_Storage"], ["storage", "bitlocker", "BitLocker_Title"], ["network", null, "Nav_Network"],
   ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["benchmarks", "bench.cpu.render.multi", "Bench_Render_Multi"], ["benchmarks", "bench.gpu.fur", "Bench_Gpu_Fur"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"], ["checks", "send", "Checks_Send_Title"], ["checks", "usb", "Checks_Usb"],
   ["apps", null, "Nav_Apps"], ["ai", null, "Nav_Ai"],
   ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"], ["play", "gameboost", "GameBoost_Title"], ["games", null, "Nav_Games"], ["overlay", null, "Nav_Overlay"],

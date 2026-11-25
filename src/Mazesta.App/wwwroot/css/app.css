@@ -782,7 +782,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 [dir="ltr"] .unit-row .nm { text-align: left; }
 .unit-row .vals { display: flex; gap: 12px; font: 700 13.5px var(--lat); font-stretch: 82%; direction: ltr; white-space: nowrap; align-items: baseline; }
 .unit-row .vals .hatch { font: 600 12px var(--fa); }
-.unit-row .vals .health { font: 600 12px var(--fa); color: var(--paper-2); direction: rtl; }
+.unit-row .vals .health { font: 700 15px var(--fa); color: var(--paper-2); direction: rtl; }
+.unit-row .vals .health[data-good="1"] { color: var(--pass); }   /* green only for a healthy drive above 85 % */
 [dir="ltr"] .unit-row .vals .health { direction: ltr; }
 .unit-row .vals .health:empty { display: none; }
 .unit-row .vals .health[data-status="Warning"] { color: var(--warn); } .unit-row .vals .health[data-status="Unhealthy"] { color: var(--fail); }
@@ -1972,45 +1973,22 @@ div.findings { max-height: none; overflow: visible; }
 .chk-usb-row svg { width: 18px; height: 18px; flex: none; stroke: var(--pass); }
 .chk-usb-row.bad svg { stroke: var(--fail); }
 
-/* ——— Drive health (storage page): the health on a bar and the temperature in its level's colour, the findings, the parameter table. Fine is plain white, never the storage hue: its orange reads as the amber of a caution. ——— */
-.dh-panel { --hue: var(--c-storage); margin: 14px 0 4px; }
-.dh-list { display: grid; gap: 16px; }
-.dh-drive + .dh-drive { border-top: 1px solid var(--rule); padding-top: 14px; }
-.dh-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-.dh-name { font-weight: 700; font-size: 14px; }
-.dh-head .pill { margin-inline-start: auto; }
-.dh-read { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-.dh-cell { --c: var(--paper); display: grid; gap: 6px; align-content: start; background: var(--well); border-radius: 4px; padding: 10px 12px; }
-.dh-cell.lv-Watch { --c: var(--warn); } .dh-cell.lv-Fail { --c: var(--fail); }
-.dh-cell .k { font-size: 12px; color: var(--paper-3); }
-.dh-big { font-size: 28px; font-weight: 700; line-height: 1; color: var(--c); }
-.dh-cell .bar { height: 10px; border-radius: 1px; background: var(--ticks), var(--ink-4); overflow: hidden; }
-.dh-cell .bar i { display: block; height: 100%; width: 100%; background: var(--c); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 700ms var(--ease); }
-[dir="ltr"] .dh-cell .bar i { --from: left; }
-.dh-alert { margin-top: 12px; padding: 10px 12px; border-inline-start: 3px solid currentColor; border-radius: 3px; background: color-mix(in oklab, currentColor 10%, transparent); }
-.dh-alert.fail { color: var(--fail); } .dh-alert.warn { color: var(--warn); }
-.dh-alert ul { margin: 0; padding-inline-start: 18px; color: var(--paper); line-height: 1.9; }
-.dh-alert li.fail::marker { color: var(--fail); } .dh-alert li.warn::marker { color: var(--warn); }
-.dh-backup { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-weight: 700; }
-.dh-backup svg { width: 14px; height: 14px; stroke: currentColor; fill: none; flex: none; }
-.dh-fine { margin: 10px 0 0; }
-.dh-params { margin-top: 10px; }
-.dh-params summary { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; padding: 4px 0; }
-.dh-table tr.flag { color: var(--warn); } .dh-table tr.flag.fail { color: var(--fail); }
-.dh-table tr.flag td { background: color-mix(in oklab, currentColor 10%, transparent); }
-.dh-table tr.flag td:first-child { border-inline-start: 3px solid currentColor; }
-.dh-table tr.why td { color: var(--paper-2); background: var(--well); padding: 8px 12px; line-height: 1.8; white-space: normal; }
-.dh-why { all: unset; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 700; }
-.dh-why:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
-.dh-why svg { width: 12px; height: 12px; stroke: currentColor; fill: none; transition: transform 160ms var(--ease); }
-.dh-why[aria-expanded="true"] svg { transform: rotate(180deg); }
-@media (prefers-reduced-motion: reduce) { .dh-cell .bar i, .dh-why svg { transition: none; } }
-/* The dashboard's drive rows: the health as a figure you can read across the room, with its bar; the temperature amber or red past the drive's limits. */
-.dash-health .row { align-items: baseline; justify-content: flex-start; gap: 10px; }
-.dash-health .row .num { font-size: 18px; font-weight: 700; color: var(--paper); }
-.dash-health .bar i { background: var(--paper-2); }
-.dash-health .bar { height: 8px; }
-.dash-health[data-level="Watch"] .row .num { color: var(--warn); } .dash-health[data-level="Watch"] .bar i { background: var(--warn); }
-.dash-health[data-level="Fail"] .row .num { color: var(--fail); } .dash-health[data-level="Fail"] .bar i { background: var(--fail); }
-.unit-row .vals [data-level="Watch"] { color: var(--warn); font-weight: 700; } .unit-row .vals [data-level="Fail"] { color: var(--fail); font-weight: 700; }
-.meter.dash-health[hidden] { display: none; }
+/* A spec card's coloured rows (a drive's own report): green only for a health above 85 %, amber and red for cautions and faults; a faulty row's label opens what it means. */
+.kv .lv-Good { color: var(--pass); font-weight: 700; }
+.kv .lv-Watch { color: var(--warn); font-weight: 700; } .kv dd.lv-Watch:not(.spec-why), .kv dt.lv-Watch { background: color-mix(in oklab, var(--warn) 8%, transparent); }
+.kv .lv-Fail { color: var(--fail); font-weight: 700; } .kv dd.lv-Fail:not(.spec-why), .kv dt.lv-Fail { background: color-mix(in oklab, var(--fail) 8%, transparent); }
+.kv dd.lv-Good:has(.spec-bar), .kv dd:has(.spec-bar) { font-size: 15px; }
+.spec-bar { display: block; height: 8px; margin-top: 6px; border-radius: 1px; background: var(--ticks), var(--ink-4); overflow: hidden; }
+.spec-bar i { display: block; height: 100%; width: 100%; background: var(--paper-2); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 700ms var(--ease); }
+[dir="ltr"] .spec-bar i { --from: left; }
+.lv-Good .spec-bar i { background: var(--pass); } .lv-Watch .spec-bar i { background: var(--warn); } .lv-Fail .spec-bar i { background: var(--fail); }
+.kv .spec-why { grid-column: 1 / -1; font-weight: 400; color: var(--paper-2); background: var(--well); padding: 8px 10px; line-height: 1.8; text-align: start !important; }
+.kv .spec-why[hidden] { display: none; }
+.spec-open { all: unset; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.spec-open:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.spec-open svg { width: 12px; height: 12px; stroke: currentColor; fill: none; transition: transform 160ms var(--ease); }
+.spec-open[aria-expanded="true"] svg { transform: rotate(180deg); }
+.spec-alert { margin: 0 0 10px; padding: 8px 12px 8px 10px; padding-inline-start: 26px; border-inline-start: 3px solid currentColor; border-radius: 3px; background: color-mix(in oklab, currentColor 10%, transparent); line-height: 1.8; }
+.spec-alert.fail { color: var(--fail); } .spec-alert.warn { color: var(--warn); }
+.spec-alert li { color: var(--paper); } .spec-alert li.lv-Fail::marker { color: var(--fail); } .spec-alert li.lv-Watch::marker { color: var(--warn); }
+@media (prefers-reduced-motion: reduce) { .spec-bar i, .spec-open svg { transition: none; } }

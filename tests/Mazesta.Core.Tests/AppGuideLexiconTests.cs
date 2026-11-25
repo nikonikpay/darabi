@@ -56,10 +56,6 @@ public class AppGuideLexiconTests
         Assert.False(AiAssistantPolicy.AsksToAct("سلام"));
         Assert.True(R("آی پی من چنده").Place?.Page == "network" && R("آی پی من چنده").Intent == AiIntent.Navigate);
     }
-    [Fact] public void Asking_for_the_drive_parameters_opens_the_drive_health_box()
-    {
-        foreach (var q in new[] { "پارامترهای دیسک رو نشون بده", "show the drive health" }) { var r = R(q); Assert.True(r.Place is { Page: "storage", Target: "drivehealth" }, q + ": " + r.Intent + " " + r.Place?.Target); }
-    }
     [Fact] public void A_drive_test_asked_for_by_name_runs_alone()
     {
         var r = R("تست نوشتن طولانی هارد رو انجام بده");

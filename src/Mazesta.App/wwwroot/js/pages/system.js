@@ -2,17 +2,26 @@
 // can be saved whole as HTML, PDF or JSON.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
-import { h, val, toast } from "../ui.js";
+import { h, val, toast, icon } from "../ui.js";
 
 // A specification card: the rows that matter, the rest folded under "more", a table (a module's speed profiles, the one in use marked) and a note.
 const latin = (s) => /[a-z]/i.test(s) && !/[؀-ۿ]/.test(s);
+// A row may carry a level (Good green, Watch amber, Fail red), a bar (0..1) under its value, and an explanation: then its label is a button that opens it.
 function rows(list) {
-  return h("dl", { class: "kv" }, list.map((r) => [h("dt", { class: latin(r.label) ? "lat" : "" }, r.label),
-    h("dd", { class: /[؀-ۿ]/.test(r.value) ? "" : "lat", style: { textAlign: /[؀-ۿ]/.test(r.value) ? null : "left" } }, r.value)]));
+  return h("dl", { class: "kv" }, list.map((r) => {
+    const lv = r.level ? ` lv-${r.level}` : "";
+    const why = r.why ? h("dd", { class: `spec-why${lv}`, hidden: true }, r.why) : null;
+    const label = why ? h("button", { type: "button", class: "spec-open", "aria-expanded": "false", onclick: (e) => { why.hidden = !why.hidden; e.currentTarget.setAttribute("aria-expanded", String(!why.hidden)); } }, icon("chevron"), r.label) : r.label;
+    return [h("dt", { class: (latin(r.label) ? "lat" : "") + lv }, label),
+      h("dd", { class: (/[؀-ۿ]/.test(r.value) ? "" : "lat") + lv, style: { textAlign: /[؀-ۿ]/.test(r.value) ? null : "left" } }, r.value,
+        r.bar === null || r.bar === undefined ? null : h("span", { class: "spec-bar", role: "presentation" }, h("i", { style: { "--p": r.bar } }))), why];
+  }));
 }
 export function card(c, i) {
   const main = c.rows.filter((r) => !r.more), more = c.rows.filter((r) => r.more);
+  const worst = c.alerts?.some((a) => a.level === "Fail") ? "fail" : "warn";
   return h("div", { class: "col spec-card", style: { "--i": i } }, h("div", { class: "col-head" }, h("span", { class: "h3" }, c.title)),
+    c.alerts?.length ? h("ul", { class: `spec-alert ${worst}`, role: worst === "fail" ? "alert" : null }, c.alerts.map((a) => h("li", { class: `lv-${a.level}` }, a.text))) : null,
     main.length ? rows(main) : null,
     c.table ? h("div", { class: "spec-table-wrap" }, h("table", { class: "table spec-table" },
       h("thead", {}, h("tr", {}, c.table.headers.map((x, j) => h("th", { class: j ? "lat" : "" }, x)))),

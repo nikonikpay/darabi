@@ -1,5 +1,5 @@
 using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Desktop.ViewModels; using Mazesta.Monitoring;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
 namespace Mazesta.App;
 
 public sealed partial class WebBridge
@@ -39,7 +39,10 @@ public sealed partial class WebBridge
         {
             var (inv, d, cached) = await snapshot.DetailsAsync().ConfigureAwait(true);
             string kind = Str(p, "kind");
-            var cards = kind.Length == 0 ? PartSpecs.All(inv, d) : PartSpecs.For(Enum.Parse<HardwareKind>(kind), inv, d);
+            // The storage page's cards carry each drive's own report (a second or two of WMI and the NVMe log, read off the UI thread); a failed read leaves them as before.
+            IReadOnlyList<Mazesta.Core.Providers.DriveHealth>? health = null;
+            if (kind == "Storage") try { health = await Task.Run(() => _sp.GetRequiredService<Mazesta.Core.Providers.IDriveHealthProvider>().Read()).ConfigureAwait(true); } catch (Exception e) { _log.LogWarning(e, "Drive health for the storage cards"); }
+            var cards = kind.Length == 0 ? PartSpecs.All(inv, d) : PartSpecs.For(Enum.Parse<HardwareKind>(kind), inv, d, health);
             return new { cards = cards.Select(Card), errors = d.Errors, cached };
         });
 
@@ -54,7 +57,7 @@ public sealed partial class WebBridge
                     .ToDictionary(k => k.ToString(), k => SystemInfoViewModel.Component(inv, k).Select(Section)),
                 cpu = inv.Cpu?.Name?.Trim(), gpus = inv.Gpus.Select(g => g.Name?.Trim()), board = inv.Motherboard is { } b ? $"{b.Manufacturer} {b.Product}".Trim() : null,
                 bios = inv.Bios?.Version, ramBytes = inv.TotalPhysicalMemoryBytes, os = inv.Os?.Caption, errors = inv.Errors,
-                drives = inv.Storage.Select(d => new { name = d.FriendlyName, health = SystemInfoViewModel.DriveHealth(d.HealthStatus, d.WearPercent), status = Mazesta.Core.Health.DriveAttention.Verdict(d.HealthStatus, d.WearPercent), letters = d.Letters }),
+                drives = inv.Storage.Select(d => new { name = d.FriendlyName, health = SystemInfoViewModel.DriveHealth(d.HealthStatus, d.WearPercent), status = Mazesta.Core.Health.DriveAttention.Verdict(d.HealthStatus, d.WearPercent), pct = Mazesta.Core.Health.DriveAttention.HealthPercent(d.WearPercent), letters = d.Letters }),
             };
         });
     }
@@ -62,7 +65,8 @@ public sealed partial class WebBridge
     /// <summary>A specification card for the page: its rows (the folded ones marked), its table with the row in use, and its note.</summary>
     private static object Card(SpecCard c) => new
     {
-        title = c.Title, rows = c.Rows.Select(r => new { label = r.Label, value = r.Value, more = r.More }), note = c.Note,
+        title = c.Title, rows = c.Rows.Select(r => new { label = r.Label, value = r.Value, more = r.More, level = r.Level, why = r.Why, bar = r.Bar }), note = c.Note,
+        alerts = c.Alerts?.Select(a => new { text = a.Text, level = a.Level }),
         table = c.Table is { } t ? new { headers = t.Headers, rows = t.Rows, highlight = t.Highlight } : null,
     };
 

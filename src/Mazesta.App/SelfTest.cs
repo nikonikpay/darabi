@@ -49,13 +49,8 @@ internal static class SelfTest
             if (kind == "specs")   // the storage cards as the page gets them (specs.get), to compare with other disk tools
             {
                 var (inv, d, _) = await services.GetRequiredService<Mazesta.Desktop.Composition.HardwareSnapshot>().DetailsAsync();
-                foreach (var c in PartSpecs.For(Mazesta.Core.Hardware.HardwareKind.Storage, inv, d)) { Say($"== {c.Title}"); foreach (var r in c.Rows) Say($"   {r.Label}: {r.Value}"); }
-                Say("DONE"); return;
-            }
-            if (kind == "drives")   // the drive health box as the page gets it (drives.health), to compare with Hard Disk Sentinel or CrystalDiskInfo
-            {
-                var drives = await Task.Run(() => services.GetRequiredService<Mazesta.Core.Providers.IDriveHealthProvider>().Read());
-                Say(System.Text.Json.JsonSerializer.Serialize(drives.Select(WebBridge.Drive), new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+                var health = await Task.Run(() => services.GetRequiredService<Mazesta.Core.Providers.IDriveHealthProvider>().Read());
+                foreach (var c in PartSpecs.For(Mazesta.Core.Hardware.HardwareKind.Storage, inv, d, health)) { Say($"== {c.Title}"); foreach (var a in c.Alerts ?? []) Say($"   ! [{a.Level}] {a.Text}"); foreach (var r in c.Rows) Say($"   {r.Label}: {r.Value}{(r.Level is { } l ? $"  [{l}{(r.Bar is { } b ? $" bar {b:0.00}" : "")}]" : "")}{(r.More ? "  (more)" : "")}"); }
                 Say("DONE"); return;
             }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }

@@ -336,7 +336,7 @@ export async function call(m, p, emit) {
         { role: "assistant", text: "تست حافظه اجرا شد و نتیجهٔ آن «موفق» بود.", tools: [{ name: "run_tests", ok: true, result: JSON.stringify({ started: true, results: [{ id: "memory.pattern", name: "الگوی حافظه", outcome: "Passed" }] }) }] },
         { role: "user", text: "صفحهٔ اورلی رو باز کن", tools: [] }, { role: "assistant", text: "صفحهٔ اورلی باز شد.", tools: [{ name: "open_page", ok: true, result: null }] }] };
     case "assistant.exec": return null;
-    case "specs.get": await new Promise((r) => setTimeout(r, 300)); return { errors: [], cards: DEMO_SPECS[p.kind || "Cpu"] || DEMO_SPECS.Cpu };
+    case "specs.get": await new Promise((r) => setTimeout(r, 300)); return { errors: [], cards: p.kind === "Storage" ? demoDrives() : DEMO_SPECS[p.kind || "Cpu"] || DEMO_SPECS.Cpu };
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
     case "tweaks.state": return tweaks();
@@ -430,7 +430,6 @@ export async function call(m, p, emit) {
     case "tuning.state": return tuning();
     case "tuning.set": if (p.field === "curve") { form.core = p.core; form.coreValue = +p.core; form.capValue = +p.cap; form.maxClock = p.cap; } return null;
     case "reports.state": return reports();
-    case "drives.health": await new Promise((r) => setTimeout(r, 300)); return { drives: demoDrives() };
     case "bitlocker.get": return { known: true, volumes: [{ letter: "C:", state: "WaitingForActivation", canLock: true, recovery: false }, { letter: "D:", state: "Off", canLock: false, recovery: null }] };
     case "tools.state": return { busy: false, status: strings.Tools_Result_Healthy, percent: 100, canCancel: false,
       output: ["Beginning system scan.  This process will take some time.", "", "Beginning verification phase of system scan.", "Verification 100% complete.", "", "Windows Resource Protection did not find any integrity violations."],
@@ -443,21 +442,18 @@ export async function call(m, p, emit) {
   }
 }
 
-// The storage page's drive health box in the preview: a warm NVMe drive (amber, one row marked) and a failing hard disk, so both branches can be seen.
+// The storage page's drive cards in the preview, with each drive's own report on them: a healthy NVMe drive that runs warm, and a failing hard disk.
 function demoDrives() {
-  const s = (k, ...a) => a.reduce((x, v, i) => x.replace(`{${i}}`, v), strings[k]);
-  const p = (name, value, level = "Good", why = null, extra = {}) => ({ id: null, name: strings[name] || name, value, level, why: why && strings[why], cur: null, worst: null, thr: null, ...extra });
-  const a = (id, key, cur, worst, thr, raw, level = "Good", why = null) => ({ ...p(key, raw, level, why), id, cur, worst, thr });
+  const s = (k, ...a) => a.reduce((x, v, i) => x.replace(`{${i}}`, v), strings[k] || k), r = (k, value, more = false, extra = {}) => ({ label: strings[k] || k, value, more, ...extra });
   return [
-    { name: "Samsung SSD 980 PRO 1TB", letters: "C:", media: "SSD", bus: "NVMe", health: 97, level: "Watch", verdict: strings.DriveLevel_Watch, temp: 63, tempLevel: "Watch", watchC: 60, failC: 70, backup: false, ata: false,
-      issues: [{ text: s("DriveIssue_Warm", "63"), level: "Watch" }],
-      params: [p("DriveNvme_CriticalWarning", "0x00"), p("DriveNvme_Temperature", "63 °C", "Watch", "DriveWhy_Temp"), p("DriveNvme_Spare", "100 %"), p("DriveNvme_SpareThreshold", "10 %"), p("DriveNvme_Used", "3 %"),
-        p("DriveNvme_DataRead", "48.2 TB"), p("DriveNvme_DataWritten", "31.7 TB"), p("DriveNvme_PowerOnHours", "6,214 h"), p("DriveNvme_UnsafeShutdowns", "87"), p("DriveNvme_MediaErrors", "0"),
-        p("DriveNvme_ErrorLog", "12"), p("DriveNvme_WarnTempTime", "0 min"), p("DriveNvme_CritTempTime", "0 min"), p("DriveNvme_WarnThreshold", "82 °C"), p("DriveNvme_CritThreshold", "85 °C")] },
-    { name: "WDC WD20PURZ-85GU6Y0", letters: "D:", media: "HDD", bus: "SATA", health: 6, level: "Fail", verdict: strings.DriveLevel_Fail, temp: 41, tempLevel: "Good", watchC: 50, failC: 55, backup: true, ata: true,
-      issues: [{ text: s("DriveIssue_AttrFailing", strings.DriveAttr_5, "05"), level: "Fail" }, { text: s("DriveIssue_Worn", "6"), level: "Fail" }, { text: s("DriveIssue_BadSectors", "976"), level: "Watch" }],
-      params: [a("01", "DriveAttr_1", 200, 200, 51, "0"), a("03", "DriveAttr_3", 175, 172, 21, "4225"), a("05", "DriveAttr_5", 1, 1, 140, "976", "Fail", "DriveWhy_AtaThreshold"),
-        a("09", "DriveAttr_9", 61, 61, 0, "28775"), a("C2", "DriveAttr_194", 106, 99, 0, "41 °C"), a("C5", "DriveAttr_197", 200, 200, 0, "14", "Watch", "DriveWhy_Sectors"),
-        a("C6", "DriveAttr_198", 200, 200, 0, "0"), a("C7", "DriveAttr_199", 200, 200, 0, "3", "Watch", "DriveWhy_Crc")] },
+    { title: s("SystemInfo_StorageN", "1"), rows: [r("SystemInfo_Name", "Samsung SSD 980 PRO 1TB (C:)"), r("SystemInfo_MediaType", "SSD"), r("SystemInfo_BusType", "NVMe"), r("SystemInfo_Size", "1000 GB"),
+      r("SystemInfo_Health", "سالم (97%)", false, { level: "Good", bar: 0.97 }), r("Spec_Temperature", "63 °C (max 74 °C)", false, { level: "Watch", why: strings.DriveWhy_Temp }),
+      r("Spec_NvmeWarning", "ندارد"), r("Spec_NvmeMediaErrors", "0"), r("Spec_NvmeUnsafeShutdowns", "87", true), r("DriveNvme_HostReads", "416,096,773", true), r("DriveNvme_WarnThreshold", "82 °C", true)],
+      alerts: [{ text: s("DriveIssue_Warm", "63"), level: "Watch" }] },
+    { title: s("SystemInfo_StorageN", "2"), rows: [r("SystemInfo_Name", "WDC WD20PURZ-85GU6Y0 (D:)"), r("SystemInfo_MediaType", "HDD"), r("SystemInfo_BusType", "SATA"), r("SystemInfo_Size", "2000 GB"),
+      r("SystemInfo_Health", "معیوب (6%)", false, { level: "Fail", bar: 0.06 }), r("Spec_Temperature", "41 °C"),
+      r("05 · " + strings.DriveAttr_5, "976 (1 / 1 / 140)", false, { level: "Fail", why: strings.DriveWhy_AtaThreshold }), r("C5 · " + strings.DriveAttr_197, "14 (200 / 200 / 0)", false, { level: "Watch", why: strings.DriveWhy_Sectors }),
+      r("09 · " + strings.DriveAttr_9, "28775 (61 / 61 / 0)", true), r("C2 · " + strings.DriveAttr_194, "41 °C (106 / 99 / 0)", true)],
+      alerts: [{ text: s("DriveIssue_AttrFailing", strings.DriveAttr_5, "05"), level: "Fail" }, { text: s("DriveIssue_Worn", "6"), level: "Fail" }, { text: s("DriveIssue_BadSectors", "976"), level: "Watch" }, { text: strings.Spec_DriveBackup, level: "Fail" }] },
   ];
 }

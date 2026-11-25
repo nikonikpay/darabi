@@ -4519,26 +4519,8 @@ Cancel: stop.</value></data>
   <data name="DriveWhy_AtaThreshold" xml:space="preserve"><value>The current value (set by the drive itself, higher is better) has fallen to the threshold the drive set for failure: by the drive's own test it is failing.</value></data>
   <data name="DriveWhy_Sectors" xml:space="preserve"><value>Sectors of the disk surface it could not read reliably. Once they appear on a hard disk more usually follow: back up and keep an eye on the count.</value></data>
   <data name="DriveWhy_Crc" xml:space="preserve"><value>Errors on the way between the drive and the motherboard, not in the drive itself. Usually a loose or poor SATA cable or port: reseat or replace the cable.</value></data>
-  <data name="Web_Drive_Title" xml:space="preserve"><value>Drive health</value></data>
-  <data name="Web_Drive_Health" xml:space="preserve"><value>Health</value></data>
-  <data name="Web_Drive_Temp" xml:space="preserve"><value>Temperature</value></data>
-  <data name="Web_Drive_TempLimits" xml:space="preserve"><value>amber from {0} °C, red from {1} °C</value></data>
-  <data name="Web_Drive_Backup" xml:space="preserve"><value>Back up its data now to prevent data loss.</value></data>
-  <data name="Web_Drive_Fine" xml:space="preserve"><value>The drive's own report shows no problem.</value></data>
-  <data name="Web_Drive_NoHealth" xml:space="preserve"><value>no health counter</value></data>
-  <data name="Web_Drive_Params" xml:space="preserve"><value>Parameters</value></data>
-  <data name="Web_Drive_Flagged" xml:space="preserve"><value>{0} to look at</value></data>
-  <data name="Web_Drive_Col_Name" xml:space="preserve"><value>Parameter</value></data>
-  <data name="Web_Drive_Col_Cur" xml:space="preserve"><value>Current</value></data>
-  <data name="Web_Drive_Col_Worst" xml:space="preserve"><value>Worst</value></data>
-  <data name="Web_Drive_Col_Thr" xml:space="preserve"><value>Threshold</value></data>
-  <data name="Web_Drive_Col_Raw" xml:space="preserve"><value>Raw value</value></data>
-  <data name="Web_Drive_Col_Value" xml:space="preserve"><value>Value</value></data>
-  <data name="Web_Drive_Loading" xml:space="preserve"><value>Reading the drives' own reports…</value></data>
-  <data name="Web_Drive_None" xml:space="preserve"><value>No drive gave a health report (USB drives are not read).</value></data>
-  <data name="Web_Drive_Error" xml:space="preserve"><value>The drives' reports could not be read: {0}</value></data>
-  <data name="Help_Web_Drive_Title" xml:space="preserve"><value>Each drive's health as the drive itself reports it, the way Hard Disk Sentinel and CrystalDiskInfo show it: the health in percent on a bar, the temperature (amber and then red as it climbs; an SSD from 60 and 70 °C, a hard disk from 50 and 55, or the drive's own lower limit), what is wrong in plain words with a backup warning, and every SMART or NVMe parameter. A faulty parameter's row is coloured; click it to read what it means and what to do.</value></data>
-  <data name="HelpHow_Web_Drive_Title" xml:space="preserve"><value>Open the Storage page and read each drive's health bar and temperature in the Drive health box.|If a coloured box lists problems, read them; a red one means back up the drive's data now.|Open Parameters and click a coloured row to read what it means and what to do.|The tray shows the same findings in its summary window and announces a new one once.</value></data>
   <data name="DriveIssue_CableErrors" xml:space="preserve"><value>It has counted {0} transfer errors on its cable or port (not the drive itself): reseat or replace the SATA cable.</value></data>
   <data name="DriveIssue_WarningTempTime" xml:space="preserve"><value>It has run {0} minutes above its own warning temperature.</value></data>
+  <data name="Spec_DriveBackup" xml:space="preserve"><value>Back up its data now to prevent data loss.</value></data>
+  <data name="Spec_Smart" xml:space="preserve"><value>SMART parameter</value></data>
 </root>

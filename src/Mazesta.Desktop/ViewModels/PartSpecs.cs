@@ -5,8 +5,11 @@ namespace Mazesta.Desktop.ViewModels;
 public sealed record InfoTable(IReadOnlyList<string> Headers, IReadOnlyList<IReadOnlyList<string>> Rows, int? Highlight = null);
 
 /// <summary>A specification card: the rows that matter up front, the rest (<see cref="SpecRow.More"/>) folded under "more", an optional table and a note.</summary>
-public sealed record SpecRow(string Label, string Value, bool More = false);
-public sealed record SpecCard(string Title, IReadOnlyList<SpecRow> Rows, InfoTable? Table = null, string? Note = null);
+/// <see cref="SpecRow.Level"/> colours a row (Good green, Watch amber, Fail red), <see cref="SpecRow.Why"/> is what it opens to, <see cref="SpecRow.Bar"/> (0..1) draws a bar
+/// under it; a card's <see cref="SpecCard.Alerts"/> are its findings in words, shown above its rows (a drive's: what is wrong and "back up now").
+public sealed record SpecRow(string Label, string Value, bool More = false, string? Level = null, string? Why = null, double? Bar = null);
+public sealed record SpecAlert(string Text, string Level);
+public sealed record SpecCard(string Title, IReadOnlyList<SpecRow> Rows, InfoTable? Table = null, string? Note = null, IReadOnlyList<SpecAlert>? Alerts = null);
 
 /// <summary>
 /// Each part's full specification for its page, grouped into cards (the part, its caches or connection, its firmware…), from the inventory and the
@@ -38,21 +41,23 @@ public static class PartSpecs
         if (text is not null) rows.Add(new(Loc.Get(key), suffix is null ? text : $"{text} {suffix}", more));
     }
 
-    public static IReadOnlyList<SpecCard> For(HardwareKind kind, HardwareInventory inv, HardwareDetails d) => kind switch
+    /// <param name="health">Each drive's own health report (<see cref="Core.Providers.IDriveHealthProvider"/>), matched to its card by name: its findings, the
+    /// colours of its rows and its SMART / NVMe parameters. Without it a drive's card lists what the inventory read.</param>
+    public static IReadOnlyList<SpecCard> For(HardwareKind kind, HardwareInventory inv, HardwareDetails d, IReadOnlyList<Core.Providers.DriveHealth>? health = null) => kind switch
     {
         HardwareKind.Cpu => Cpu(inv.Cpu, d.Cpu),
         HardwareKind.Gpu => [.. inv.Gpus.SelectMany((g, i) => Gpu(g, d.Gpus.ElementAtOrDefault(i), inv.Gpus.Count > 1 ? i + 1 : null)).DefaultIfEmpty(Missing("Dashboard_Gpu"))],
         HardwareKind.Memory => Memory(inv, d.Spd),
-        HardwareKind.Storage => [.. inv.Storage.Select((s, i) => Drive(s, d.Drives.ElementAtOrDefault(i), inv.Storage.Count > 1 ? i + 1 : null)).DefaultIfEmpty(Missing("SystemInfo_Storage"))],
+        HardwareKind.Storage => [.. inv.Storage.Select((s, i) => Drive(s, d.Drives.ElementAtOrDefault(i), inv.Storage.Count > 1 ? i + 1 : null, health?.FirstOrDefault(x => x.Name == s.FriendlyName))).DefaultIfEmpty(Missing("SystemInfo_Storage"))],
         HardwareKind.Network => [.. inv.NetworkAdapters.Select((n, i) => Nic(n, d.Nics.FirstOrDefault(x => x.Name == n.Name), inv.NetworkAdapters.Count > 1 ? i + 1 : null)).DefaultIfEmpty(Missing("SystemInfo_Network"))],
         HardwareKind.Motherboard => Board(inv, d.Security),
         _ => [],
     };
 
     /// <summary>Every part, board first, for the System Information page.</summary>
-    public static IReadOnlyList<SpecCard> All(HardwareInventory inv, HardwareDetails d)
+    public static IReadOnlyList<SpecCard> All(HardwareInventory inv, HardwareDetails d, IReadOnlyList<Core.Providers.DriveHealth>? health = null)
         => [.. For(HardwareKind.Cpu, inv, d), .. For(HardwareKind.Memory, inv, d), .. For(HardwareKind.Gpu, inv, d), .. For(HardwareKind.Motherboard, inv, d),
-            .. For(HardwareKind.Storage, inv, d), .. For(HardwareKind.Network, inv, d)];
+            .. For(HardwareKind.Storage, inv, d, health), .. For(HardwareKind.Network, inv, d)];
 
     private static SpecCard Missing(string titleKey) => new(Loc.Get(titleKey), [new(Loc.Get("SystemInfo_Name"), Na)]);
 
@@ -239,6 +244,46 @@ public static class PartSpecs
     }
 
     // ——— Storage ———
+    private static SpecCard Drive(StorageDeviceInfo s, DriveDetails? d, int? number, Core.Providers.DriveHealth? health)
+    {
+        var card = Drive(s, d, number);
+        if (health is null) return card;
+        // The drive's own report on the same card: its findings above the rows, the health with its bar (green from 85 %, amber under 80, red under 60),
+        // the temperature amber then red past the drive's limits, a faulty row coloured and opening to what it means, and every other parameter under "more".
+        var r = Core.Health.DriveReport.Of(health);
+        static string? L(Core.Health.DriveLevel l) => l == Core.Health.DriveLevel.Good ? null : l.ToString();
+        var byName = r.Params.DistinctBy(p => p.Name + p.Id).ToDictionary(p => p.Name + p.Id);
+        SpecRow Mark(SpecRow row, string param) => byName.TryGetValue(param, out var p) && p.Level != Core.Health.DriveLevel.Good ? row with { Level = L(p.Level), Why = p.Why is { } w ? Loc.Get(w) : null } : row;
+        var rows = card.Rows.Select(row =>
+            row.Label == Loc.Get("SystemInfo_Health") && r.HealthPercent is { } hp
+                ? row with { Value = SystemInfoViewModel.DriveHealth(s.HealthStatus, health.WearPercent), Bar = hp / 100.0, Level = hp > 85 ? "Good" : hp < Core.Health.DriveAttention.FailBelow ? "Fail" : hp < Core.Health.DriveAttention.WatchBelow ? "Watch" : null }
+            : row.Label == Loc.Get("Spec_Temperature") && r.TempLevel is { } tl && tl != Core.Health.DriveLevel.Good ? row with { Level = L(tl), Why = Loc.Get("DriveWhy_Temp") }
+            : row.Label == Loc.Get("Spec_NvmeWarning") ? Mark(row, "DriveNvme_CriticalWarning")
+            : row.Label == Loc.Get("Spec_NvmeMediaErrors") ? Mark(row, "DriveNvme_MediaErrors")
+            : row.Label == Loc.Get("Spec_NvmeSpare") ? Mark(row, "DriveNvme_Spare")
+            : row).ToList();
+        // What the card did not list yet: the rest of the NVMe log, the drive's own temperature limits, and each SATA attribute (current / worst / threshold, raw).
+        string[] shown = ["DriveNvme_CriticalWarning", "DriveNvme_Temperature", "DriveNvme_Spare", "DriveNvme_SpareThreshold", "DriveNvme_Used", "DriveNvme_DataRead", "DriveNvme_DataWritten",
+            "DriveNvme_PowerCycles", "DriveNvme_PowerOnHours", "DriveNvme_UnsafeShutdowns", "DriveNvme_MediaErrors", "DriveNvme_ErrorLog"];
+        int at = rows.FindIndex(x => x.More); if (at < 0) at = rows.Count;
+        foreach (var p in r.Params.Where(p => !shown.Contains(p.Name)))
+        {
+            string label = p.Id is null ? Loc.Get(p.Name) : $"{p.Id} · {(p.Name == "DriveAttr_Vendor" ? Loc.Format(p.Name, p.Id) : Loc.Get(p.Name))}";
+            string value = p.Current is null ? p.Value : $"{p.Value} ({p.Current} / {p.Worst} / {p.Threshold?.ToString(CultureInfo.InvariantCulture) ?? "-"})";
+            var row = new SpecRow(label, value, p.Level == Core.Health.DriveLevel.Good, L(p.Level), p.Why is { } w ? Loc.Get(w) : null);
+            if (row.More) rows.Add(row); else rows.Insert(at++, row);   // a faulty one is shown, not folded away
+        }
+        string Issue(Core.Health.DriveIssue i)
+        {
+            string id = ((int)(i.Count ?? 0)).ToString("X2", CultureInfo.InvariantCulture);
+            return i.Code == "AttrFailing" ? Loc.Format("DriveIssue_AttrFailing", Loc.Get(Core.Health.DriveReport.NamedAttributes.Contains((int)(i.Count ?? 0)) ? $"DriveAttr_{(int)(i.Count ?? 0)}" : "Spec_Smart"), id)
+                : Loc.Format("DriveIssue_" + i.Code, (i.Count ?? 0).ToString("0", CultureInfo.InvariantCulture));
+        }
+        var alerts = r.Issues.Select(i => new SpecAlert(Issue(i), i.Level.ToString())).ToList();
+        if (r.Issues.Any(i => i.Level == Core.Health.DriveLevel.Fail && i.Code is not ("Hot" or "Warm"))) alerts.Add(new(Loc.Get("Spec_DriveBackup"), "Fail"));
+        return card with { Rows = rows, Alerts = alerts.Count > 0 ? alerts : null };
+    }
+
     private static SpecCard Drive(StorageDeviceInfo s, DriveDetails? d, int? number)
     {
         var rows = new List<SpecRow>();
