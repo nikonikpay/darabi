@@ -16,4 +16,4 @@
 ## Finding files and code (graphify)
 
 - Before searching the tree with Glob/Grep to locate a file, class, or the code behind a feature, query the knowledge graph first: `graphify query "<question>"`, `graphify explain "<name>"` or `graphify path "<A>" "<B>"` (graph in `graphify-out/graph.json`). Use the `source_location` it returns to open the file directly; fall back to Grep only if the graph has no answer.
-- After a large change (new files, renames, deletions), refresh it with `/graphify . --update` so it does not go stale.
+- After a large change (new files, renames, deletions), refresh it with `/graphify . --update` so it does not go stale, then run `python tools/graphify-relink-csharp.py` and `graphify export html` (an update leaves C# namespace imports on stray duplicate nodes).
