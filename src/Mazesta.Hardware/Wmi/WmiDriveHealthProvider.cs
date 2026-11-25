@@ -17,24 +17,36 @@ public sealed class WmiDriveHealthProvider(IWmiQuery query) : IDriveHealthProvid
         return [.. drives.Select((d, i) =>
         {
             // The drive's own figures beat Windows' counter (which reads 0 on many NVMe drives): the NVMe log's "percentage used", and the bad-sector attributes.
-            int? used = d.WearPercent;
+            int? used = d.WearPercent; NvmeHealthLog? log = null; (double? Warn, double? Crit) limits = default;
             if (d.BusType == "NVMe" && rows[i].Row.GetValueOrDefault("DeviceId") is { } id && int.TryParse(Convert.ToString(id, System.Globalization.CultureInfo.InvariantCulture), out int number)
-                && NvmeHealthReader.ReadLog(number) is { } log) used = log.PercentageUsed;
-            int? sectors = null; long? bad = null;
-            for (int k = 0; k < smart.Count && sectors is null; k++)
-                if (!taken.Contains(k) && WmiDriveHealthParser.Same(smart[k].Prod, d.Name)) { taken.Add(k); sectors = SmartHealth.FromAttributes(smart[k].Raw); bad = SmartHealth.BadSectors(smart[k].Raw); }
-            return d with { WearPercent = SmartHealth.Wear(used, sectors), BadSectors = bad, Letters = rows[i].Row.GetValueOrDefault("DeviceId") is { } did && letters.TryGetValue(Convert.ToString(did, System.Globalization.CultureInfo.InvariantCulture) ?? "", out var l) ? l : null };
+                && NvmeHealthReader.ReadLog(number) is { } read) { log = read; used = read.PercentageUsed; limits = NvmeHealthReader.ReadTempLimits(number); }
+            int? sectors = null; long? bad = null; IReadOnlyList<SmartAttribute>? attributes = null;
+            for (int k = 0; k < smart.Count && attributes is null; k++)
+                if (!taken.Contains(k) && WmiDriveHealthParser.Same(smart[k].Prod, d.Name))
+                {
+                    taken.Add(k); attributes = smart[k].Attributes;
+                    var raw = attributes.DistinctBy(a => a.Id).ToDictionary(a => a.Id, a => a.Raw); sectors = SmartHealth.FromAttributes(raw); bad = SmartHealth.BadSectors(raw);
+                }
+            return d with { WearPercent = SmartHealth.Wear(used, sectors), BadSectors = bad, Nvme = log, Smart = attributes, WarnTempC = limits.Warn, CritTempC = limits.Crit, Letters = rows[i].Row.GetValueOrDefault("DeviceId") is { } did && letters.TryGetValue(Convert.ToString(did, System.Globalization.CultureInfo.InvariantCulture) ?? "", out var l) ? l : null };
         })];
     }
 
     /// <summary>Each ATA drive's SMART attributes (administrator only; a drive Windows does not expose them for - NVMe, USB - is simply absent).</summary>
-    private List<(string Prod, IReadOnlyDictionary<int, ulong> Raw)> SmartBlobs()
+    private List<(string Prod, IReadOnlyList<SmartAttribute> Attributes)> SmartBlobs()
     {
-        var list = new List<(string, IReadOnlyDictionary<int, ulong>)>();
+        var list = new List<(string, IReadOnlyList<SmartAttribute>)>();
         try
         {
+            var limits = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (var r in query.Query(@"root\wmi", "SELECT InstanceName, VendorSpecific FROM MSStorageDriver_FailurePredictThresholds"))
+                    if (r.GetValueOrDefault("InstanceName") is string n && r.GetValueOrDefault("VendorSpecific") is byte[] b) limits[n] = b;
+            }
+            catch (Exception) { }   // no thresholds: the attributes are shown without them and never judged on them
             foreach (var r in query.Query(@"root\wmi", "SELECT InstanceName, VendorSpecific FROM MSStorageDriver_ATAPISmartData"))
-                if (r.GetValueOrDefault("InstanceName") is string name && r.GetValueOrDefault("VendorSpecific") is byte[] blob) list.Add((name, SmartHealth.Parse(blob)));
+                if (r.GetValueOrDefault("InstanceName") is string name && r.GetValueOrDefault("VendorSpecific") is byte[] blob)
+                    list.Add((name, SmartHealth.ReadAttributes(blob, limits.GetValueOrDefault(name))));
         }
         catch (Exception) { }   // no SMART access: the drive keeps what Windows reports
         return list;

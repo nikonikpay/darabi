@@ -10,7 +10,8 @@ public sealed class NvmeHealthReader(IWmiQuery query) : INvmeHealthSource
 {
     private const string Storage = @"root\Microsoft\Windows\Storage";
     private const uint IoctlStorageQueryProperty = 0x002D1400, GenericRead = 0x80000000, GenericWrite = 0x40000000, ShareReadWrite = 3, OpenExisting = 3;
-    private const int DeviceProtocolSpecificProperty = 50, AdapterProtocolSpecificProperty = 49, ProtocolTypeNvme = 3, NvmeDataTypeLogPage = 2, HealthLogPage = 2;
+    private const int DeviceProtocolSpecificProperty = 50, AdapterProtocolSpecificProperty = 49, ProtocolTypeNvme = 3, NvmeDataTypeLogPage = 2, HealthLogPage = 2,
+        NvmeDataTypeIdentify = 1, IdentifyController = 1, IdentifySize = 4096;
     private const int Header = 8, SpecificData = 40;
 
     public IReadOnlyList<NvmeDriveHealth> Read()
@@ -26,21 +27,32 @@ public sealed class NvmeHealthReader(IWmiQuery query) : INvmeHealthSource
     }
 
     /// <summary>The health log of \\.\PhysicalDrive<paramref name="disk"/>, or null when the drive or its driver will not give it.</summary>
-    public static NvmeHealthLog? ReadLog(int disk)
+    public static NvmeHealthLog? ReadLog(int disk) => Query(disk, NvmeDataTypeLogPage, HealthLogPage, NvmeHealthLog.Size) is { } page ? NvmeHealthLog.Parse(page) : null;
+
+    /// <summary>The drive's own composite temperature limits from its Identify Controller data (WCTEMP, where it starts to throttle, and CCTEMP, bytes 266
+    /// and 268, in kelvin); either is null when the drive reports 0 (no limit) or will not answer.</summary>
+    public static (double? WarnC, double? CritC) ReadTempLimits(int disk)
+    {
+        if (Query(disk, NvmeDataTypeIdentify, IdentifyController, IdentifySize) is not { } id) return (null, null);
+        static double? C(int kelvin) => kelvin is > 273 and < 273 + 150 ? Math.Round(kelvin - 273.15) : null;
+        return (C(BitConverter.ToUInt16(id, 266)), C(BitConverter.ToUInt16(id, 268)));
+    }
+
+    private static byte[]? Query(int disk, int dataType, int request, int size)
     {
         using var handle = CreateFile($@"\\.\PhysicalDrive{disk}", GenericRead | GenericWrite, ShareReadWrite, 0, OpenExisting, 0, 0);
         if (handle.IsInvalid) return null;
         foreach (int property in new[] { DeviceProtocolSpecificProperty, AdapterProtocolSpecificProperty })
         {
-            var buffer = new byte[Header + SpecificData + NvmeHealthLog.Size];
+            var buffer = new byte[Header + SpecificData + size];
             // STORAGE_PROPERTY_QUERY { PropertyId, QueryType = standard } followed by STORAGE_PROTOCOL_SPECIFIC_DATA.
-            int[] fields = [property, 0, ProtocolTypeNvme, NvmeDataTypeLogPage, HealthLogPage, 0, SpecificData, NvmeHealthLog.Size, 0, 0, 0, 0];
+            int[] fields = [property, 0, ProtocolTypeNvme, dataType, request, 0, SpecificData, size, 0, 0, 0, 0];
             Buffer.BlockCopy(fields, 0, buffer, 0, fields.Length * 4);
             if (!DeviceIoControl(handle, IoctlStorageQueryProperty, buffer, buffer.Length, buffer, buffer.Length, out int returned, 0) || returned < Header + SpecificData) continue;
             // The answer is a STORAGE_PROTOCOL_DATA_DESCRIPTOR { Version, Size, STORAGE_PROTOCOL_SPECIFIC_DATA }: the data sits at the offset it names.
             int offset = BitConverter.ToInt32(buffer, Header + 16), length = BitConverter.ToInt32(buffer, Header + 20);
-            if (length < NvmeHealthLog.Size || Header + offset + NvmeHealthLog.Size > buffer.Length) continue;
-            return NvmeHealthLog.Parse(buffer.AsSpan(Header + offset, NvmeHealthLog.Size));
+            if (length < size || Header + offset + size > buffer.Length) continue;
+            return buffer.AsSpan(Header + offset, size).ToArray();
         }
         return null;
     }
