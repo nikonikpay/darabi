@@ -157,11 +157,17 @@ export function mount(el) {
     const rows = drives.map((d, k) => {
       const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" }), num = h("span", {}), bar = h("i", {}), full = h("span", { class: "full-mark", hidden: true }, icon("alert"), t("Web_Dash_DriveFull"));
       const nm = h("span", { class: "nm", title: d.name }, d.name);
-      driveHealth.set(d.name.trim().toLowerCase(), { hv, nm });
-      const row = h("div", { class: "unit-row" }, nm, h("span", { class: "vals" }, hv, tv),
+      // The health, big with its bar, on a line of its own once the drive's own report arrives (drives.health); the temperature takes its level's colour.
+      const hp = h("span", { class: "num" }), hb = h("i", {}), hrow = h("div", { class: "meter dash-health", hidden: true },
+        h("div", { class: "row" }, h("span", {}, t("Web_Drive_Health")), hp), h("div", { class: "bar", role: "presentation" }, hb));
+      const entry = { hv, nm, hp, hb, hrow, bands: null };
+      driveHealth.set(d.name.trim().toLowerCase(), entry);
+      const row = h("div", { class: "unit-row" }, nm, h("span", { class: "vals" }, hv, tv), hrow,
         h("div", { class: "meter" }, h("div", { class: "row" }, h("span", {}, t("Web_Dash_UsedSpace"), full), num), h("div", { class: "bar", role: "presentation" }, bar)));
       updates.push(() => {
-        tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null));
+        const c = temp ? value(temp.id) : null;
+        tv.dataset.level = entry.bands && c !== null && c !== undefined ? (c >= entry.bands[1] ? "Fail" : c >= entry.bands[0] ? "Watch" : "") : "";
+        tv.replaceChildren(val(temp ? fmt(c, temp.unit) : null));
         const p = shares[k]();
         bar.style.setProperty("--p", p === null ? 0 : Math.min(1, Math.max(0, p)));
         num.replaceChildren(p === null ? val(null) : h("span", { class: "num" }, `${Math.round(p * 100)}%`));
@@ -200,6 +206,17 @@ export function mount(el) {
     }
   });
   load();
+  // Each drive's own report: its health as a big figure with a bar (the line that says it in words then steps aside), and its temperature limits.
+  if (driveHealth.size) call("drives.health").then((r) => {
+    for (const d of r.drives) {
+      const e = driveHealth.get(d.name.trim().toLowerCase()); if (!e) continue;
+      e.bands = [d.watchC, d.failC];
+      if (d.health === null || d.health === undefined) continue;
+      const lv = d.health < 60 ? "Fail" : d.health < 80 ? "Watch" : "";
+      e.hp.textContent = `${d.health}%`; e.hb.style.setProperty("--p", d.health / 100); e.hrow.dataset.level = lv; e.hrow.hidden = false; e.hv.hidden = true;
+    }
+    tick();
+  }).catch(() => {});   // the line in words stays
   const offFresh = on("hardwareFresh", () => { if (cached) load(); });
   el.classList.add("dash-page");
   return () => { off(); offFresh(); offMessages(); };
