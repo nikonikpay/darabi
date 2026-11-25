@@ -52,6 +52,12 @@ internal static class SelfTest
                 foreach (var c in PartSpecs.For(Mazesta.Core.Hardware.HardwareKind.Storage, inv, d)) { Say($"== {c.Title}"); foreach (var r in c.Rows) Say($"   {r.Label}: {r.Value}"); }
                 Say("DONE"); return;
             }
+            if (kind == "drives")   // the drive health box as the page gets it (drives.health), to compare with Hard Disk Sentinel or CrystalDiskInfo
+            {
+                var drives = await Task.Run(() => services.GetRequiredService<Mazesta.Core.Providers.IDriveHealthProvider>().Read());
+                Say(System.Text.Json.JsonSerializer.Serialize(drives.Select(WebBridge.Drive), new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+                Say("DONE"); return;
+            }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
             if (kind == "makers") { await SelfTestLights.RunMakersAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")

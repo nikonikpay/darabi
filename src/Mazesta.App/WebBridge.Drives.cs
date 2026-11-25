@@ -22,7 +22,7 @@ public sealed partial class WebBridge
         });
     }
 
-    private static object Drive(DriveHealth d)
+    internal static object Drive(DriveHealth d)
     {
         var r = DriveReport.Of(d);
         string Name(DriveParam x) => x.Name == "DriveAttr_Vendor" ? Loc.Format(x.Name, x.Id ?? "") : Loc.Get(x.Name);
