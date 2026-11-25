@@ -292126,30 +292126,6 @@
       "type": "external"
     },
     {
-      "id": "mazesta_core_time",
-      "label": "mazesta_core_time",
-      "_origin": "semantic",
-      "community": 10,
-      "community_name": "Monitoring and Hardware Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_time",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_details",
-      "label": "mazesta_hardware_details",
-      "_origin": "semantic",
-      "community": 10,
-      "community_name": "Monitoring and Hardware Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_details",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "microsoft_extensions_logging_abstractions",
       "label": "microsoft_extensions_logging_abstractions",
       "_origin": "semantic",
@@ -292194,30 +292170,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "computesharp_interop",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_health",
-      "label": "mazesta_core_health",
-      "_origin": "semantic",
-      "community": 11,
-      "community_name": "RGB and Desk Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_health",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_rgb",
-      "label": "mazesta_core_rgb",
-      "_origin": "semantic",
-      "community": 11,
-      "community_name": "RGB and Desk Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_rgb",
       "source_file": "",
       "type": "external"
     },
@@ -292330,30 +292282,6 @@
       "type": "external"
     },
     {
-      "id": "mazesta_core_software",
-      "label": "mazesta_core_software",
-      "_origin": "semantic",
-      "community": 149,
-      "community_name": "AppGuide",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_software",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_tuning",
-      "label": "mazesta_core_tuning",
-      "_origin": "semantic",
-      "community": 152,
-      "community_name": "GpuCheck",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_tuning",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "bmesh",
       "label": "bmesh",
       "_origin": "semantic",
@@ -292414,42 +292342,6 @@
       "type": "external"
     },
     {
-      "id": "mazesta_core_health_checkup",
-      "label": "mazesta_core_health_checkup",
-      "_origin": "semantic",
-      "community": 21,
-      "community_name": "Tray File Search and Space",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_health_checkup",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_tray",
-      "label": "mazesta_core_tray",
-      "_origin": "semantic",
-      "community": 21,
-      "community_name": "Tray File Search and Space",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_tray",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_nvidia",
-      "label": "mazesta_hardware_nvidia",
-      "_origin": "semantic",
-      "community": 21,
-      "community_name": "Tray File Search and Space",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_nvidia",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "microsoft_win32",
       "label": "microsoft_win32",
       "_origin": "semantic",
@@ -292506,18 +292398,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "system_runtime_interopservices",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_gaming",
-      "label": "mazesta_core_gaming",
-      "_origin": "semantic",
-      "community": 219,
-      "community_name": "Autorun",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_gaming",
       "source_file": "",
       "type": "external"
     },
@@ -292726,66 +292606,6 @@
       "type": "external"
     },
     {
-      "id": "mazesta_core_hardware",
-      "label": "mazesta_core_hardware",
-      "_origin": "semantic",
-      "community": 26,
-      "community_name": "Setup, Render and Storage Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_hardware",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_providers",
-      "label": "mazesta_core_providers",
-      "_origin": "semantic",
-      "community": 26,
-      "community_name": "Setup, Render and Storage Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_providers",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_evidence",
-      "label": "mazesta_diagnostics_evidence",
-      "_origin": "semantic",
-      "community": 26,
-      "community_name": "Setup, Render and Storage Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_evidence",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_memory",
-      "label": "mazesta_diagnostics_memory",
-      "_origin": "semantic",
-      "community": 26,
-      "community_name": "Setup, Render and Storage Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_memory",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_storage",
-      "label": "mazesta_diagnostics_storage",
-      "_origin": "semantic",
-      "community": 26,
-      "community_name": "Setup, Render and Storage Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_storage",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "microsoft_win32_safehandles",
       "label": "microsoft_win32_safehandles",
       "_origin": "semantic",
@@ -292990,42 +292810,6 @@
       "type": "external"
     },
     {
-      "id": "mazesta_core_inventory",
-      "label": "mazesta_core_inventory",
-      "_origin": "semantic",
-      "community": 39,
-      "community_name": "MVVM Toolkit and Overlay VMs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_inventory",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_text",
-      "label": "mazesta_core_text",
-      "_origin": "semantic",
-      "community": 39,
-      "community_name": "MVVM Toolkit and Overlay VMs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_text",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_cpu",
-      "label": "mazesta_diagnostics_cpu",
-      "_origin": "semantic",
-      "community": 39,
-      "community_name": "MVVM Toolkit and Overlay VMs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_cpu",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "system_collections_objectmodel",
       "label": "system_collections_objectmodel",
       "_origin": "semantic",
@@ -293206,18 +292990,6 @@
       "type": "external"
     },
     {
-      "id": "mazesta_diagnostics_tests_fakes",
-      "label": "mazesta_diagnostics_tests_fakes",
-      "_origin": "semantic",
-      "community": 5,
-      "community_name": "Core Tray and Windows Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_tests_fakes",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "system_componentmodel",
       "label": "system_componentmodel",
       "_origin": "semantic",
@@ -293250,126 +293022,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_fs",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_core_crashes",
-      "label": "mazesta_core_crashes",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_core_crashes",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_desktop_localization",
-      "label": "mazesta_desktop_localization",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_desktop_localization",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_desktop_viewmodels",
-      "label": "mazesta_desktop_viewmodels",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_desktop_viewmodels",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_ai",
-      "label": "mazesta_diagnostics_ai",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_ai",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_crashes",
-      "label": "mazesta_diagnostics_crashes",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_crashes",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_network",
-      "label": "mazesta_diagnostics_network",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_network",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_whea",
-      "label": "mazesta_diagnostics_whea",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_whea",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_lhm",
-      "label": "mazesta_hardware_lhm",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_lhm",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_wmi",
-      "label": "mazesta_hardware_wmi",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_wmi",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_persistence_updates",
-      "label": "mazesta_persistence_updates",
-      "_origin": "semantic",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_persistence_updates",
       "source_file": "",
       "type": "external"
     },
@@ -293538,66 +293190,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "system_windows_forms",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_desktop_composition",
-      "label": "mazesta_desktop_composition",
-      "_origin": "semantic",
-      "community": 606,
-      "community_name": "mazesta_desktop_composition",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_desktop_composition",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_gpu",
-      "label": "mazesta_diagnostics_gpu",
-      "_origin": "semantic",
-      "community": 607,
-      "community_name": "mazesta_diagnostics_gpu",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_gpu",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_tuning",
-      "label": "mazesta_diagnostics_tuning",
-      "_origin": "semantic",
-      "community": 608,
-      "community_name": "mazesta_diagnostics_tuning",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_tuning",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_rgb",
-      "label": "mazesta_hardware_rgb",
-      "_origin": "semantic",
-      "community": 609,
-      "community_name": "mazesta_hardware_rgb",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_rgb",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_monitoring_tests_fakes",
-      "label": "mazesta_monitoring_tests_fakes",
-      "_origin": "semantic",
-      "community": 610,
-      "community_name": "mazesta_monitoring_tests_fakes",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_monitoring_tests_fakes",
       "source_file": "",
       "type": "external"
     },
@@ -294111,17 +293703,6 @@
       "source_url": null
     },
     {
-      "id": "mazesta_hardware_tests_fakes",
-      "label": "mazesta_hardware_tests_fakes",
-      "community": 10,
-      "community_name": "Monitoring and Hardware Namespaces",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_tests_fakes",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "microsoft_data_sqlite",
       "label": "microsoft_data_sqlite",
       "community": 11,
@@ -294129,39 +293710,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "microsoft_data_sqlite",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_audio",
-      "label": "mazesta_hardware_audio",
-      "community": 116,
-      "community_name": "VolumeForm",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_audio",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_hardware_files",
-      "label": "mazesta_hardware_files",
-      "community": 21,
-      "community_name": "Tray File Search and Space",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_hardware_files",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_gpu_benchmarks",
-      "label": "mazesta_diagnostics_gpu_benchmarks",
-      "community": 22,
-      "community_name": "GPU Scene and Benchmark Tests",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_gpu_benchmarks",
       "source_file": "",
       "type": "external"
     },
@@ -294217,17 +293765,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "windows",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "mazesta_diagnostics_benchmarks",
-      "label": "mazesta_diagnostics_benchmarks",
-      "community": 6,
-      "community_name": "App Composition and Services",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "mazesta_diagnostics_benchmarks",
       "source_file": "",
       "type": "external"
     }
@@ -467573,7 +467110,7 @@
     },
     {
       "source": "src_mazesta_app_usageuploader",
-      "target": "mazesta_core_crashes",
+      "target": "csharp_namespace:b20c8c27d673091b",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -467879,7 +467416,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_autorun",
-      "target": "mazesta_core_gaming",
+      "target": "csharp_namespace:a4c7d64913e8e1b9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -467913,7 +467450,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_windows_autorun",
-      "target": "mazesta_core_gaming",
+      "target": "csharp_namespace:a4c7d64913e8e1b9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -467964,7 +467501,7 @@
     },
     {
       "source": "src_mazesta_app_chartwindow",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468032,7 +467569,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistant",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468049,7 +467586,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistantreplies",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468066,7 +467603,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistanttools",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468083,7 +467620,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468134,7 +467671,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_quiet",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468389,7 +467926,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_checkupservice",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468406,7 +467943,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_checkuptext",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468491,7 +468028,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_partspecs",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468559,7 +468096,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_benchmarkmodel",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468576,7 +468113,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_benchmarktrace",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468593,7 +468130,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_cpubenchmark",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468661,7 +468198,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_storagebenchmark",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468831,7 +468368,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_benchmarks_cpurenderbenchmark",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468882,7 +468419,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_benchmarks_gpufurbenchmark",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468916,7 +468453,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_benchmarks_gpuscenebenchmark",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -468950,7 +468487,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_cpurenderexecutor",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -469358,7 +468895,7 @@
     },
     {
       "source": "src_mazesta_monitoring_pollingengine",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -469443,7 +468980,7 @@
     },
     {
       "source": "src_mazesta_reporting_reportplaintext",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -469681,7 +469218,7 @@
     },
     {
       "source": "tests_mazesta_desktop_tests_partspecstests",
-      "target": "mazesta_core_hardware",
+      "target": "csharp_namespace:db0a8f5b9df98f0c",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470038,7 +469575,7 @@
     },
     {
       "source": "src_mazesta_app_gpufancontroller",
-      "target": "mazesta_core_health",
+      "target": "csharp_namespace:35fdec2d83b3db9a",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470174,7 +469711,7 @@
     },
     {
       "source": "src_mazesta_persistence_healthshare",
-      "target": "mazesta_core_health",
+      "target": "csharp_namespace:35fdec2d83b3db9a",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470378,7 +469915,7 @@
     },
     {
       "source": "tests_mazesta_persistence_tests_healthsharetests",
-      "target": "mazesta_core_health",
+      "target": "csharp_namespace:35fdec2d83b3db9a",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470412,7 +469949,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_core_health_checkup",
+      "target": "csharp_namespace:128552ffc51cf664",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470446,7 +469983,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_checkupservice",
-      "target": "mazesta_core_health_checkup",
+      "target": "csharp_namespace:128552ffc51cf664",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470531,7 +470068,7 @@
     },
     {
       "source": "src_mazesta_hardware_nvidia_nvidiarunprobe",
-      "target": "mazesta_core_health_checkup",
+      "target": "csharp_namespace:128552ffc51cf664",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470905,7 +470442,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_partspecs",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470939,7 +470476,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_tuningviewmodel",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470956,7 +470493,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_benchmarkdetails",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -470990,7 +470527,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_benchmarks_gpuscenebenchmark",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471024,7 +470561,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_gpusceneexecutor",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471211,7 +470748,7 @@
     },
     {
       "source": "src_mazesta_reporting_reporthtml",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471228,7 +470765,7 @@
     },
     {
       "source": "src_mazesta_reporting_sessionreport",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471262,7 +470799,7 @@
     },
     {
       "source": "tests_mazesta_core_tests_checkuptests",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471381,7 +470918,7 @@
     },
     {
       "source": "tests_mazesta_desktop_tests_partspecstests",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471534,7 +471071,7 @@
     },
     {
       "source": "tests_mazesta_reporting_tests_reportsummarytests",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471551,7 +471088,7 @@
     },
     {
       "source": "tests_mazesta_reporting_tests_reporttests",
-      "target": "mazesta_core_inventory",
+      "target": "csharp_namespace:8db8bfecc02fbbb9",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -471993,7 +471530,7 @@
     },
     {
       "source": "src_mazesta_monitoring_pollingengine",
-      "target": "mazesta_core_providers",
+      "target": "csharp_namespace:f4d9196080d1ed8b",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472214,7 +471751,7 @@
     },
     {
       "source": "src_mazesta_app_selftestlights",
-      "target": "mazesta_core_rgb",
+      "target": "csharp_namespace:715c5ecc4813c8e5",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472486,7 +472023,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistanttools",
-      "target": "mazesta_core_software",
+      "target": "csharp_namespace:f51a9fda95899882",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472503,7 +472040,7 @@
     },
     {
       "source": "src_mazesta_core_ai_appguide",
-      "target": "mazesta_core_software",
+      "target": "csharp_namespace:f51a9fda95899882",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472554,7 +472091,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_benchmarksviewmodel",
-      "target": "mazesta_core_text",
+      "target": "csharp_namespace:60394219c1d1f63e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472622,7 +472159,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_tuningviewmodel",
-      "target": "mazesta_core_text",
+      "target": "csharp_namespace:60394219c1d1f63e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472656,7 +472193,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_bootstrapper",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472673,7 +472210,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472690,7 +472227,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_reportservice",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472707,7 +472244,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_benchmarkrunner",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472741,7 +472278,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_testengine",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472758,7 +472295,7 @@
     },
     {
       "source": "src_mazesta_hardware_lhm_librehardwaremonitorprovider",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472792,7 +472329,7 @@
     },
     {
       "source": "src_mazesta_monitoring_pollingengine",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472809,7 +472346,7 @@
     },
     {
       "source": "src_mazesta_tray_traycontext",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -472928,7 +472465,7 @@
     },
     {
       "source": "tests_mazesta_hardware_tests_librehardwaremonitorprovidertests",
-      "target": "mazesta_core_time",
+      "target": "csharp_namespace:85c8c8eadcb10cd4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473030,7 +472567,7 @@
     },
     {
       "source": "src_mazesta_app_program",
-      "target": "mazesta_core_tray",
+      "target": "csharp_namespace:07b00ff13bcb7cd8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473098,7 +472635,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_rgb",
-      "target": "mazesta_core_tray",
+      "target": "csharp_namespace:07b00ff13bcb7cd8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473132,7 +472669,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_windows_fileshellmenu",
-      "target": "mazesta_core_tray",
+      "target": "csharp_namespace:07b00ff13bcb7cd8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473183,7 +472720,7 @@
     },
     {
       "source": "src_mazesta_tray_powertimermenu",
-      "target": "mazesta_core_tray",
+      "target": "csharp_namespace:07b00ff13bcb7cd8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473200,7 +472737,7 @@
     },
     {
       "source": "src_mazesta_tray_shell_shellinbox",
-      "target": "mazesta_core_tray",
+      "target": "csharp_namespace:07b00ff13bcb7cd8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473217,7 +472754,7 @@
     },
     {
       "source": "src_mazesta_tray_traycontext",
-      "target": "mazesta_core_tray",
+      "target": "csharp_namespace:07b00ff13bcb7cd8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473319,7 +472856,7 @@
     },
     {
       "source": "src_mazesta_core_health_checkup_gpucheck",
-      "target": "mazesta_core_tuning",
+      "target": "csharp_namespace:ce44e27895d34470",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -473574,7 +473111,7 @@
     },
     {
       "source": "src_mazesta_tray_gpuprofilesmenu",
-      "target": "mazesta_core_tuning",
+      "target": "csharp_namespace:ce44e27895d34470",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474492,7 +474029,7 @@
     },
     {
       "source": "src_mazesta_app_chartwindow",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474509,7 +474046,7 @@
     },
     {
       "source": "src_mazesta_app_failurewatch",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474543,7 +474080,7 @@
     },
     {
       "source": "src_mazesta_app_program",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474577,7 +474114,7 @@
     },
     {
       "source": "src_mazesta_app_uninstaller",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474594,7 +474131,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_ai",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474611,7 +474148,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_app",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474662,7 +474199,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistant",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474679,7 +474216,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistantreplies",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474696,7 +474233,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistanttools",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474713,7 +474250,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474730,7 +474267,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_checkup",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474764,7 +474301,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_drivers",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474781,7 +474318,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_files",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474849,7 +474386,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_rgb",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474883,7 +474420,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_site",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474900,7 +474437,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_system",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474917,7 +474454,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_tests",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -474968,7 +474505,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_checkuptext",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475002,7 +474539,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_reportservice",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475019,7 +474556,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_testdetailtext",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475053,7 +474590,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_benchmarksviewmodel",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475104,7 +474641,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_partspecs",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475189,7 +474726,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_testadvice",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475257,7 +474794,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_tuningviewmodel",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475342,7 +474879,7 @@
     },
     {
       "source": "tests_mazesta_desktop_tests_partspecstests",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475376,7 +474913,7 @@
     },
     {
       "source": "tests_mazesta_desktop_tests_testadvicetests",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475393,7 +474930,7 @@
     },
     {
       "source": "tests_mazesta_desktop_tests_testdetailtexttests",
-      "target": "mazesta_desktop_localization",
+      "target": "csharp_namespace:50fa25050846fe07",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475665,7 +475202,7 @@
     },
     {
       "source": "src_mazesta_app_selftest",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475682,7 +475219,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_app",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475716,7 +475253,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistanttools",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475733,7 +475270,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475818,7 +475355,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_settings",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -475835,7 +475372,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_tests",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -476107,7 +475644,7 @@
     },
     {
       "source": "tests_mazesta_desktop_tests_testprofilestests",
-      "target": "mazesta_desktop_viewmodels",
+      "target": "csharp_namespace:b851179e9ac98588",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -476668,7 +476205,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistant",
-      "target": "mazesta_diagnostics_ai",
+      "target": "csharp_namespace:1ce54b9a27afec2d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -476685,7 +476222,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistanttools",
-      "target": "mazesta_diagnostics_ai",
+      "target": "csharp_namespace:1ce54b9a27afec2d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -476906,7 +476443,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "mazesta_diagnostics_benchmarks",
+      "target": "csharp_namespace:78ba6ac00f283a35",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -476957,7 +476494,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_reportservice",
-      "target": "mazesta_diagnostics_benchmarks",
+      "target": "csharp_namespace:78ba6ac00f283a35",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477229,7 +476766,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_gpusceneexecutor",
-      "target": "mazesta_diagnostics_benchmarks",
+      "target": "csharp_namespace:78ba6ac00f283a35",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477450,7 +476987,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_diagnostics_cpu",
+      "target": "csharp_namespace:819134a66266f6f4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477484,7 +477021,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_benchmarkdetails",
-      "target": "mazesta_diagnostics_cpu",
+      "target": "csharp_namespace:819134a66266f6f4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477501,7 +477038,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_cpubenchmark",
-      "target": "mazesta_diagnostics_cpu",
+      "target": "csharp_namespace:819134a66266f6f4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477654,7 +477191,7 @@
     },
     {
       "source": "src_mazesta_app_usageuploader",
-      "target": "mazesta_diagnostics_crashes",
+      "target": "csharp_namespace:3727d557f03b3df8",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477722,7 +477259,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_checkupservice",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477756,7 +477293,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_benchmarkmodel",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477773,7 +477310,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_cpubenchmark",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477807,7 +477344,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_cpu_cpucorecycleexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477909,7 +477446,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_cpu_cpuvectorstressexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477943,7 +477480,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_cpurenderexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -477994,7 +477531,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_gpustressexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478028,7 +477565,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_powerexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478045,7 +477582,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_gpusceneexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478062,7 +477599,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_shamsehthermalexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478079,7 +477616,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_memory_memorypatternexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478096,7 +477633,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_memory_memorysequenceexecutor",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478113,7 +477650,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_testengine",
-      "target": "mazesta_diagnostics_evidence",
+      "target": "csharp_namespace:bcdedf65631c319e",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478249,7 +477786,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "mazesta_diagnostics_gpu_benchmarks",
+      "target": "csharp_namespace:f0a844ff96331205",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478402,7 +477939,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_gpusceneexecutor",
-      "target": "mazesta_diagnostics_gpu_benchmarks",
+      "target": "csharp_namespace:f0a844ff96331205",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -478470,7 +478007,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_shamsehthermalexecutor",
-      "target": "mazesta_diagnostics_gpu_benchmarks",
+      "target": "csharp_namespace:f0a844ff96331205",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479133,7 +478670,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_ai",
-      "target": "mazesta_diagnostics_memory",
+      "target": "csharp_namespace:8c4a7f4a1380e5a6",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479184,7 +478721,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_storagebenchmark",
-      "target": "mazesta_diagnostics_memory",
+      "target": "csharp_namespace:8c4a7f4a1380e5a6",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479218,7 +478755,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_benchmarks_gpuscenebenchmark",
-      "target": "mazesta_diagnostics_memory",
+      "target": "csharp_namespace:8c4a7f4a1380e5a6",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479269,7 +478806,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_storage_storageexecutors",
-      "target": "mazesta_diagnostics_memory",
+      "target": "csharp_namespace:8c4a7f4a1380e5a6",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479286,7 +478823,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_storage_storagesurfaceexecutor",
-      "target": "mazesta_diagnostics_memory",
+      "target": "csharp_namespace:8c4a7f4a1380e5a6",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479422,7 +478959,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "mazesta_diagnostics_network",
+      "target": "csharp_namespace:d2c6e968a83e5da4",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479490,7 +479027,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_diagnostics_storage",
+      "target": "csharp_namespace:7d9f74debec1d6db",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479524,7 +479061,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_benchmarks_storagebenchmark",
-      "target": "mazesta_diagnostics_storage",
+      "target": "csharp_namespace:7d9f74debec1d6db",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479694,7 +479231,7 @@
     },
     {
       "source": "tests_mazesta_diagnostics_tests_cpustresstests",
-      "target": "mazesta_diagnostics_tests_fakes",
+      "target": "csharp_namespace:09c23290c5afe60d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479796,7 +479333,7 @@
     },
     {
       "source": "tests_mazesta_diagnostics_tests_memorytests",
-      "target": "mazesta_diagnostics_tests_fakes",
+      "target": "csharp_namespace:09c23290c5afe60d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479830,7 +479367,7 @@
     },
     {
       "source": "tests_mazesta_diagnostics_tests_smartchecktests",
-      "target": "mazesta_diagnostics_tests_fakes",
+      "target": "csharp_namespace:09c23290c5afe60d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -479864,7 +479401,7 @@
     },
     {
       "source": "tests_mazesta_diagnostics_tests_storagetests",
-      "target": "mazesta_diagnostics_tests_fakes",
+      "target": "csharp_namespace:09c23290c5afe60d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480051,7 +479588,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "mazesta_diagnostics_whea",
+      "target": "csharp_namespace:35799856e75492de",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480068,7 +479605,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_testengine",
-      "target": "mazesta_diagnostics_whea",
+      "target": "csharp_namespace:35799856e75492de",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480527,7 +480064,7 @@
     },
     {
       "source": "src_mazesta_tray_volume_volumeform",
-      "target": "mazesta_hardware_audio",
+      "target": "csharp_namespace:5cb5a3cc746496d3",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480595,7 +480132,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_checkupservice",
-      "target": "mazesta_hardware_details",
+      "target": "csharp_namespace:17f0194b7d0107af",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480612,7 +480149,7 @@
     },
     {
       "source": "src_mazesta_hardware_wmi_wmidrivehealthprovider",
-      "target": "mazesta_hardware_details",
+      "target": "csharp_namespace:17f0194b7d0107af",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480663,7 +480200,7 @@
     },
     {
       "source": "src_mazesta_tray_space_spaceform",
-      "target": "mazesta_hardware_files",
+      "target": "csharp_namespace:6044882f2bb21506",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480697,7 +480234,7 @@
     },
     {
       "source": "src_mazesta_app_uninstaller",
-      "target": "mazesta_hardware_lhm",
+      "target": "csharp_namespace:6d88f3901a070350",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480714,7 +480251,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_bootstrapper",
-      "target": "mazesta_hardware_lhm",
+      "target": "csharp_namespace:6d88f3901a070350",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -480901,7 +480438,7 @@
     },
     {
       "source": "src_mazesta_tray_gpuprofilesmenu",
-      "target": "mazesta_hardware_nvidia",
+      "target": "csharp_namespace:d046abf85a0bd13d",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481037,7 +480574,7 @@
     },
     {
       "source": "tests_mazesta_hardware_tests_librehardwaremonitorprovidertests",
-      "target": "mazesta_hardware_tests_fakes",
+      "target": "csharp_namespace:6cab096d0dd0ac7b",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481088,7 +480625,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_benchmarks",
-      "target": "mazesta_hardware_wmi",
+      "target": "csharp_namespace:e2ec8fb132902ff1",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481139,7 +480676,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_usb",
-      "target": "mazesta_hardware_wmi",
+      "target": "csharp_namespace:e2ec8fb132902ff1",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481394,7 +480931,7 @@
     },
     {
       "source": "src_mazesta_app_chartwindow",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481462,7 +480999,7 @@
     },
     {
       "source": "src_mazesta_app_program",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481496,7 +481033,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_app",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481513,7 +481050,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_assistant",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481632,7 +481169,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_bootstrapper",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481649,7 +481186,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481734,7 +481271,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_reportservice",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481887,7 +481424,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_gpu_scene_gpusceneexecutor",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481938,7 +481475,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_testengine",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -481955,7 +481492,7 @@
     },
     {
       "source": "src_mazesta_reporting_sensorsummarizer",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482142,7 +481679,7 @@
     },
     {
       "source": "tests_mazesta_reporting_tests_reporttests",
-      "target": "src_mazesta_monitoring_mazesta_monitoring",
+      "target": "csharp_namespace:60c8f7a2c1750096",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482329,7 +481866,7 @@
     },
     {
       "source": "src_mazesta_app_mainwindow",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482363,7 +481900,7 @@
     },
     {
       "source": "src_mazesta_app_program",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482431,7 +481968,7 @@
     },
     {
       "source": "src_mazesta_app_usageuploader",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482482,7 +482019,7 @@
     },
     {
       "source": "src_mazesta_app_webbridge_rgb",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482499,7 +482036,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_bootstrapper",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482516,7 +482053,7 @@
     },
     {
       "source": "src_mazesta_desktop_composition_diagnosticsregistration",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482584,7 +482121,7 @@
     },
     {
       "source": "src_mazesta_desktop_services_reportservice",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482635,7 +482172,7 @@
     },
     {
       "source": "src_mazesta_desktop_viewmodels_tuningviewmodel",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482652,7 +482189,7 @@
     },
     {
       "source": "src_mazesta_diagnostics_testengine",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482737,7 +482274,7 @@
     },
     {
       "source": "src_mazesta_tray_gpuprofilesmenu",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482754,7 +482291,7 @@
     },
     {
       "source": "src_mazesta_tray_program",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482788,7 +482325,7 @@
     },
     {
       "source": "src_mazesta_tray_summaryform",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482805,7 +482342,7 @@
     },
     {
       "source": "src_mazesta_tray_traycontext",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -482822,7 +482359,7 @@
     },
     {
       "source": "src_mazesta_tray_traytext",
-      "target": "src_mazesta_persistence_mazesta_persistence",
+      "target": "csharp_namespace:faa24a0b737f8d17",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -483111,7 +482648,7 @@
     },
     {
       "source": "src_mazesta_app_program",
-      "target": "mazesta_persistence_updates",
+      "target": "csharp_namespace:b51b466eb1bbb885",
       "relation": "imports",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -724092,5 +723629,5 @@
       "source_file": ".impeccable/review/monitoring.png"
     }
   ],
-  "built_at_commit": "d158efb0c5f05586ce06ec273e571796861332fa"
+  "built_at_commit": "086d70b4fef9baed038f261f2f7adfb77ac94957"
 }
