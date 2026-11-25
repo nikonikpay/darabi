@@ -60,21 +60,26 @@ async function viewInvoice(id, q) {
   const draft = v.status === 'draft', ro = !draft || !can('accounting', 2), tpl = v.kind === 'template', sale = v.kind === 'sale' || v.kind === 'return';
   const picker = tpl ? null : customerPicker(cust, ro);
   const f = { at: h('input', { type: 'date', value: v.at || today(), readOnly: ro }), valid: h('input', { type: 'date', value: v.valid_until || '', readOnly: ro }), title: text('title', v.title, { readOnly: ro, placeholder: tpl ? 'مثلاً: سیستم گیمینگ اقتصادی' : 'اختیاری' }),
-    discount: text('discount', v.discount || '', { dir: 'ltr', readOnly: ro, oninput: () => recalc() }), tax: text('tax_pct', v.tax_pct, { dir: 'ltr', readOnly: ro, oninput: () => recalc() }), notes: area('notes', v.notes, { readOnly: ro, rows: 2 }) };
-  const cols = [{ k: 'name', label: 'کالا یا خدمت (از انبار یا نام آزاد)', type: 'product', fill: { unit_price: 'sell_price', buy_price: 'buy_price', warranty_months: 'warranty_months' } }, { k: 'qty', label: 'تعداد', type: 'num', def: 1 }, { k: 'unit_price', label: 'قیمت واحد', type: 'num' }]
-    .concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', readOnly: !S.cfg.costEdit }] : []).concat([{ k: 'serials', label: 'سریال‌ها (با , جدا)', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }]);
+    discount: text('discount', v.discount || '', { dir: 'ltr', readOnly: ro, oninput: () => recalc() }), notes: area('notes', v.notes, { readOnly: ro, rows: 2 }) };
+  // VAT is a tick: on it is the site's rate (10% when none is set), off it is none; an old invoice keeps the rate it was made with
+  const vatRate = +v.tax_pct > 0 ? +v.tax_pct : (+A().tax > 0 ? +A().tax : 10), vatBox = check('tax_on', +v.tax_pct > 0, 'مالیات بر ارزش افزوده ' + vatRate + '٪');
+  $('input', vatBox).disabled = ro; vatBox.addEventListener('change', () => recalc());
+  f.tax = { get value() { return $('input', vatBox).checked ? String(vatRate) : '0'; } };
+  const discWords = moneyInput(f.discount);
+  const cols = [{ k: 'category', label: 'نوع کالا', type: 'select', opts: Object.assign({}, S.cfg.categories), def: 'other' }, { k: 'name', label: 'مدل / کالا یا خدمت (از انبار یا نام آزاد)', type: 'product', always: { category: 'category' }, fill: { unit_price: 'sell_price', buy_price: 'buy_price', warranty_months: 'warranty_months' } }, { k: 'qty', label: 'تعداد', type: 'num', def: 1 }, { k: 'unit_price', label: 'قیمت واحد', type: 'num', money: true }]
+    .concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', money: true, readOnly: !S.cfg.costEdit }] : []).concat([{ k: 'serials', label: 'سریال‌ها (با , جدا)', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }]);
   const rows = rowsEditor(cols, v.items.map(x => Object.assign({}, x, { serials: (x.serials || []).join(', ') })), { readOnly: ro, onchange: () => recalc() });
-  const out = { sub: h('b', { class: 'lat' }), tax: h('b', { class: 'lat' }), total: h('b', { class: 'lat' }), profit: h('b', { class: 'lat' }) };
+  const out = { sub: h('b', { class: 'lat' }), tax: h('b', { class: 'lat' }), total: h('b', { class: 'lat' }), profit: h('b', { class: 'lat' }), words: h('small', { class: 'words' }) };
   const recalc = () => {
     let s = 0, c = 0; rows.get().forEach(x => { const n = num(x.qty) || 1; s += n * num(x.unit_price); c += n * num(x.buy_price); });
     const d = Math.min(s, num(f.discount.value)), pct = Math.max(0, Math.min(100, parseFloat(digits(f.tax.value)) || 0)), t = Math.round((s - d) * pct / 100);
-    out.sub.textContent = money(s); out.tax.textContent = money(t); out.total.textContent = money(s - d + t); out.profit.textContent = money(s - d - c);
+    out.sub.textContent = money(s); out.tax.textContent = money(t); out.total.textContent = money(s - d + t); out.words.textContent = s - d + t > 0 ? toWords(s - d + t) + ' تومان' : ''; out.profit.textContent = money(s - d - c);
   };
   // F3: type part of a name, Enter adds the first match (or one more of a line already there)
   const finder = h('input', { type: 'search', placeholder: 'نام، برند یا کد کالا… (↓ و Enter: افزودن)', autocomplete: 'off' });
   const addProduct = p => {
     const tr = rows.el.querySelector(`tr[data-pid="${p.id}"]`);
-    if (tr) { const qn = tr.querySelector('[name=qty]'); qn.value = (num(qn.value) || 1) + 1; } else rows.add({ product_id: p.id, name: p.name, qty: 1, unit_price: p.sell_price, buy_price: p.buy_price, warranty_months: p.warranty_months });
+    if (tr) { const qn = tr.querySelector('[name=qty]'); qn.value = (num(qn.value) || 1) + 1; } else rows.add({ product_id: p.id, category: p.category, name: p.name, qty: 1, unit_price: p.sell_price, buy_price: p.buy_price, warranty_months: p.warranty_months });
     recalc(); finder.value = ''; finder.focus();
   };
   const found = suggest(finder, async qv => (await GET('staff/products' + qs({ q: qv, per: 12 }))).items.map(p => [productLabel(p), () => addProduct(p)]), 'کالایی با این نام در انبار نیست؛ با «+ ردیف» نام آزاد بنویسید.');
@@ -142,8 +147,8 @@ async function viewInvoice(id, q) {
       field('تاریخ', f.at), v.kind === 'proforma' ? field('اعتبار تا', f.valid) : null),
       ro ? null : h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'افزودن کالا ', h('small', { class: 'lat muted' }, 'F3')), found),
       h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'ردیف‌ها'), rows.el),
-      h('div', { class: 'wide money' }, field('تخفیف (تومان) — F7', f.discount), field('مالیات بر ارزش افزوده (٪)', f.tax), h('div', { class: 'sum' }, h('span', {}, 'جمع ردیف‌ها'), out.sub), h('div', { class: 'sum' }, h('span', {}, 'مالیات'), out.tax),
-        h('div', { class: 'sum big' }, h('span', {}, 'مبلغ نهایی'), out.total), S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود (بدون مالیات)'), out.profit) : null,
+      h('div', { class: 'wide money' }, field('تخفیف (تومان) — F7', f.discount, discWords), vatBox, h('div', { class: 'sum' }, h('span', {}, 'جمع ردیف‌ها'), out.sub), h('div', { class: 'sum' }, h('span', {}, 'مالیات'), out.tax),
+        h('div', { class: 'sum big' }, h('span', {}, 'مبلغ نهایی'), out.total), out.words, S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود (بدون مالیات)'), out.profit) : null,
         !isNew && sale && v.status === 'final' ? h('div', { class: 'sum' }, h('span', {}, 'پرداخت‌شده / مانده'), h('b', { class: 'lat' }, money(v.paid) + ' / ' + money(v.total - v.paid))) : null),
       tpl ? null : field('یادداشت', f.notes, '', 'wide')));
   if (v.payments && v.payments.length) el.append(h('section', { class: 'panel' }, h('h3', {}, 'پرداخت‌های این فاکتور'), paymentsTable(v.payments)));
@@ -158,8 +163,8 @@ function printInvoice(v) {
   const node = h('div', { class: 'receipt invoice' }, h('header', {}, h('div', {}, h('h1', {}, a.shop || p.shop), a.phone || p.phone ? h('div', { class: 'lat' }, a.phone || p.phone) : null, a.address ? h('div', {}, a.address) : null),
     h('div', {}, h('h2', {}, v.kindText), h('div', {}, 'شماره: ', h('b', { class: 'lat' }, v.no || '—')), h('div', {}, 'تاریخ: ', h('span', { class: 'lat' }, v.at_j)), proforma && v.valid_until_j ? h('div', {}, 'اعتبار تا: ', h('span', { class: 'lat' }, v.valid_until_j)) : null)),
     h('dl', {}, [['خریدار', v.customer_name], ['موبایل', v.customer_mobile], ['کد ملی', v.customer_national_id], ['نشانی', v.customer_address]].filter(x => x[1]).map(x => [h('dt', {}, x[0]), h('dd', {}, x[1])])),
-    h('table', { class: 'lines' }, h('thead', {}, h('tr', {}, ['#', 'شرح', 'تعداد', 'قیمت واحد', 'جمع'].map(x => h('th', {}, x)))),
-      h('tbody', {}, v.items.map((x, i) => h('tr', {}, h('td', {}, i + 1), h('td', {}, x.name, x.serials.length ? h('div', { class: 'lat small' }, x.serials.join(', ')) : null, x.warranty_months ? h('div', { class: 'small' }, x.warranty_months + ' ماه گارانتی') : null), h('td', {}, x.qty), h('td', { class: 'lat' }, money(x.unit_price)), h('td', { class: 'lat' }, money(x.line_total)))))),
+    h('table', { class: 'lines' }, h('thead', {}, h('tr', {}, ['#', 'نوع', 'شرح', 'تعداد', 'قیمت واحد', 'جمع'].map(x => h('th', {}, x)))),
+      h('tbody', {}, v.items.map((x, i) => h('tr', {}, h('td', {}, i + 1), h('td', {}, (S.cfg.categories || {})[x.category] || ''), h('td', {}, x.name, x.serials.length ? h('div', { class: 'lat small' }, x.serials.join(', ')) : null, x.warranty_months ? h('div', { class: 'small' }, x.warranty_months + ' ماه گارانتی') : null), h('td', {}, x.qty), h('td', { class: 'lat' }, money(x.unit_price)), h('td', { class: 'lat' }, money(x.line_total)))))),
     h('dl', { class: 'totals' }, [['جمع', v.subtotal], v.discount ? ['تخفیف', v.discount] : null, v.tax ? ['مالیات بر ارزش افزوده (' + v.tax_pct + '٪)', v.tax] : null, ['مبلغ قابل پرداخت', v.total],
       v.kind === 'sale' && v.status === 'final' ? ['پرداخت‌شده', v.paid] : null, v.kind === 'sale' && v.status === 'final' && v.total - v.paid ? ['مانده', v.total - v.paid] : null].filter(Boolean).map(x => [h('dt', {}, x[0]), h('dd', { class: 'lat' }, money(x[1]))])),
     v.status === 'void' ? h('p', { class: 'foot' }, 'باطل شده') : null, v.notes ? h('p', {}, v.notes) : null, h('p', { class: 'foot' }, a.foot || p.foot), h('div', { class: 'sign' }, h('span', {}, 'مهر و امضای فروشنده'), h('span', {}, 'امضای خریدار')));
@@ -193,7 +198,7 @@ async function paymentDialog(o) {
     const cust = customerPicker(old && old.customer_id ? { id: old.customer_id, name: old.customer_name } : (o.customer || (inv && inv.customer_id ? { id: inv.customer_id, name: inv.customer_name } : null)), !!inv);
     const vend = select('vendor_id', Object.assign({ 0: '— انتخاب کنید —' }, Object.fromEntries(vendors.map(x => [x.id, x.name]))), old ? old.vendor_id : (o.vendor || 0));
     const cat = text('category', old ? old.category : '', { list: 'expl', placeholder: 'اجاره، حقوق، …' }), expl = h('datalist', { id: 'expl' }, (A().expenses || []).map(x => h('option', { value: x })));
-    const amount = text('amount', old ? old.amount : (inv ? Math.max(0, inv.total - inv.paid) : ''), { dir: 'ltr', required: true, autofocus: true });
+    const amount = text('amount', old ? old.amount : (inv ? Math.max(0, inv.total - inv.paid) : ''), { dir: 'ltr', required: true, autofocus: true }), amountWords = moneyInput(amount);
     const method = select('method', A().methods, old ? old.method : 'cash'), account = text('account', old ? old.account : '', { list: 'accl' }), accl = h('datalist', { id: 'accl' }, (S.cfg.accounts || []).map(x => h('option', { value: x })));
     const at = h('input', { type: 'date', value: old ? old.at : today() }), tx = text('tx', old ? old.tx : '', { dir: 'ltr' }), notes = text('notes', old ? old.notes : '');
     const cq = { no: text('cno', old && old.cheque ? old.cheque.no : '', { dir: 'ltr', placeholder: 'شمارهٔ صیادی یا سری' }), bank: text('cbank', ''), due: h('input', { type: 'date', value: old && old.cheque ? old.cheque.due_at : '' }) };
@@ -209,7 +214,7 @@ async function paymentDialog(o) {
       if (method.value === 'cheque') body.cheque = { no: digits(cq.no.value), bank: cq.bank.value, due_at: cq.due.value };
       try { await POST('staff/payments', body); close(); toast('ثبت شد.'); route(); } catch (e) { fail(e); }
     };
-    b.append(h('div', { class: 'grid' }, field('نوع', dir), field('طرف حساب', party), h('div', { class: 'wide' }, boxes.customer, boxes.vendor, boxes.expense), field('مبلغ (تومان)', amount), field('روش', method),
+    b.append(h('div', { class: 'grid' }, field('نوع', dir), field('طرف حساب', party), h('div', { class: 'wide' }, boxes.customer, boxes.vendor, boxes.expense), field('مبلغ (تومان)', amount, amountWords), field('روش', method),
       h('div', { class: 'wide' }, chequeBox), field('حساب / صندوق', account, 'کارتخوان، حساب بانکی یا صندوق'), field('تاریخ', at), field('شمارهٔ پیگیری', tx), field('شرح', notes), expl, accl),
       h('div', { class: 'row end' }, old && can('accounting', 2) ? h('button', { class: 'btn', onclick: async () => { if (await ask('این پرداخت پاک شود؟', 'پاک کن')) { try { await POST('staff/payments/delete', { id: old.id }); close(); toast('پاک شد.'); route(); } catch (e) { fail(e); } } } }, 'حذف') : null,
         h('button', { class: 'btn', onclick: close }, 'انصراف'), h('button', { class: 'btn primary', onclick: save }, 'ثبت')));

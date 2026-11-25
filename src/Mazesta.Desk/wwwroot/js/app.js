@@ -325,6 +325,7 @@ function rowsEditor(cols, rows, o) {
       const v = r ? r[c.k] : (c.def == null ? '' : c.def);
       const inp = c.type === 'product' ? productInput(c, v, tr, ro) : c.type === 'select' ? select(c.k, c.opts, v || c.def, { disabled: ro }) : c.type === 'check' ? h('input', { type: 'checkbox', name: c.k, checked: !!v, disabled: ro }) :
         h('input', { type: 'text', inputmode: c.type === 'num' ? 'numeric' : null, name: c.k, value: v == null ? '' : v, dir: c.ltr || c.type === 'num' ? 'ltr' : null, list: c.list, autocomplete: c.list ? 'off' : null, readOnly: ro || c.readOnly, 'aria-label': c.label });
+      if (c.money && !ro) { inp.value = grouped(inp.value); inp.addEventListener('input', () => groupDigits(inp)); }   // prices read by threes
       tr.append(h('td', { class: c.type === 'check' ? 'c' : '' }, inp));
     });
     if (!ro) tr.append(h('td', { class: 'c' }, h('button', { type: 'button', class: 'x', 'aria-label': 'حذف ردیف', onclick: () => { tr.remove(); o.onchange && o.onchange(); } }, '×')));

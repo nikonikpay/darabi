@@ -14,6 +14,28 @@ const clear = e => { while (e.firstChild) e.removeChild(e.firstChild); return e;
 const debounce = (f, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => f(...a), ms); }; };
 const money = n => n == null ? '—' : Number(n).toLocaleString('en-US') + ' تومان';
 const digits = s => String(s == null ? '' : s).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+/** A whole toman amount in Persian words ("یک میلیون و دویست و پنجاه هزار"); '' for nothing. Up to the trillions, which no invoice here reaches. */
+function toWords(n) {
+  n = Math.floor(+n); if (!(n >= 0)) return ''; if (n === 0) return 'صفر';
+  const U = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه', 'ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'], T = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'],
+    H = ['', 'صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'], B = ['', 'هزار', 'میلیون', 'میلیارد', 'تریلیون'];
+  const three = x => { const p = []; if (x >= 100) p.push(H[Math.floor(x / 100)]); x %= 100; if (x >= 20) { p.push(T[Math.floor(x / 10)]); x %= 10; } if (x) p.push(U[x]); return p.join(' و '); };
+  const parts = []; for (let i = 0; n > 0; i++, n = Math.floor(n / 1000)) { const g = n % 1000; if (g) parts.unshift((i === 1 && g === 1 ? '' : three(g) + (B[i] ? ' ' : '')) + (B[i] || '')); }
+  return parts.join(' و ');
+}
+const grouped = s => digits(s).replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/** Groups a typed number by threes as it is typed (1,250,000), keeping the caret on the same digit. The site strips the commas again. */
+function groupDigits(el) {
+  const before = digits(el.value.slice(0, el.selectionStart)).replace(/\D/g, '').length;
+  el.value = grouped(el.value);
+  if (document.activeElement === el) { let n = 0, p = 0; while (p < el.value.length && n < before) { if (/\d/.test(el.value[p])) n++; p++; } el.setSelectionRange(p, p); }
+}
+/** Makes an amount box group its digits and returns the line under it that writes the amount in words ("… تومان"). */
+function moneyInput(el) {
+  const words = h('small', { class: 'words' }), upd = () => { const d = digits(el.value).replace(/\D/g, ''); words.textContent = d ? toWords(+d) + ' تومان' : ''; };
+  el.addEventListener('input', () => { groupDigits(el); upd(); }); el.value = grouped(el.value); upd();
+  return words;
+}
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 function toast(msg, kind) {
