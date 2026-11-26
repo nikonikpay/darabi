@@ -104,7 +104,10 @@ final class MZC_Tasks
         $ref = '';
         if ($t['ref_kind'] === 'build' && ($b = $db->get_row($db->prepare('SELECT invoice_no, service_no, title FROM `' . self::t('builds') . '` WHERE id = %d', (int) $t['ref_id']), ARRAY_A))) { $ref = trim('سیستم ' . ($b['invoice_no'] ?: $b['service_no']) . ' — ' . $b['title'], ' —'); }
         if ($t['ref_kind'] === 'job' && ($j = $db->get_row($db->prepare('SELECT service_no, device FROM `' . self::t('jobs') . '` WHERE id = %d', (int) $t['ref_id']), ARRAY_A))) { $ref = trim('سرویس ' . $j['service_no'] . ' — ' . $j['device'], ' —'); }
-        $c = $t['customer_id'] ? MZC_Crm::customer($t['customer_id']) : null;
+        // the record's name and the customer's are for those who may see that record or the customers: being given a task does not widen what a person sees
+        $area = $t['ref_kind'] === 'build' ? 'builds' : ($t['ref_kind'] === 'job' ? 'jobs' : ''); $sees = $area !== '' && MZC_Staff::can($uid, $area, 1);
+        if (!$sees) { $ref = ''; }
+        $c = $t['customer_id'] && ($sees || MZC_Staff::can($uid, 'customers', 1)) ? MZC_Crm::customer($t['customer_id']) : null;
         $log = array_map(function ($l) use ($steps) {
             return array('who' => $l['who'], 'at_j' => MZC_Crm::jtime(strtotime($l['at'] . ' UTC')), 'action' => $l['action'], 'actionText' => isset(self::$actions[$l['action']]) ? self::$actions[$l['action']] : $l['action'], 'note' => (string) $l['note'],
                 'step' => (int) $l['step'], 'stepTitle' => isset($steps[(int) $l['step']]) ? $steps[(int) $l['step']]['title'] : '', 'progress' => $l['progress'] === null ? null : (int) $l['progress']);
@@ -112,7 +115,7 @@ final class MZC_Tasks
         $open = in_array($t['status'], array('open', 'blocked'), true); $boss = (int) $t['created_by'] === $uid || self::manager($uid);
         return array('id' => (int) $t['id'], 'title' => $t['title'], 'body' => (string) $t['body'], 'status' => $t['status'], 'statusText' => self::$statuses[$t['status']], 'progress' => (int) $t['progress'], 'percent' => $percent, 'priority' => (int) $t['priority'],
             'due_at' => (string) $t['due_at'], 'due_at_j' => MZC_Api::jd($t['due_at']), 'flow_id' => (int) $t['flow_id'], 'flow_name' => (string) $t['flow_name'], 'steps' => $named, 'step' => $i, 'marks' => $marks, 'confirm' => (bool) $t['confirm'],
-            'ref_kind' => (string) $t['ref_kind'], 'ref_id' => (int) $t['ref_id'], 'ref_label' => $ref, 'customer_id' => (int) $t['customer_id'], 'customer_name' => $c ? $c['name'] : '', 'customer_mobile' => $c ? (string) $c['mobile'] : '',
+            'ref_kind' => (string) $t['ref_kind'], 'ref_id' => (int) $t['ref_id'], 'ref_label' => $ref, 'customer_id' => $c ? (int) $t['customer_id'] : 0, 'customer_name' => $c ? $c['name'] : '', 'customer_mobile' => $c ? (string) $c['mobile'] : '',
             'created_by' => (int) $t['created_by'], 'who' => $t['who'], 'created_j' => MZC_Crm::jtime(strtotime($t['created'] . ' UTC')), 'done_at_j' => $t['done_at'] ? MZC_Crm::jtime(strtotime($t['done_at'] . ' UTC')) : '', 'updated' => $t['updated'],
             // what this person may do now
             // `mine`: it is this person's turn (their lists); `can_act`: the current step's buttons work for them (a manager may answer for others)

@@ -49,6 +49,33 @@ public class SiteSessionOfflineTests : IDisposable
     }
 
     [Fact]
+    public async Task A_site_that_is_down_behind_a_CDN_answers_with_an_error_page_and_counts_as_no_line_and_a_save_goes_once()
+    {
+        int port = FreePort(); var ct = CancellationToken.None; var ops = new List<string>(); string token = new('b', 64); bool down = false;
+        using var http = new HttpListener(); http.Prefixes.Add($"http://127.0.0.1:{port}/"); http.Start();
+        _ = Task.Run(async () =>
+        {
+            while (http.IsListening)
+            {
+                HttpListenerContext c; try { c = await http.GetContextAsync(); } catch (Exception e) when (e is HttpListenerException or ObjectDisposedException) { return; }
+                string path = c.Request.Url!.AbsolutePath; if (path.EndsWith("/staff/payments", StringComparison.Ordinal)) ops.Add(c.Request.Headers["X-MZC-Op"] ?? "");
+                byte[] body = Encoding.UTF8.GetBytes(down ? "<html><body>502 Bad Gateway</body></html>" : path.EndsWith("/staff/login", StringComparison.Ordinal) ? "{\"token\":\"" + token + "\",\"name\":\"Ali\"}" : path.EndsWith("/staff/sync", StringComparison.Ordinal) ? "{\"error\":\"none\"}" : "{\"ok\":true}");
+                c.Response.ContentType = down ? "text/html" : "application/json"; c.Response.StatusCode = down ? 502 : path.EndsWith("/staff/sync", StringComparison.Ordinal) ? 404 : 200;
+                await c.Response.OutputStream.WriteAsync(body); c.Response.Close();
+            }
+        });
+        using (var first = new SiteSession(_dir)) { Assert.True(first.SetServer($"http://127.0.0.1:{port}")); Assert.Equal(200, (await first.LoginAsync("ali", "p", ct)).Status); await first.CallAsync("GET", "staff/config", null, ct); }
+        down = true;
+        using var site = new SiteSession(_dir);
+        Assert.Equal(200, (await site.CallAsync("GET", "staff/me", null, ct)).Status); Assert.Equal(200, (await site.CallAsync("GET", "staff/config", null, ct)).Status);   // the kept answers open the program
+        Assert.Equal(202, (await site.CallAsync("POST", "staff/payments", "{\"amount\":5}", ct)).Status);
+        await site.LogoutAsync(ct); var inside = await site.LoginAsync("ali", "p", ct); Assert.Equal(200, inside.Status); Assert.True(inside.Data!.Value.GetProperty("offline").GetBoolean());
+        down = false; Assert.Equal((1, 0, false), await site.FlushAsync(ct));
+        // the try that met the error page and the one that got through carry the same id: a site that did book the first books nothing twice
+        Assert.Equal(2, ops.Count); Assert.Matches("^[0-9a-f]{32}$", ops[0]); Assert.Equal(ops[0], ops[1]);
+    }
+
+    [Fact]
     public async Task Without_the_site_only_the_last_person_gets_in_with_the_same_password_and_is_signed_in_again_when_it_answers()
     {
         int port = FreePort(); var ct = CancellationToken.None; var sent = new List<string>(); string token = new('a', 64); bool passwordChanged = false;

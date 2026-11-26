@@ -43,9 +43,9 @@ public sealed class OfflineQueue
     public int Pending { get { lock (_lock) return _items.Count(x => x.Error is null); } }
     public IReadOnlyList<QueuedCall> Refused { get { lock (_lock) return _items.Where(x => x.Error is not null).ToList(); } }
 
-    public QueuedCall Add(string path, string body, string user = "", string server = "")
+    public QueuedCall Add(string path, string body, string user = "", string server = "", string? id = null)
     {
-        var q = new QueuedCall(Guid.NewGuid().ToString("N"), path, body, DateTime.Now, null, user, server);
+        var q = new QueuedCall(id ?? Guid.NewGuid().ToString("N"), path, body, DateTime.Now, null, user, server);
         lock (_lock) { _items.Add(q); Save(); }
         return q;
     }

@@ -15,7 +15,13 @@ async function syncGate() {
     clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'mark' }, 'M'), h('h1', {}, before.ready ? 'به‌روزرسانی اطلاعات' : 'دریافت اطلاعات برای اولین بار'),
       h('p', { class: 'muted' }, before.ready ? 'تغییرهای تازه از سایت گرفته می‌شود.' : 'پرونده‌ها یک بار کامل گرفته و روی همین کامپیوتر نگه داشته می‌شوند؛ دفعه‌های بعد فقط تغییرها می‌آیند.'), h('progress', {}), note));
     const timer = setInterval(async () => { const s = await syncState(); if (s.received) note.textContent = s.received + ' پرونده دریافت شد…'; }, 400);
-    let s; try { s = (await bridge.sync()).data || before; } finally { clearInterval(timer); }
+    // with a whole copy already here, a slow or hanging site is not waited for: the program opens and the changes come in behind it
+    let s;
+    try {
+      const running = bridge.sync(), r = before.ready ? await Promise.race([running, new Promise(done => setTimeout(done, 6000, null))]) : await running;
+      s = r ? r.data || before : before;
+      if (!r) toast('پاسخ سایت دیر شد؛ برنامه باز شد و همگام‌سازی در پس‌زمینه ادامه دارد.');
+    } finally { clearInterval(timer); }
     SYNC.seq = s.seq;
     if (!s.supported || s.ready) { if (s.ready && s.error) toast('به سایت وصل نشدیم؛ اطلاعات تا ' + s.lastSync + ' روی این کامپیوتر است.', 'err'); return true; }
     if (!s.known) return true;   // the site never answered with a copy on this PC: the program works from the site, as before

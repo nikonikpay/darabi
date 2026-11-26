@@ -79,6 +79,8 @@ internal sealed partial class SiteSession : IDisposable
     private readonly Replica _replica;
     private volatile bool _noGzip;
     private volatile Task _after = Task.CompletedTask; private volatile string _afterRecord = "\n";
+    private static readonly TimeSpan QuickCall = TimeSpan.FromSeconds(20), SlowCall = TimeSpan.FromSeconds(60), DownFor = TimeSpan.FromSeconds(30);
+    private DateTime _downUntil = DateTime.MinValue;
 
     private void ForgetReads() { _cache.Clear(); _putEpoch.Clear(); _replica.Clear(); _noSync = false; _noGzip = false; _lastAsked = DateTime.MinValue; }
 
@@ -120,7 +122,11 @@ internal sealed partial class SiteSession : IDisposable
         if (read && !_after.IsCompleted && !path.StartsWith(_afterRecord, StringComparison.Ordinal)) await Task.WhenAny(_after, Task.Delay(TimeSpan.FromSeconds(8), ct));
         if (read && FromCopy(path) is { } copied) return (200, WithPending(path, copied), null);
         if (read && !VolatileRoute().IsMatch(path) && _cache.Get(path) is { } hit && DateTime.Now - hit.At < Fresh && _putEpoch.TryGetValue(path, out int ep) && ep == Volatile.Read(ref _epoch) && Parse(hit.Json) is { } cached) return (200, WithPending(path, cached), null);
-        var r = await SendAsync(method, path, body, null, ct);
+        // a save that may wait carries its own id from the first try, so one the site did book before the answer was lost is not booked again from the queue
+        string? op = !read && OfflineQueue.Queueable(method, path, body) ? Guid.NewGuid().ToString("N") : null;
+        // the site did not answer a moment ago: a read with an answer kept here is given at once instead of waiting for it again
+        bool skip = read && DateTime.Now < _downUntil && (_cache.Get(path) is not null || KeptList().Match(path) is { Success: true } kept && _cache.List(kept.Groups[1].Value, kept.Groups[3].Value) is not null);
+        var r = skip ? (Status: 0, Data: (JsonElement?)null, Error: (string?)"اتصال به سایت برقرار نشد.", Raw: "", Conflict: "") : await SendAsync(method, path, body, op, ct);
         if (!read && r.Status is >= 200 and < 300)
         {
             if (path.StartsWith("staff/lock", StringComparison.Ordinal)) return (r.Status, await CheckStaleAsync(body, r.Data, ct), r.Error);   // (the lock renewals every 45 s are not a change of anything)
@@ -146,7 +152,7 @@ internal sealed partial class SiteSession : IDisposable
         }
         if (OfflineQueue.Queueable(method, path, body))
         {
-            var q = Queue.Add(path, string.IsNullOrEmpty(body) ? "{}" : body, _user, Origin);
+            var q = Queue.Add(path, string.IsNullOrEmpty(body) ? "{}" : body, _user, Origin, op);
             using var doc = JsonDocument.Parse(JsonSerializer.Serialize(new { queued = true, id = q.Id, pending = Queue.Pending }));
             return (202, doc.RootElement.Clone(), null);
         }
@@ -237,13 +243,19 @@ internal sealed partial class SiteSession : IDisposable
             req.Content = new ByteArrayContent(ms.ToArray()); req.Content.Headers.ContentType = new("application/octet-stream"); req.Headers.TryAddWithoutValidation("X-MZC-Gzip", "1");
         }
         else if (method == "POST") req.Content = new StringContent(string.IsNullOrEmpty(body) ? "{}" : body, Encoding.UTF8, "application/json");
+        // the first copy and a backup may take long; anything else that gets no answer is given up on soon, so a hanging site does not hold the program
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(path.StartsWith("staff/sync", StringComparison.Ordinal) || path.StartsWith("staff/backup", StringComparison.Ordinal) ? SlowCall : QuickCall);
         try
         {
-            using var res = await _http.SendAsync(req, ct);
-            string text = await res.Content.ReadAsStringAsync(ct);
+            using var res = await _http.SendAsync(req, limit.Token);
+            string text = await res.Content.ReadAsStringAsync(limit.Token);
             JsonElement? data = null;
             try { using var doc = JsonDocument.Parse(text); if (doc.RootElement.ValueKind == JsonValueKind.Object) data = doc.RootElement.Clone(); } catch (JsonException) { }
             int status = (int)res.StatusCode;
+            // a CDN in front of a site that is down answers with its own error page: that is no line to the site, not an answer from it
+            if (status >= 500 && data is null) { _downUntil = DateTime.Now + DownFor; return (0, null, $"سایت پاسخ نمی‌دهد (کد {status}).", "", ""); }
+            _downUntil = DateTime.MinValue;
             // a firewall in front of the site that will not take the compressed form: the same save goes as it is, and the rest too
             if (zip && (status == 415 || (data is null && status is >= 400 and < 500))) { _noGzip = true; return await RawAsync(method, path, body, opId, ct); }
             if (status is >= 300 and < 400) return (status, null, $"نشانی سایت به «{res.Headers.Location}» تغییر مسیر می‌دهد؛ همان نشانی را در تنظیمات اتصال بنویسید.", "", "");
@@ -252,6 +264,7 @@ internal sealed partial class SiteSession : IDisposable
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or OperationCanceledException)
         {
+            if (!ct.IsCancellationRequested) _downUntil = DateTime.Now + DownFor;
             return (0, null, ct.IsCancellationRequested ? "لغو شد." : "اتصال به سایت برقرار نشد: " + e.Message, "", "");
         }
     }

@@ -20,7 +20,26 @@ final class MZC_Api
     public static $label_default = array('job' => array('service_no', 'customer', 'mobile', 'device', 'received'), 'build' => array('invoice', 'customer', 'title'));
     const RECEIPT_TEXT = 'مشتری گرامی، دستگاه شما با شمارهٔ پذیرش {no} در مازستا ثبت شد. {url}';
 
-    public static function boot() { add_action('rest_api_init', array(__CLASS__, 'routes')); }
+    public static function boot() { add_action('rest_api_init', array(__CLASS__, 'routes')); add_filter('rest_dispatch_request', array(__CLASS__, 'once'), 10, 4); }
+
+    /**
+     * A new record sent with an id of its own (X-MZC-Op, the staff program's) is made once: the same id again - the answer to the first send was lost and the program's queue
+     * sends it again - gets the record already made. (Payments, invoices, calls and tasks do the same in their own routes.)
+     */
+    public static function once($res, $req, $route, $handler)
+    {
+        $kinds = array('customers' => 'customers', 'products' => 'stock', 'builds' => 'builds', 'jobs' => 'jobs', 'ships' => 'ships', 'shortages' => '');
+        $pre = '/' . Mazesta_Connect::NS . '/staff/'; $k = strncmp($route, $pre, strlen($pre)) === 0 ? substr($route, strlen($pre)) : '';
+        if ($res !== null || !isset($kinds[$k]) || $req->get_method() !== 'POST' || self::n(self::body($req), 'id') || ($key = MZC_Acc_Api::op_key($req)) === '') { return $res; }
+        // the right is checked first: a repeated id must not show a record to someone who may not make it
+        $a = $kinds[$k] === '' ? MZC_Staff::auth($req) : MZC_Staff::auth($req, $kinds[$k], 1);
+        if ($a instanceof WP_REST_Response) { return $a; }
+        $find = function ($id) use ($k) { switch ($k) { case 'customers': return MZC_Crm::customer($id); case 'products': return MZC_Stock::product($id); case 'builds': return MZC_Crm::build($id); case 'jobs': return MZC_Crm::job($id); case 'ships': return MZC_Ships::ship($id); default: return MZC_Desk_Api::shortage($id); } };
+        $out = function ($r) use ($k, $a) {
+            switch ($k) { case 'customers': return self::customer_out($r); case 'products': return self::product_out($r, $a); case 'builds': return self::build_out($r, true, $a); case 'jobs': return self::job_out($r, true, self::money_seen($a), self::cost_seen($a)); case 'ships': return MZC_Desk_Api::ship_out($r); default: return MZC_Desk_Api::short_out($r); }
+        };
+        return MZC_Acc_Api::op_run($key, $find, $out, function () use ($handler, $req) { return call_user_func($handler['callback'], $req); });
+    }
 
     public static function routes()
     {
