@@ -23,6 +23,7 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-stats.php        systems, usage events and the apps' logs: tables of their own in the CRM's database, what the dashboard, systems, events, tuning and messages pages read
  *   includes/class-mzc-messages.php     messages to the systems (REST for the app; tables in the CRM's database)
  *   includes/class-mzc-crm-db.php       the CRM's own database (not WordPress'): connection, the schema of every table of the plugin, the removal of the data of before 2.8
+ *   includes/class-mzc-sync.php         the CRM connection that notes every write, and what the staff programs' own copies are kept current from
  *   includes/class-mzc-crm.php          customers, new builds, service jobs, parts, photos
  *   includes/class-mzc-rev.php          the saved versions of services, new computers and invoices (who changed what, going back) and who has one open for editing
  *   includes/class-mzc-stock.php        the stock: products, suppliers' purchase invoices, where each part went, serial numbers
@@ -44,7 +45,7 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-portal.php       the customer's page ([mazesta_portal]) and its REST routes
  *   includes/class-mzc-admin.php        menus and the shared admin shell; admin/*.php are the pages; assets/ the styles and scripts
  */
-foreach (array('mazesta-connect', 'mzc-log', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-rev', 'mzc-stock', 'mzc-acc', 'mzc-woo', 'mzc-report', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-access', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-acc-api', 'mzc-desk-api', 'mzc-ledger', 'mzc-oauth', 'mzc-mcp', 'mzc-admin') as $mzc_file) {
+foreach (array('mazesta-connect', 'mzc-log', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-sync','mzc-crm', 'mzc-rev', 'mzc-stock', 'mzc-acc', 'mzc-woo', 'mzc-report', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-access', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-acc-api', 'mzc-desk-api', 'mzc-ledger', 'mzc-oauth', 'mzc-mcp', 'mzc-admin') as $mzc_file) {
     require_once MZC_DIR . 'includes/class-' . $mzc_file . '.php';
 }
 
@@ -56,6 +57,7 @@ MZC_Access::boot();
 MZC_Staff::boot();
 MZC_Api::boot();
 MZC_Rev::boot();
+MZC_Sync::boot();
 MZC_Stock::boot();
 MZC_Acc::boot();
 MZC_Acc_Api::boot();

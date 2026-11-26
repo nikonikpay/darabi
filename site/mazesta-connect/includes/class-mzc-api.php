@@ -95,7 +95,7 @@ final class MZC_Api
             'address' => (string) $c['address'], 'notes' => (string) $c['notes'], 'group' => (string) $c['grp'], 'groupText' => isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : '', 'updated' => $c['updated']);
     }
 
-    private static function build_out($b, $full, $a = null)
+    public static function build_out($b, $full, $a = null)
     {
         $o = array('id' => (int) $b['id'], 'number' => (string) ($b['invoice_no'] ?: $b['service_no']), 'service_no' => (string) $b['service_no'], 'invoice_no' => (string) $b['invoice_no'], 'title' => $b['title'],
             'device_type' => (string) $b['device_type'], 'deviceText' => self::dtype($b['device_type']), 'status' => $b['status'], 'statusText' => isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : '',
@@ -116,7 +116,7 @@ final class MZC_Api
         return $o;
     }
 
-    private static function job_out($j, $full, $money, $cost = false)
+    public static function job_out($j, $full, $money, $cost = false)
     {
         $o = array('id' => (int) $j['id'], 'number' => (string) $j['service_no'], 'service_no' => (string) $j['service_no'], 'device' => (string) $j['device'], 'device_serial' => (string) $j['device_serial'], 'device_type' => (string) $j['device_type'], 'deviceText' => self::dtype($j['device_type']), 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : '',
             'customer_id' => (int) $j['customer_id'], 'received_at' => (string) $j['received_at'], 'received_at_j' => self::jd($j['received_at']), 'closed_at' => (string) $j['closed_at'], 'due_at' => (string) $j['due_at'], 'due_at_j' => self::jd($j['due_at']),
@@ -445,7 +445,7 @@ final class MZC_Api
         return MZC_Staff::can($a['id'], 'stock', $need) ? $a : self::fail('دسترسی این کار را ندارید.', 403);
     }
 
-    private static function product_out($p, $a)
+    public static function product_out($p, $a)
     {
         $o = array('id' => (int) $p['id'], 'name' => $p['name'], 'category' => $p['category'], 'categoryText' => isset(MZC_Crm::$categories[$p['category']]) ? MZC_Crm::$categories[$p['category']] : '', 'brand' => (string) $p['brand'], 'sku' => (string) $p['sku'],
             'sell_price' => $p['sell_price'] === null ? null : (int) $p['sell_price'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'notes' => (string) $p['notes'], 'stock' => isset($p['stock']) ? (int) $p['stock'] : null, 'wc_id' => isset($p['wc_id']) ? (int) $p['wc_id'] : 0, 'updated' => $p['updated']);
@@ -514,7 +514,7 @@ final class MZC_Api
         return self::ok(array('id' => $r, 'name' => self::s($p, 'name', 120)), $id ? 200 : 201);
     }
 
-    private static function purchase_out($u, $a, $full)
+    public static function purchase_out($u, $a, $full)
     {
         $cost = self::cost_seen($a);
         $o = array('id' => (int) $u['id'], 'vendor_id' => (int) $u['vendor_id'], 'vendor_name' => (string) $u['vendor_name'], 'invoice_no' => (string) $u['invoice_no'], 'bought_at' => (string) $u['bought_at'], 'bought_at_j' => self::jd($u['bought_at']), 'notes' => (string) $u['notes'], 'updated' => $u['updated']);

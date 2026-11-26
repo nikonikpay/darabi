@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 19;
+    const SCHEMA = 20;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -64,9 +64,10 @@ final class MZC_Crm_Db
         self::$db = null;
         if (!self::configured()) { self::$error = 'پایگاه داده CRM هنوز در تنظیمات وارد نشده است.'; return null; }
         $s = self::settings(); $pass = self::unseal($s['pass']);
-        $e = self::test($s['host'], $s['name'], $s['user'], $pass);
-        if ($e !== '') { self::$error = $e; return null; }
-        $db = new wpdb($s['user'], $pass, $s['name'], $s['host']);
+        // one connection (a test connection before it doubled the time every request spent connecting): MZC_Db leaves `ready` false instead of stopping the page
+        mysqli_report(MYSQLI_REPORT_OFF);
+        $db = new MZC_Db($s['user'], $pass, $s['name'], $s['host']);
+        if (!$db->ready || !$db->dbh) { self::$error = 'اتصال برقرار نشد: ' . (mysqli_connect_error() ?: 'نام پایگاه داده یا دسترسی را بررسی کنید.'); return null; }
         $db->suppress_errors(true);
         $db->set_charset($db->dbh, 'utf8mb4', 'utf8mb4_unicode_ci');
         self::$db = $db;
@@ -184,6 +185,8 @@ final class MZC_Crm_Db
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('shortages')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(190) NOT NULL, qty INT NOT NULL DEFAULT 1, kind VARCHAR(10) NOT NULL DEFAULT 'other',
             ref VARCHAR(60) NULL, customer_id BIGINT UNSIGNED NULL, status VARCHAR(10) NOT NULL DEFAULT 'open', note VARCHAR(255) NULL, vendor_id BIGINT UNSIGNED NULL, asked_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
             who VARCHAR(120) NOT NULL DEFAULT '', created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY status (status, created), KEY customer_id (customer_id)) $engine";
+        // schema 20: every write to a synced table, numbered, so a staff program takes only what changed since the number it has (MZC_Sync)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('changes')}` (seq BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, kind VARCHAR(10) NOT NULL, rid BIGINT UNSIGNED NOT NULL, at INT UNSIGNED NOT NULL) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }

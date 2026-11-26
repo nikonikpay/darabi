@@ -28,7 +28,14 @@ final class MZC_Desk_Api
 
     /* ---------- shortages ---------- */
 
-    private static function short_out($x)
+    /** One shortage line with the names its list shows, or null. */
+    public static function shortage($id)
+    {
+        $db = self::db(); if (!$db) { return null; }
+        return $db->get_row($db->prepare('SELECT s.*, c.name AS customer_name, v.name AS vendor_name FROM `' . self::t('shortages') . '` s LEFT JOIN `' . self::t('customers') . '` c ON c.id = s.customer_id LEFT JOIN `' . self::t('vendors') . '` v ON v.id = s.vendor_id WHERE s.id = %d', (int) $id), ARRAY_A);
+    }
+
+    public static function short_out($x)
     {
         return array('id' => (int) $x['id'], 'name' => $x['name'], 'qty' => (int) $x['qty'], 'kind' => $x['kind'], 'kindText' => isset(self::$short_kinds[$x['kind']]) ? self::$short_kinds[$x['kind']] : '', 'ref' => (string) $x['ref'],
             'customer_id' => (int) $x['customer_id'], 'customer_name' => isset($x['customer_name']) ? (string) $x['customer_name'] : '', 'status' => $x['status'], 'statusText' => self::$short_statuses[$x['status']], 'note' => (string) $x['note'],
@@ -91,7 +98,7 @@ final class MZC_Desk_Api
 
     /* ---------- warranty shipments ---------- */
 
-    private static function ship_out($s)
+    public static function ship_out($s)
     {
         $state = !empty($s['picked_up']) ? 'done' : ($s['received_at'] ? 'back' : 'sent');
         return array('id' => (int) $s['id'], 'part_name' => $s['part_name'], 'serial' => (string) $s['serial'], 'problem' => (string) $s['problem'], 'sent_at' => (string) $s['sent_at'], 'sent_at_j' => MZC_Api::jd($s['sent_at']), 'tracking' => (string) $s['tracking'],

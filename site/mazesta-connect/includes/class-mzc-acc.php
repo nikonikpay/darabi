@@ -223,6 +223,7 @@ final class MZC_Acc
             }
             // a sale made from a proforma closes it
             if ($ok && $v['kind'] === 'sale' && $v['ref_id']) { $db->query($db->prepare('UPDATE `' . self::t('invoices') . "` SET status = 'final', updated = %s WHERE id = %d AND kind = 'proforma' AND status = 'draft'", self::now(), (int) $v['ref_id'])); }
+            if ($ok && $v['kind'] === 'sale' && $v['ref_id']) { MZC_Sync::mark('invoices', $v['ref_id']); }
             $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
             if (!$ok) { return 'قطعی نشد: ' . $err; }
             MZC_Woo::touch(array_column($v['items'], 'product_id'));

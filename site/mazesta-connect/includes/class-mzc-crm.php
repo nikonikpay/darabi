@@ -762,6 +762,7 @@ final class MZC_Crm
         $db = self::db(); if (!$db || !isset(self::$stages[$stage])) { return; }
         $col = $stage === 'Before' ? 'report_pre' : 'report_id';
         $db->query($db->prepare('UPDATE `' . self::t('jobs') . "` SET `$col` = %s, updated = %s WHERE service_no = %s", $report_id, self::now(), $service));
+        MZC_Sync::mark('jobs', $db->get_col($db->prepare('SELECT id FROM `' . self::t('jobs') . '` WHERE service_no = %s', $service)));
     }
 
     private static $outcomes = array('Passed' => 'موفق', 'Failed' => 'ناموفق', 'Cancelled' => 'لغو شد', 'Unsupported' => 'پشتیبانی نمی‌شود', 'Error' => 'خطای تست', 'Inconclusive' => 'نامعین');
@@ -816,6 +817,7 @@ final class MZC_Crm
         foreach ((array) $db->get_col('SELECT file FROM `' . self::t('photos') . '`') as $f) { if (preg_match('/^[a-f0-9]{32}\.(jpg|png|webp)$/', (string) $f)) { @unlink(self::photo_dir() . '/' . $f . '.dat'); } }
         foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'job_calls', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items', 'invoices', 'invoice_items', 'payments', 'cheques') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
         $db->query('DELETE FROM `' . self::t('meta') . "` WHERE k = 'import'");
+        MZC_Sync::reset();   // emptied tables note nothing: every staff program takes the whole copy again
         MZC_Admin::back('mzc-settings', 'ok:همهٔ اطلاعات CRM پاک شد؛ فایل واردسازی را دوباره بارگذاری کنید.');
     }
 
