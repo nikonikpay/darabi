@@ -2,7 +2,7 @@
 (function () {
   let bar = null, busy = false;
   async function tick() {
-    if (busy || !window.S || !S.me || !window.bridge) return;
+    if (busy || typeof S === 'undefined' || !S.me || !window.bridge) return;   // S is a top-level const: it is not on window
     busy = true;
     try {
       let q = await bridge.queue();

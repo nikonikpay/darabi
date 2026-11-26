@@ -31,7 +31,7 @@ function showLogin(msg) {
     e.preventDefault(); err.textContent = ''; btn.disabled = true;
     const r = await bridge.login(user.value.trim(), pass.value);
     btn.disabled = false;
-    if (r.status === 200 && r.data) { S.me = r.data; await enter(); } else err.textContent = (r.data && r.data.error) || r.error || 'ورود ناموفق بود.';
+    if (r.status === 200 && r.data) { S.me = r.data; if (r.data.offline) toast('بدون اتصال وارد شدید: نسخهٔ ذخیره‌شدهٔ این کامپیوتر را می‌بینید و ثبت‌ها در صف می‌مانند.'); await enter(); } else err.textContent = (r.data && r.data.error) || r.error || 'ورود ناموفق بود.';
   };
   const btn = h('button', { class: 'btn primary big', type: 'submit' }, 'ورود');
   app.append(h('form', { class: 'login', onsubmit: go }, h('div', { class: 'mark' }, 'M'), h('h1', {}, 'میز کار مازستا'), h('p', { class: 'muted' }, 'با نام کاربری و گذرواژهٔ خودتان وارد شوید.'),

@@ -47,4 +47,47 @@ public class SiteSessionOfflineTests : IDisposable
         Assert.Equal(200, old.Status); Assert.True(old.Data!.Value.GetProperty("offline").GetBoolean()); Assert.Equal(2, old.Data!.Value.GetProperty("customers").GetArrayLength());
         await serve;
     }
+
+    [Fact]
+    public async Task Without_the_site_only_the_last_person_gets_in_with_the_same_password_and_is_signed_in_again_when_it_answers()
+    {
+        int port = FreePort(); var ct = CancellationToken.None; var sent = new List<string>(); string token = new('a', 64); bool passwordChanged = false;
+        HttpListener Up()
+        {
+            var http = new HttpListener(); http.Prefixes.Add($"http://127.0.0.1:{port}/"); http.Start();
+            _ = Task.Run(async () =>
+            {
+                while (http.IsListening)
+                {
+                    HttpListenerContext c; try { c = await http.GetContextAsync(); } catch (Exception e) when (e is HttpListenerException or ObjectDisposedException) { return; }
+                    string path = c.Request.Url!.AbsolutePath; bool login = path.EndsWith("/staff/login", StringComparison.Ordinal), ok = login ? !passwordChanged : c.Request.Headers["X-MZC-Token"] == token;
+                    if (ok && !login) sent.Add(c.Request.HttpMethod + " " + path[(path.IndexOf("staff/", StringComparison.Ordinal) + 6)..]);
+                    byte[] body = Encoding.UTF8.GetBytes(!ok ? "{\"error\":\"no\"}" : login ? "{\"token\":\"" + token + "\",\"name\":\"Ali\"}" : "{\"ok\":true}");
+                    c.Response.ContentType = "application/json"; c.Response.StatusCode = ok ? 200 : 401; await c.Response.OutputStream.WriteAsync(body); c.Response.Close();
+                }
+            });
+            return http;
+        }
+        var up = Up();
+        using (var first = new SiteSession(_dir)) { Assert.True(first.SetServer($"http://127.0.0.1:{port}")); Assert.Equal(200, (await first.LoginAsync("Ali", "right-pass", ct)).Status); Assert.Equal(200, (await first.CallAsync("GET", "staff/config", null, ct)).Status); }
+        up.Close();
+
+        using var site = new SiteSession(_dir);   // a restart with no line: the kept sign-in opens the program
+        Assert.True(site.SignedIn); Assert.Equal("Ali", (await site.CallAsync("GET", "staff/me", null, ct)).Data!.Value.GetProperty("name").GetString());
+        await site.LogoutAsync(ct); Assert.False(site.SignedIn);
+        Assert.Equal(401, (await site.CallAsync("GET", "staff/config", null, ct)).Status);                    // signed out: nothing kept is served
+        Assert.Equal(401, (await site.LoginAsync("ali", "wrong", ct)).Status); Assert.Equal(0, (await site.LoginAsync("sara", "right-pass", ct)).Status); Assert.False(site.SignedIn);
+        var inside = await site.LoginAsync(" ALI ", "right-pass", ct); Assert.Equal(200, inside.Status); Assert.True(inside.Data!.Value.GetProperty("offline").GetBoolean()); Assert.False(inside.Data!.Value.TryGetProperty("token", out _));
+        Assert.Equal(200, (await site.CallAsync("GET", "staff/config", null, ct)).Status);
+        Assert.Equal(202, (await site.CallAsync("POST", "staff/payments", "{\"amount\":1}", ct)).Status);
+        Assert.DoesNotContain("right-pass", File.ReadAllText(Path.Combine(_dir, "desk.json")));
+
+        sent.Clear(); up = Up();   // the line is back: the waiting payment signs in by itself and goes
+        Assert.Equal((1, 0, false), await site.FlushAsync(ct)); Assert.Equal(["POST payments"], sent);
+        await site.LogoutAsync(ct);
+
+        // a password the site no longer takes stops working without the site too
+        passwordChanged = true; Assert.Equal(401, (await site.LoginAsync("ali", "right-pass", ct)).Status); up.Close();
+        Assert.Equal(0, (await site.LoginAsync("ali", "right-pass", ct)).Status); Assert.False(site.SignedIn);
+    }
 }

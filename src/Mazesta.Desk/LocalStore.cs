@@ -48,7 +48,7 @@ internal sealed class LocalStore : IDisposable
         {
             using var c = _db.CreateCommand(); c.CommandText = "REPLACE INTO reads (path, blob, at) VALUES ($p, $b, $a)";
             c.Parameters.AddWithValue("$p", path); c.Parameters.AddWithValue("$b", Seal(json)); c.Parameters.AddWithValue("$a", DateTime.Now.ToString("o")); c.ExecuteNonQuery();
-            using var n = _db.CreateCommand(); n.CommandText = "DELETE FROM reads WHERE path IN (SELECT path FROM reads ORDER BY at LIMIT MAX(0, (SELECT COUNT(*) FROM reads) - " + MaxReads + "))"; n.ExecuteNonQuery();
+            using var n = _db.CreateCommand(); n.CommandText = "DELETE FROM reads WHERE path IN (SELECT path FROM reads WHERE path NOT IN ('staff/me', 'staff/config') ORDER BY at LIMIT MAX(0, (SELECT COUNT(*) FROM reads) - " + MaxReads + "))"; n.ExecuteNonQuery();
         }
     }
 

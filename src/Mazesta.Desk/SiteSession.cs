@@ -26,13 +26,23 @@ internal sealed partial class SiteSession : IDisposable
             if (doc.RootElement.TryGetProperty("server", out var s) && DeskRules.Server(s.GetString()) is { } u) _server = u;
             if (doc.RootElement.TryGetProperty("user", out var us) && us.GetString() is { } who) _user = who;
             if (doc.RootElement.TryGetProperty("token", out var t) && t.GetString() is { Length: > 0 } sealedToken) _token = Unseal(sealedToken);
+            if (doc.RootElement.TryGetProperty("proof", out var p) && p.GetString() is { Length: > 0 } sealedProof) _proof = JsonSerializer.Deserialize<Proof>(Unseal(sealedProof));
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or CryptographicException) { }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or CryptographicException or FormatException) { }
     }
 
     public Uri Server => _server;
     private string Origin => _server.GetLeftPart(UriPartial.Authority);
-    public bool SignedIn => _token.Length > 0;
+    public bool SignedIn => _token.Length > 0 || _pass is not null;
+    private bool SignedOut => !SignedIn && _user.Length > 0;   // someone signed out (or was put out): what is kept is for nobody until a sign-in
+
+    /// <summary>What lets the last person who signed in with the site get in without it: a salted slow hash of the password (never the password), sealed in desk.json.</summary>
+    private sealed record Proof(string User, byte[] Salt, byte[] Hash, DateTime At);
+    private Proof? _proof;
+    private string? _pass;   // the password of a sign-in made without the site and with no token, kept in memory only until the site answers and gives one
+    // ponytail: 30 days from the last sign-in with the site; a person switched off on the site can still open this PC's copy that long if it never connects
+    private static readonly TimeSpan OfflineFor = TimeSpan.FromDays(30);
+    private static byte[] Hash(string password, byte[] salt) => Rfc2898DeriveBytes.Pbkdf2(password, salt, 200_000, HashAlgorithmName.SHA256, 32);
 
     private static string Seal(string s) => Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(s), null, DataProtectionScope.CurrentUser));
     private static string Unseal(string s) => Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(s), null, DataProtectionScope.CurrentUser));
@@ -43,7 +53,7 @@ internal sealed partial class SiteSession : IDisposable
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
             string temp = _file + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(new { server = _server.GetLeftPart(UriPartial.Authority), user = _user, token = _token.Length == 0 ? "" : Seal(_token) }));
+            File.WriteAllText(temp, JsonSerializer.Serialize(new { server = _server.GetLeftPart(UriPartial.Authority), user = _user, token = _token.Length == 0 ? "" : Seal(_token), proof = _proof is null ? "" : Seal(JsonSerializer.Serialize(_proof)) }));
             File.Move(temp, _file, overwrite: true);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
@@ -52,7 +62,7 @@ internal sealed partial class SiteSession : IDisposable
     public bool SetServer(string typed)
     {
         if (DeskRules.Server(typed) is not { } u) return false;
-        if (u != _server) { _server = u; _token = ""; _user = ""; ForgetReads(); }   // another site: the old sign-in and its answers are not for it
+        if (u != _server) { _server = u; _token = ""; _user = ""; _pass = null; _proof = null; ForgetReads(); }   // another site: the old sign-in and its answers are not for it
         Save(); return true;
     }
 
@@ -98,6 +108,7 @@ internal sealed partial class SiteSession : IDisposable
     public async Task<(int Status, JsonElement? Data, string? Error)> CallAsync(string method, string path, string? body, CancellationToken ct)
     {
         bool read = method == "GET";
+        if (SignedOut) return (401, null, "اول وارد شوید.");
         if (read && !VolatileRoute().IsMatch(path) && _cache.Get(path) is { } hit && DateTime.Now - hit.At < Fresh && _putEpoch.TryGetValue(path, out int ep) && ep == Volatile.Read(ref _epoch) && Parse(hit.Json) is { } cached) return (200, WithPending(path, cached), null);
         var r = await SendAsync(method, path, body, null, ct);
         if (!read && r.Status is >= 200 and < 300 && !path.StartsWith("staff/lock", StringComparison.Ordinal)) Interlocked.Increment(ref _epoch);   // (the lock renewals every 45 s are not a change of anything)
@@ -165,7 +176,25 @@ internal sealed partial class SiteSession : IDisposable
             }
     }
 
+    /// <summary>One request. A 401 after a sign-in made without the site signs in with it now and sends again; a sign-in the site rejects ends here (and no longer works without the site).</summary>
     private async Task<(int Status, JsonElement? Data, string? Error, string Raw, string Conflict)> SendAsync(string method, string path, string? body, string? opId, CancellationToken ct)
+    {
+        string used = _token;
+        var r = await RawAsync(method, path, body, opId, ct);
+        if (r.Status != 401) return r;
+        bool rejected = used.Length > 0;
+        if (_token == used && _pass is { } pass)
+        {
+            var s = await SignInAsync(_user, pass, ct);
+            if (s.Status is not (200 or 401 or 403)) return (0, null, s.Error, "", "");   // the site cannot sign anyone in just now: the call waits
+            rejected = s.Status != 200;
+        }
+        if (_token.Length > 0 && _token != used) return await RawAsync(method, path, body, opId, ct);
+        if (rejected) { _token = ""; _pass = null; _proof = null; Save(); }
+        return r;
+    }
+
+    private async Task<(int Status, JsonElement? Data, string? Error, string Raw, string Conflict)> RawAsync(string method, string path, string? body, string? opId, CancellationToken ct)
     {
         if (!DeskRules.MethodAllowed(method) || !DeskRules.PathAllowed(path)) return (0, null, "درخواست مجاز نیست.", "", "");
         using var req = new HttpRequestMessage(new HttpMethod(method), new Uri(_server, DeskRules.ApiRoot + path));
@@ -179,7 +208,6 @@ internal sealed partial class SiteSession : IDisposable
             JsonElement? data = null;
             try { using var doc = JsonDocument.Parse(text); if (doc.RootElement.ValueKind == JsonValueKind.Object) data = doc.RootElement.Clone(); } catch (JsonException) { }
             int status = (int)res.StatusCode;
-            if (status == 401 && path != "staff/login") { _token = ""; Save(); }   // the site no longer knows this sign-in
             string conflict = res.Headers.TryGetValues("X-MZC-Conflict", out var cv) ? cv.FirstOrDefault() ?? "" : "";
             return (status, data, data is null ? $"پاسخ نامعتبر از سایت ({status}). نشانی سایت را بررسی کنید." : null, data is null ? "" : text, conflict);
         }
@@ -189,26 +217,45 @@ internal sealed partial class SiteSession : IDisposable
         }
     }
 
-    /// <summary>Signs in; on success the token is kept and the answer (without it) returned.</summary>
+    /// <summary>Signs in; on success the token is kept and the answer (without it) returned. With the site out of reach, the person who last signed in here gets in with the same password (marked "offline").</summary>
     public async Task<(int Status, JsonElement? Data, string? Error)> LoginAsync(string user, string password, CancellationToken ct)
     {
-        string body = JsonSerializer.Serialize(new { username = user, password, device = Environment.MachineName });
-        var r = await CallAsync("POST", "staff/login", body, ct);
-        if (r.Status == 200 && r.Data is { } d && d.TryGetProperty("token", out var t) && t.GetString() is { Length: > 0 } tok)
-        {
-            string who = user.Trim().ToLowerInvariant();
-            if (who != _user) ForgetReads();   // a sign-in that ran out, then someone else: they may see less than the last person did
-            _token = tok; _user = who; Save(); _warmed = DateTime.MinValue;
-            using var doc = JsonDocument.Parse(JsonSerializer.Serialize(d.EnumerateObject().Where(p => p.Name != "token").ToDictionary(p => p.Name, p => p.Value)));
-            return (200, doc.RootElement.Clone(), null);
-        }
+        string who = user.Trim().ToLowerInvariant();
+        var r = await SignInAsync(who, password, ct);
+        if ((r.Status == 0 || r.Status >= 500) && !ct.IsCancellationRequested) return OfflineLogin(who, password);
+        if (r.Status is 401 or 403 && _proof?.User == who) { _proof = null; Save(); }   // a password changed or an account switched off on the site stops working here too
         return r;
     }
 
+    private async Task<(int Status, JsonElement? Data, string? Error)> SignInAsync(string who, string password, CancellationToken ct)
+    {
+        var r = await RawAsync("POST", "staff/login", JsonSerializer.Serialize(new { username = who, password, device = Environment.MachineName }), null, ct);
+        if (r.Status != 200) return (r.Status, r.Data, r.Error);
+        if (r.Data is not { } d || !d.TryGetProperty("token", out var t) || t.GetString() is not { Length: > 0 } tok) return (0, null, "پاسخ نامعتبر از سایت. نشانی سایت را بررسی کنید.");
+        if (who != _user) ForgetReads();   // someone else than last time: they may see less than that person did
+        string me = JsonSerializer.Serialize(d.EnumerateObject().Where(p => p.Name != "token").ToDictionary(p => p.Name, p => p.Value));
+        byte[] salt = RandomNumberGenerator.GetBytes(16);
+        _token = tok; _user = who; _pass = null; _proof = new Proof(who, salt, Hash(password, salt), DateTime.UtcNow); Save(); _warmed = DateTime.MinValue;
+        _cache.Put("staff/me", me); Interlocked.Increment(ref _epoch);   // who this is, for a start without the site
+        return (200, Parse(me), null);
+    }
+
+    private (int Status, JsonElement? Data, string? Error) OfflineLogin(string who, string password)
+    {
+        if (_proof is not { } p || p.User != who || DateTime.UtcNow - p.At > OfflineFor || _cache.Get("staff/me") is not { } kept || JsonNode.Parse(kept.Json) is not JsonObject me)
+            return (0, null, "اتصال به سایت نیست. بدون اتصال فقط کاربری وارد می‌شود که در ۳۰ روز گذشته یک بار با اتصال روی همین کامپیوتر وارد شده باشد.");
+        if (!CryptographicOperations.FixedTimeEquals(Hash(password, p.Salt), p.Hash)) return (401, null, "اتصال به سایت نیست و گذرواژه با آخرین ورود روی این کامپیوتر یکی نیست.");
+        _user = who; _pass = _token.Length == 0 ? password : null; Save();
+        me["offline"] = true;
+        return (200, Parse(me.ToJsonString()), null);
+    }
+
+    /// <summary>Signs out. The PC's own copy stays (sealed, and for nobody until a sign-in), so the same person can get in again without the site; someone else signing in clears it.</summary>
     public async Task LogoutAsync(CancellationToken ct)
     {
-        if (_token.Length > 0) await CallAsync("POST", "staff/logout", null, ct);
-        _token = ""; _user = ""; Save(); ForgetReads();   // the next person may see less than this one did
+        _pass = null;
+        if (_token.Length > 0) await RawAsync("POST", "staff/logout", null, null, ct);
+        _token = ""; Save();
     }
 
     public void Dispose() { _http.Dispose(); _cache.Dispose(); }
