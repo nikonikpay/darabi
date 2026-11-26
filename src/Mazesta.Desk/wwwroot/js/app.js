@@ -129,7 +129,7 @@ function editLock(entity, id, el) {
       if (e.status !== 423) return;
       clearInterval(l.t); if (S.lock === l) S.lock = null;
       note.hidden = false; note.textContent = e.message + ' این صفحه فقط خواندنی است.';
-      el.querySelectorAll('input, select, textarea, button.primary, form button').forEach(x => { x.disabled = true; });
+      el.querySelectorAll('input, select, textarea, button.primary, form button').forEach(x => { if (!x.closest('.calls')) x.disabled = true; });   // what was said with the customer is written down whoever has the form open
     }
   };
   l.t = setInterval(take, 45000); take();
@@ -201,6 +201,7 @@ async function viewHome() {
     });
     return h('section', { class: 'panel' }, h('h3', {}, label), row);
   };
+  out.append(followupsPanel());   // followup.js
   if (can('builds')) out.append(cards('سیستم‌های نو در جریان', 'build', S.cfg.buildStatuses));
   if (can('jobs')) out.append(cards('سرویس‌ها', 'job', S.cfg.jobStatuses));
   if (can('accounting')) out.append(duePanel());   // acc.js: cheques near their due date
@@ -406,6 +407,7 @@ async function viewBuild(id, q) {
       h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el), checks.el,
       soft.el, mediaLinks(b.media), field('یادداشت', f.notes, '', 'wide'), ro && !(can('tests', 2) && can('builds')) ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
   if (!isNew && can('builds', 2)) page.insertBefore(editLock('build', b.id, page), $('form', page));
+  if (!isNew) page.append(callsPanel('build', b));
   return page;
 }
 
@@ -459,6 +461,7 @@ async function viewJob(id, q) {
       checks.el, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات دیگری که مشتری تحویل داده'), recv.el), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات اضافه‌شده'), parts.el),
       soft.el, costs, field('لینک عکس و فیلم در تلگرام', f.media, '', 'wide'), mediaLinks(j.media), field('یادداشت داخلی', f.notes, '', 'wide'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
   if (!isNew && !ro) el.insertBefore(editLock('job', j.id, el), $('form', el));
+  if (!isNew) el.append(callsPanel('job', j));
   recalc(); return el;
 }
 function offerPrint(job) {

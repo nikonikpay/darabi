@@ -31,6 +31,8 @@ final class MZC_Db extends wpdb
         $was = MZC_Sync::rows($this, $table, $where);
         $r = parent::update($table, $data, $where, $format, $where_format);
         if ($r) { MZC_Sync::wrote($this, $table, array_merge($was, array_map(function ($x) use ($data) { return $data + $x; }, $was))); }   // before and after: a line moved to another product marks both
+        // a product's new selling price goes into the ready-made invoices that hold it, whichever page or program changed it
+        if ($r && array_key_exists('sell_price', $data) && $table === MZC_Crm_Db::t('products')) { MZC_Acc::reprice_templates(array_column($was, 'id')); }
         return $r;
     }
 

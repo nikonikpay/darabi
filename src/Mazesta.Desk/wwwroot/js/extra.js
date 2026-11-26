@@ -45,7 +45,7 @@ async function viewShortages(q) {
     table(['تاریخ', 'قطعه', 'تعداد', 'برای', 'درخواست‌دهنده', 'وضعیت', 'خرید از / یادداشت'], r.items.map(x => h('tr', { class: r.canAnswer ? 'click' : '', onclick: () => r.canAnswer && shortageAnswer(x) },
       h('td', { class: 'lat' }, x.created_j), h('td', {}, h('b', {}, x.name)), h('td', { class: 'lat' }, x.qty), h('td', {}, (x.kindText || '') + (x.ref ? ' ' + x.ref : ''), x.customer_name ? h('small', { class: 'muted' }, ' — ' + x.customer_name) : null),
       h('td', {}, x.who), h('td', {}, pill(x.statusText, SHORT_TONE[x.status])), h('td', {}, x.vendor_name ? h('b', {}, x.vendor_name + ' ') : null, x.note))), 'کسری ثبت نشده.'),
-    r.canAnswer ? h('p', { class: 'muted' }, 'روی هر ردیف بزنید تا وضعیت و «خرید از چه کسی» را بنویسید.') : h('p', { class: 'muted' }, 'درخواست شما را انبار و حسابداری می‌بینند و جواب می‌دهند.'), pager(r.total, r.per, page, hrefOf));
+    r.canAnswer ? h('p', { class: 'muted' }, 'روی هر ردیف بزنید تا وضعیت و «خرید از چه کسی» را بنویسید.') : h('p', { class: 'muted' }, 'درخواست شما را انبار و حسابداری می‌بینند و جواب می‌دهند.'), pager(r.total, r.per, page, hrefOf), offerShortPanel());
 }
 
 /** The buyers' badge on the menu and a note on the home screen (the toast once a sign-in). */
@@ -53,7 +53,7 @@ async function shortBadge(first) {
   if (!S.me) return;
   try {
     const r = await GET('staff/shortages/count'); if (!r.buyer) return;
-    const a = $('nav a[data-r="#/shortages"]'); if (a) a.textContent = 'کسری انبار' + (r.open ? ' (' + r.open + ')' : '');
+    navBadge('#/shortages', r.open);
     if (r.open && first && !S.shortShown) { S.shortShown = true; toast(r.open + ' درخواست قطعه منتظر جواب است.', 'err'); }
   } catch (e) { }
 }

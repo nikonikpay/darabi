@@ -33,7 +33,7 @@ async function viewInvoices(q) {
   const kinds = h('div', { class: 'chips' }, h('button', { class: 'chip' + (kind ? '' : ' on'), onclick: () => go({ kind: '' }) }, 'همه'), Object.entries(A().kinds).map(([k, t]) => h('button', { class: 'chip' + (kind === k ? ' on' : ''), onclick: () => go({ kind: k }) }, t)));
   const add = can('accounting', 2) ? [keyBtn('+ فاکتور فروش', 'F2', () => { location.hash = '#/invoice/new'; }, 'primary'), keyBtn('+ پیش‌فاکتور', 'F11', () => { location.hash = '#/invoice/new?kind=proforma'; }), keyBtn('از فاکتور آماده', 'F4', () => pickTemplate()), h('a', { class: 'btn', href: '#/invoice/new?kind=template' }, '+ فاکتور آماده')] : [];
   return h('div', {}, title('فاکتورها', ...add), h('div', { class: 'row' }, filterBar(q, '#/invoices', A().statuses, 'شماره، مشتری، کالا یا سریال…'), kinds),
-    table(['نوع', 'تاریخ', 'مشتری / نام', 'وضعیت', 'ردیف', 'مبلغ', 'مانده'], r.items.map(v => clickRow('#/invoice/' + v.id, [kindPill(v), h('span', { class: 'lat' }, v.at_j), v.customer_name || v.title, stPill(v), v.lines, money(v.total),
+    table(['نوع', 'تاریخ', 'مشتری / نام', 'وضعیت', 'ردیف', 'مبلغ', 'مانده'], r.items.map(v => clickRow('#/invoice/' + v.id, [kindPill(v), h('span', { class: 'lat' }, v.at_j), v.customer_name || v.title, [stPill(v), v.short && v.short.length ? pill(v.short.length + ' قطعه ناموجود', 'bad') : null], v.lines, money(v.total),
       v.kind === 'sale' && v.status === 'final' ? (v.remaining ? h('b', { class: 'err' }, money(v.remaining)) : pill('تسویه', 'ok')) : '']))), pager(r.total, r.per, page, hrefOf));
 }
 
@@ -45,7 +45,7 @@ async function pickTemplate(kind) {
     const to = select('to', { sale: 'فاکتور فروش', proforma: 'پیش‌فاکتور' }, kind || 'sale');
     const list = h('div', { class: 'results tall' }, r.items.length ? r.items.map((t, i) => h('button', { class: 'opt', type: 'button', autofocus: i === 0, onclick: async () => {
       try { const v = await POST('staff/invoices/copy', { id: t.id, kind: to.value }); close(); location.hash = '#/invoice/' + v.id; toast('از «' + t.title + '» ساخته شد؛ مشتری و قطعات را تغییر دهید.'); } catch (e) { fail(e); }
-    } }, h('b', {}, t.title), ' ', h('span', { class: 'muted' }, t.lines + ' ردیف — ' + money(t.total)))) : h('p', { class: 'muted' }, 'هنوز فاکتور آماده‌ای نیست؛ یک فاکتور را «ذخیره به‌عنوان فاکتور آماده» کنید.'));
+    } }, h('b', {}, t.title), ' ', h('span', { class: 'muted' }, t.lines + ' ردیف — ' + money(t.total)), t.short && t.short.length ? [' ', pill('ناموجود: ' + t.short.map(s => s.name).join('، '), 'bad')] : null)) : h('p', { class: 'muted' }, 'هنوز فاکتور آماده‌ای نیست؛ یک فاکتور را «ذخیره به‌عنوان فاکتور آماده» کنید.'));
     b.append(field('بساز به‌عنوان', to), list);
     setTimeout(() => { const f = $('.opt', list); if (f) f.focus(); }, 0);
   }, true);
@@ -141,6 +141,8 @@ async function viewInvoice(id, q) {
   const head = isNew ? A().kinds[kind0] + ' تازه' : v.kindText + ' ' + (v.no || (tpl ? v.title : '(پیش‌نویس)'));
   const el = h('div', {}, title(head, !isNew ? stPill(v) : null, actions),
     v.status === 'void' ? h('p', { class: 'panel err' }, 'باطل شد: ' + v.void_reason) : null,
+    shortNote(v),   // followup.js: an offer whose parts the stock is short of
+    tpl && !isNew ? h('p', { class: 'muted' }, 'قیمت ردیف‌های این فاکتور آماده با تغییر قیمت فروش کالا در انبار خودکار به‌روز می‌شود.') : null,
     v.build_id ? h('p', { class: 'panel' }, 'این فاکتور سیستم نو است: ', h('a', { href: '#/build/' + v.build_id }, 'باز کردن سیستم'), ' (موجودی با قطعات همان سیستم حساب می‌شود)') : null,
     v.wc_order_id ? h('p', { class: 'panel' }, 'از سفارش شمارهٔ ' + v.wc_order_id + ' سایت') : null,
     // the customer's three boxes and the date(s) on one line

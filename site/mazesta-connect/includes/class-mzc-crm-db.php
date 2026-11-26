@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 21;
+    const SCHEMA = 22;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -221,12 +221,14 @@ final class MZC_Crm_Db
         $cols['revisions'] = array('applied' => 'TINYINT NOT NULL DEFAULT 1', 'offline' => 'TINYINT NOT NULL DEFAULT 0');
         // schema 21: an overlap of two saves waiting for a manager (clash 1), or decided (2)
         $cols['revisions'] += array('clash' => 'TINYINT NOT NULL DEFAULT 0');
+        // schema 22: calls about a new computer too (job_id 0 then), and the day the next one is due
+        $cols['job_calls'] = array('build_id' => 'BIGINT UNSIGNED NULL', 'next_at' => 'DATE NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {
                 if (in_array($c, $have, true)) { continue; }
                 if ($db->query('ALTER TABLE `' . $t($tb) . "` ADD COLUMN `$c` $def") === false) { return 'به‌روزرسانی جدول ناموفق بود: ' . $db->last_error; }
-                if (in_array($c, array('product_id', 'wp_user_id', 'wc_id'), true)) { $db->query('ALTER TABLE `' . $t($tb) . "` ADD KEY `$c` (`$c`)"); }
+                if (in_array($c, array('product_id', 'wp_user_id', 'wc_id', 'build_id'), true)) { $db->query('ALTER TABLE `' . $t($tb) . "` ADD KEY `$c` (`$c`)"); }
             }
         }
         $db->query('ALTER TABLE `' . $t('customers') . '` MODIFY mobile VARCHAR(20) NULL');

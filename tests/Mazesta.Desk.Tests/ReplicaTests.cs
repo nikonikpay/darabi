@@ -62,7 +62,7 @@ public class ReplicaTests : IDisposable
 
         var paths = new List<string> { "staff/customers", "staff/customers?page=2&per=5", "staff/customers?q=" + Uri.EscapeDataString("مشتری"), "staff/products", "staff/products?instock=1", "staff/products?q=" + Uri.EscapeDataString("کالا"),
             "staff/builds", "staff/builds?status=queue", "staff/jobs", "staff/jobs?status=received", "staff/invoices", "staff/invoices?kind=sale&status=final", "staff/invoices?kind=template&per=50", "staff/invoices?kind=proforma",
-            "staff/payments", "staff/payments?direction=in", "staff/cheques", "staff/ships", "staff/ships?status=open", "staff/shortages", "staff/shortages?status=active", "staff/purchases", "staff/suppliers", "staff/counts" };
+            "staff/payments", "staff/payments?direction=in", "staff/cheques", "staff/ships", "staff/ships?status=open", "staff/shortages", "staff/shortages?status=active", "staff/purchases", "staff/suppliers", "staff/counts", "staff/followups", "staff/invoices?kind=proforma&status=draft&per=50" };
         foreach (var kind in new[] { "customers", "builds", "jobs", "invoices", "purchases" })
         {
             var l = await b.CallAsync("GET", "staff/" + kind + "?per=3", null, ct);

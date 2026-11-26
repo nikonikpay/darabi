@@ -34,7 +34,7 @@ final class MZC_Api
             array('/staff/products', 'GET', 'products'), array('/staff/products/(?P<id>\d+)', 'GET', 'product'), array('/staff/products', 'POST', 'product_save'),
             array('/staff/suppliers', 'GET', 'suppliers'), array('/staff/suppliers', 'POST', 'supplier_save'),
             array('/staff/purchases', 'GET', 'purchases'), array('/staff/purchases/(?P<id>\d+)', 'GET', 'purchase'), array('/staff/purchases', 'POST', 'purchase_save'), array('/staff/serial', 'GET', 'serial'),
-            array('/staff/stats', 'GET', 'stats'), array('/staff/counts', 'GET', 'counts'),
+            array('/staff/stats', 'GET', 'stats'), array('/staff/counts', 'GET', 'counts'), array('/staff/calls', 'POST', 'call_save'), array('/staff/followups', 'GET', 'followups'),
         );
         foreach ($r as $x) { register_rest_route(Mazesta_Connect::NS, $x[0], array('methods' => $x[1], 'callback' => array(__CLASS__, 'rest_' . $x[2]), 'permission_callback' => '__return_true')); }
     }
@@ -112,6 +112,7 @@ final class MZC_Api
                 $o['parts'][] = $r;
             }
             $o['photos'] = count($b['photos']);
+            $o['calls'] = array_map(array('MZC_Crm', 'call_out'), isset($b['calls']) ? $b['calls'] : array());
         }
         return $o;
     }
@@ -131,6 +132,7 @@ final class MZC_Api
                 return $out;
             };
             $o['parts'] = $map($j['parts']); $o['recv'] = $map($j['recv']);
+            $o['calls'] = array_map(array('MZC_Crm', 'call_out'), isset($j['calls']) ? $j['calls'] : array());
             if ($money) {
                 $o += array('labor_price' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'paid' => (int) $j['paid'], 'paid_note' => (string) $j['paid_note']); $o['pays'] = array();
                 foreach ($j['pays'] as $p) { $o['pays'][] = array('amount' => (int) $p['amount'], 'account' => (string) $p['account'], 'tx' => (string) $p['tx'], 'holder' => (string) $p['holder']); }
@@ -146,7 +148,7 @@ final class MZC_Api
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $c = self::cfg(); $labels = array();
         foreach (self::$label_fields as $kind => $f) { $labels[$kind] = array('fields' => $f, 'chosen' => self::label_keys($kind, $c)); }
-        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'checklists' => MZC_Crm::$checklists, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)) + MZC_Acc_Api::config($a));
+        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'callReasons' => MZC_Crm::$call_reasons, 'callResults' => MZC_Crm::$call_results,'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'checklists' => MZC_Crm::$checklists, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)) + MZC_Acc_Api::config($a));
     }
 
     private static function label_keys($kind, $c)
@@ -595,6 +597,39 @@ final class MZC_Api
         $r = MZC_Report::visible($r, $jobs, $builds, self::money_seen($a), self::cost_seen($a) && self::money_seen($a));
         $r['periods'] = array_map(function ($x) { return array('label' => $x[0], 'from' => $x[1], 'to' => $x[2]); }, $per);
         return self::ok($r);
+    }
+
+    /* ---------- calls with the customer ---------- */
+
+    /** {kind: build|job, ref, reason, result, note, next_at, at}: one call (or visit, message) with the customer of a case. `at` is when it was made, so one written down without the site keeps its own time. */
+    public static function rest_call_save($req)
+    {
+        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $p = self::body($req); $kind = isset($p['kind']) && $p['kind'] === 'build' ? 'build' : 'job'; $ref = self::n($p, 'ref'); $area = $kind === 'build' ? 'builds' : 'jobs';
+        // whoever works on the case, or handles the customers, writes down what was said
+        if (!MZC_Staff::can($a['id'], $area, 1) || !(MZC_Staff::can($a['id'], $area, 2) || MZC_Staff::can($a['id'], 'customers', 2))) { return self::fail('دسترسی این کار را ندارید.', 403); }
+        $db = MZC_Crm::db(); if (!$db) { return self::fail(MZC_Crm_Db::error(), 503); }
+        if (!$ref || !$db->get_var($db->prepare('SELECT id FROM `' . self::t($kind === 'build' ? 'builds' : 'jobs') . '` WHERE id = %d', $ref))) { return self::fail('پرونده پیدا نشد.', 404); }
+        $result = isset($p['result'], MZC_Crm::$call_results[(string) $p['result']]) ? (string) $p['result'] : '';
+        if ($result === '') { return self::fail('نتیجهٔ تماس را انتخاب کنید.', 422); }
+        $at = strtotime((string) (isset($p['at']) ? $p['at'] : '')); if (!$at || $at > time() + 120 || $at < time() - 90 * 86400) { $at = time(); }
+        $u = $a['user'];
+        $row = array('job_id' => $kind === 'job' ? $ref : 0, 'build_id' => $kind === 'build' ? $ref : null, 'at' => gmdate('Y-m-d H:i:s', $at), 'reason' => isset($p['reason'], MZC_Crm::$call_reasons[(string) $p['reason']]) ? (string) $p['reason'] : 'other', 'result' => $result,
+            'note' => self::s($p, 'note', 500) ?: null, 'next_at' => self::d($p, 'next_at'), 'user_id' => (int) $a['id'], 'who' => mb_substr($u->display_name !== '' ? $u->display_name : $u->user_login, 0, 120));
+        $out = function ($k) { return MZC_Crm::call_out($k); };
+        $find = function ($id) use ($db) { return $db->get_row($db->prepare('SELECT * FROM `' . self::t('job_calls') . '` WHERE id = %d', $id), ARRAY_A); };
+        return MZC_Acc_Api::op_run(MZC_Acc_Api::op_key($req), $find, $out, function () use ($db, $row, $a, $kind, $ref, $find, $out) {
+            if (!$db->insert(self::t('job_calls'), $row)) { return self::fail('ذخیره نشد: ' . $db->last_error, 500); }
+            $id = (int) $db->insert_id; self::log($a, 'call', $kind, $ref, $row['result']);
+            return self::ok($out($find($id)), 201);
+        });
+    }
+
+    public static function rest_followups($req)
+    {
+        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $kinds = array(); if (MZC_Staff::can($a['id'], 'jobs', 1)) { $kinds[] = 'job'; } if (MZC_Staff::can($a['id'], 'builds', 1)) { $kinds[] = 'build'; }
+        return self::ok(array('items' => MZC_Crm::followups($kinds)));
     }
 
     /* ---------- test reports ---------- */

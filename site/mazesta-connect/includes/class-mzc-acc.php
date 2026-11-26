@@ -178,6 +178,36 @@ final class MZC_Acc
     }
 
     /**
+     * The ready-made invoices follow the stock's selling prices: every line of one that holds one of these products takes the product's price now, and the totals are worked out again.
+     * Only ready-made invoices: a proforma given to a customer keeps the price it promised.
+     */
+    public static function reprice_templates($product_ids)
+    {
+        $db = MZC_Crm_Db::db(); $ids = implode(',', array_filter(array_map('intval', (array) $product_ids))); if (!$db || $ids === '') { return; }
+        $rows = (array) $db->get_results('SELECT s.id, s.invoice_id, p.sell_price FROM `' . self::t('invoice_items') . '` s JOIN `' . self::t('invoices') . '` v ON v.id = s.invoice_id JOIN `' . self::t('products') . "` p ON p.id = s.product_id
+            WHERE v.kind = 'template' AND s.product_id IN ($ids) AND p.sell_price IS NOT NULL AND s.unit_price <> p.sell_price", ARRAY_A);
+        $touched = array();
+        foreach ($rows as $r) { $db->update(self::t('invoice_items'), array('unit_price' => (int) $r['sell_price']), array('id' => (int) $r['id'])); $touched[(int) $r['invoice_id']] = true; }
+        foreach (array_keys($touched) as $id) {
+            $v = $db->get_row($db->prepare('SELECT discount, tax_pct FROM `' . self::t('invoices') . '` WHERE id = %d', $id), ARRAY_A);
+            $sum = self::totals((array) $db->get_results($db->prepare('SELECT qty, unit_price FROM `' . self::t('invoice_items') . '` WHERE invoice_id = %d', $id), ARRAY_A), $v['discount'], $v['tax_pct']);
+            $db->update(self::t('invoices'), $sum + array('updated' => self::now()), array('id' => $id));
+        }
+    }
+
+    /** invoice id => the parts of it the stock does not have enough of now (a line tied to a product whose count is under the line's quantity). */
+    public static function short_of($invoice_ids)
+    {
+        $db = MZC_Crm_Db::db(); $ids = implode(',', array_filter(array_map('intval', (array) $invoice_ids))); if (!$db || $ids === '') { return array(); }
+        $out = array();
+        foreach ((array) $db->get_results('SELECT s.invoice_id, s.name, s.product_id, SUM(s.qty) AS qty, ' . MZC_Stock::stock_sql() . ' AS stock FROM `' . self::t('invoice_items') . '` s JOIN `' . self::t('products') . "` p ON p.id = s.product_id
+            WHERE s.invoice_id IN ($ids) GROUP BY s.invoice_id, s.product_id, s.name ORDER BY MIN(s.id)", ARRAY_A) as $r) {
+            if ((int) $r['stock'] < (int) $r['qty']) { $out[(int) $r['invoice_id']][] = array('product_id' => (int) $r['product_id'], 'name' => $r['name'], 'qty' => (int) $r['qty'], 'stock' => (int) $r['stock']); }
+        }
+        return $out;
+    }
+
+    /**
      * Makes a draft sale or return final: it gets the next number and from now on moves the stock (when not tied to a computer). A sale with $makeBuild becomes a new computer
      * in the assembly queue too, its parts the invoice's lines (one row a unit, the serials shared out), known by the same invoice number. Returns array(id, warnings) or an error text.
      */

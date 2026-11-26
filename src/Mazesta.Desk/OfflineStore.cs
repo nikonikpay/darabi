@@ -24,7 +24,8 @@ public sealed class OfflineQueue
     public static bool Queueable(string method, string path, string? body)
     {
         bool versioned = path is "staff/invoices" or "staff/customers" or "staff/products" or "staff/builds" or "staff/jobs" or "staff/ships" or "staff/shortages";
-        if (method != "POST" || !(versioned || path == "staff/payments")) return false;
+        // a call with a customer, and a task or a step of one, only add to a record: they wait like a new payment
+        if (method != "POST" || !(versioned || path is "staff/payments" or "staff/calls" or "staff/tasks" or "staff/tasks/act")) return false;
         try
         {
             using var d = JsonDocument.Parse(string.IsNullOrEmpty(body) ? "{}" : body);

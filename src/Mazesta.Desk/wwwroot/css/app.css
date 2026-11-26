@@ -85,3 +85,7 @@ tr.muted td { color: var(--muted); text-decoration: line-through; }
 .badge { margin-inline-start: auto; min-width: 20px; padding: 0 6px; border-radius: 99px; background: #e5484d; color: #fff; font-size: 11.5px; font-weight: 700; text-align: center; line-height: 20px; }
 .conflict header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; } .conflict header h3 { margin: 0; } .conflict td.other { background: #fff8e6; }
 .panel.empty { text-align: center; color: var(--muted); padding: 26px; }
+.panel.accent-bad { border-color: #e8a29c; border-inline-start: 4px solid #c4352b; } .panel.accent-warn { border-color: #e9cf8e; border-inline-start: 4px solid #c98a04; }
+.pill.warn { background: #fdefc9; color: #7a5300; }
+.callform { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin-bottom: 10px; } .callform .field { flex: 0 1 190px; } .callform .field.grow { flex: 1 1 280px; }
+.timeline { display: flex; flex-direction: column; } .call { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid #edf0f3; } .call .when { display: flex; flex-direction: column; } .call p { margin: 2px 0; }

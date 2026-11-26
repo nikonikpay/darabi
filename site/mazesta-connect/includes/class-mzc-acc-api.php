@@ -89,15 +89,22 @@ final class MZC_Acc_Api
         $a = self::auth($req, 1); if ($a instanceof WP_REST_Response) { return $a; }
         $pg = MZC_Api::page($req); $per = MZC_Api::per($req);
         list($rows, $total) = MZC_Acc::invoices(self::filters($req, array('kind', 'status', 'q', 'customer', 'from', 'to')), $pg, $per);
-        return MZC_Api::ok(array('total' => $total, 'page' => $pg, 'per' => $per, 'items' => array_map(function ($v) use ($a) { return self::invoice_out($v, $a, false); }, $rows)));
+        // a ready-made invoice or an open proforma says which of its parts the stock is short of now
+        $short = MZC_Acc::short_of(array_column(array_filter($rows, array(__CLASS__, 'offers')), 'id'));
+        return MZC_Api::ok(array('total' => $total, 'page' => $pg, 'per' => $per, 'items' => array_map(function ($v) use ($a, $short) { $o = self::invoice_out($v, $a, false); if (self::offers($v)) { $o['short'] = isset($short[$o['id']]) ? $short[$o['id']] : array(); } return $o; }, $rows)));
     }
 
     public static function rest_invoice($req)
     {
         $a = self::auth($req, 1); if ($a instanceof WP_REST_Response) { return $a; }
         $v = MZC_Acc::invoice((int) $req['id']); if (!$v) { return self::fail('فاکتور پیدا نشد.', 404); }
-        return MZC_Api::ok(self::invoice_out($v, $a, true));
+        $o = self::invoice_out($v, $a, true);
+        if (self::offers($v)) { $short = MZC_Acc::short_of($v['id']); $o['short'] = isset($short[$o['id']]) ? $short[$o['id']] : array(); }
+        return MZC_Api::ok($o);
     }
+
+    /** Whether an invoice is an offer whose parts should be on the shelf: ready-made, or a proforma still open. */
+    public static function offers($v) { return $v['kind'] === 'template' || ($v['kind'] === 'proforma' && $v['status'] === 'draft'); }
 
     /** The invoice of a write, after the `updated` check: array(row, null) or array(null, error response). */
     private static function current($p, $a)
@@ -110,7 +117,7 @@ final class MZC_Acc_Api
     }
 
     /** The staff program's offline queue sends each new payment or draft with its own id (header X-MZC-Op); a second send of the same id must not book it twice. The meta table keeps id -> record. */
-    private static function op_key($req) { $o = (string) $req->get_header('x_mzc_op'); return preg_match('/^[A-Za-z0-9\-]{8,64}$/', $o) ? 'op:' . substr(md5($o), 0, 32) : ''; }
+    public static function op_key($req) { $o = (string) $req->get_header('x_mzc_op'); return preg_match('/^[A-Za-z0-9\-]{8,64}$/', $o) ? 'op:' . substr(md5($o), 0, 32) : ''; }
     const OP_STALE = 120;   // a claim older than this (seconds) is taken to be a request that died before it finished
 
     /**
@@ -133,7 +140,7 @@ final class MZC_Acc_Api
     private static function op_drop($key) { $db = $key !== '' ? MZC_Crm_Db::db() : null; if ($db) { $db->delete(MZC_Crm_Db::t('meta'), array('k' => $key)); } }
 
     /** Runs $work (which returns a response) under the op claim: a success keeps op -> the new record's id, anything else frees the id for a later send. */
-    private static function op_run($key, $find, $out, $work)
+    public static function op_run($key, $find, $out, $work)
     {
         $c = self::op_claim($key, $find);
         if ($c[0] === 'dup') { return MZC_Api::ok($out($c[1]) + array('duplicate' => true), 200); }

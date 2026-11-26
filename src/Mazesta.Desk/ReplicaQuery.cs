@@ -42,7 +42,43 @@ internal sealed partial class Replica
         }
         if (Num(o, "vendor_id") is > 0 and var v && Load("vendors").TryGetValue(v, out var ve)) o["vendor_name"] = Str(ve.Doc, "name");
         if (o["parts"] is JsonArray parts && o.ContainsKey("title")) o["parts_count"] = parts.Count;
+        if (o["items"] is JsonArray lines && (Str(o, "kind") == "template" || Str(o, "kind") == "proforma" && Str(o, "status") == "draft") && Holds("products")) o["short"] = Short(lines);
         return o;
+    }
+
+    /// <summary>The parts of an offer the stock does not have enough of now (as the site's MZC_Acc::short_of): a count that changes with the stock, not with the invoice.</summary>
+    private JsonArray Short(JsonArray lines)
+    {
+        var products = Load("products"); var short_ = new JsonArray();
+        foreach (var g in lines.OfType<JsonObject>().Where(l => Num(l, "product_id") > 0).GroupBy(l => (Id: Num(l, "product_id"), Name: Str(l, "name"))))
+        {
+            if (!products.TryGetValue(g.Key.Id, out var p)) continue;
+            long qty = g.Sum(l => Num(l, "qty")), stock = long.TryParse(Str(p.Doc, "stock"), out long s) ? s : 0;
+            if (stock < qty) short_.Add(new JsonObject { ["product_id"] = g.Key.Id, ["name"] = g.Key.Name, ["qty"] = qty, ["stock"] = stock });
+        }
+        return short_;
+    }
+
+    /// <summary>The cases whose last call asked for another on a day that has come.</summary>
+    private JsonObject? Followups()
+    {
+        if (!Holds("jobs") && !Holds("builds")) return null;
+        string today = DateTime.Now.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        var due = new List<(string Next, long Id, JsonObject Item)>();
+        foreach (var (kind, held) in new[] { ("job", "jobs"), ("build", "builds") })
+        {
+            if (!Holds(held)) continue;
+            foreach (var r in Load(held).Values)
+            {
+                if (r.Doc["calls"] is not JsonArray calls || calls.OfType<JsonObject>().OrderBy(c => Str(c, "at"), StringComparer.Ordinal).ThenBy(c => Num(c, "id")).LastOrDefault() is not { } last) continue;
+                string next = Str(last, "next_at"); if (next.Length == 0 || string.CompareOrdinal(next, today) > 0) continue;
+                var c = Named(r.Doc);
+                var item = new JsonObject { ["kind"] = kind, ["record"] = Num(r.Doc, "id"), ["number"] = Str(r.Doc, kind == "job" ? "service_no" : "number"), ["customer_name"] = Str(c, "customer_name"), ["customer_mobile"] = Str(c, "customer_mobile") };
+                foreach (var (k, v) in last) item[k] = v?.DeepClone();
+                due.Add((next, Num(last, "id"), item));
+            }
+        }
+        return new JsonObject { ["items"] = new JsonArray(due.OrderBy(x => x.Next, StringComparer.Ordinal).ThenBy(x => x.Id).Select(x => (JsonNode)x.Item).ToArray()) };
     }
 
     private static string Hay(string kind, Row r)
@@ -110,6 +146,7 @@ internal sealed partial class Replica
 
     private JsonObject? List(string what, System.Collections.Specialized.NameValueCollection q, Func<string, JsonObject?> extras, JsonObject? config)
     {
+        if (what == "followups") return Followups();
         if (what == "counts") return Counts(config);
         if (what == "find") return Find(q["q"]);
         if (what == "suppliers") return Suppliers();

@@ -334,7 +334,31 @@ final class MZC_Crm
         $b['parts'] = $db->get_results($db->prepare('SELECT * FROM `' . self::t('build_parts') . '` WHERE build_id = %d ORDER BY id', (int) $id), ARRAY_A) ?: array();
         $b['photos'] = self::photos('build', $id);
         $b['more'] = !empty($b['data']) ? json_decode($b['data'], true) : array();
+        $b['calls'] = $db->get_results($db->prepare('SELECT * FROM `' . self::t('job_calls') . '` WHERE build_id = %d ORDER BY at, id', (int) $id), ARRAY_A) ?: array();
         return $b;
+    }
+
+    /** One call with a customer as the apps show it. */
+    public static function call_out($k)
+    {
+        return array('id' => (int) $k['id'], 'at' => (string) $k['at'], 'at_j' => self::jtime(strtotime($k['at'] . ' UTC')), 'reason' => $k['reason'], 'reasonText' => isset(self::$call_reasons[$k['reason']]) ? self::$call_reasons[$k['reason']] : $k['reason'],
+            'result' => $k['result'], 'resultText' => isset(self::$call_results[$k['result']]) ? self::$call_results[$k['result']] : $k['result'], 'note' => (string) $k['note'], 'who' => (string) $k['who'],
+            'next_at' => isset($k['next_at']) ? (string) $k['next_at'] : '', 'next_at_j' => !empty($k['next_at']) ? self::jdate($k['next_at']) : '');
+    }
+
+    /** The cases whose last call asked for another on a day that has come: [kind, record id, number, customer, the call]. */
+    public static function followups($kinds, $limit = 200)
+    {
+        $db = self::db(); if (!$db) { return array(); }
+        $out = array(); $k = self::t('job_calls'); $today = self::ymd();
+        foreach ($kinds as $kind) {
+            $col = $kind === 'job' ? 'job_id' : 'build_id'; $tb = self::t($kind === 'job' ? 'jobs' : 'builds'); $num = $kind === 'job' ? 'x.service_no' : "COALESCE(NULLIF(x.invoice_no, ''), x.service_no)";
+            $rows = $db->get_results($db->prepare("SELECT k.*, x.id AS rec, $num AS number, c.name AS customer_name, c.mobile AS customer_mobile FROM `$k` k JOIN `$tb` x ON x.id = k.$col LEFT JOIN `" . self::t('customers') . "` c ON c.id = x.customer_id
+                WHERE k.next_at IS NOT NULL AND k.next_at <= %s AND NOT EXISTS (SELECT 1 FROM `$k` n WHERE n.$col = k.$col AND (n.at > k.at OR (n.at = k.at AND n.id > k.id))) ORDER BY k.next_at LIMIT %d", $today, $limit), ARRAY_A) ?: array();
+            foreach ($rows as $r) { $out[] = array('kind' => $kind, 'record' => (int) $r['rec'], 'number' => (string) $r['number'], 'customer_name' => (string) $r['customer_name'], 'customer_mobile' => (string) $r['customer_mobile']) + self::call_out($r); }
+        }
+        usort($out, function ($a, $b) { return strcmp($a['next_at'], $b['next_at']) ?: $a['id'] - $b['id']; });
+        return $out;
     }
 
     public static function builds($q, $page, $per = 30, $customer = 0, $status = '')
@@ -416,7 +440,7 @@ final class MZC_Crm
     {
         MZC_Admin::guard('build_delete');
         $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        if ($db && $id) { self::delete_photos('build', $id); $db->delete(self::t('build_parts'), array('build_id' => $id)); $db->delete(self::t('builds'), array('id' => $id)); }
+        if ($db && $id) { self::delete_photos('build', $id); $db->delete(self::t('job_calls'), array('build_id' => $id)); $db->delete(self::t('build_parts'), array('build_id' => $id));$db->delete(self::t('builds'), array('id' => $id)); }
         MZC_Admin::back('mzc-builds', 'ok:سیستم پاک شد.');
     }
 

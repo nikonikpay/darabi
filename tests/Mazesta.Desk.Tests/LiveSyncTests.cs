@@ -94,6 +94,7 @@ public class LiveSyncTests : IDisposable
 
         // the other way round: B presses save offline, A saves online BEFORE that moment's later... B's change is the later one and becomes the record, A's stays in the history
         string u1 = S(picked.Data, "customer", "updated");
+        await Task.Delay(1100);   // the site's stamps are whole seconds: a save in the same second as the one before looks like no change at all
         Assert.Equal(200, (await a.CallAsync("POST", "staff/customers", JsonSerializer.Serialize(new { id = long.Parse(id), updated = u1, name = "مشتری همگام زنده", mobile, address = "نشانی A دوم", notes = "یادداشت B" }), ct)).Status);
         pb.Up = false; await Task.Delay(1500);
         Assert.Equal(202, (await b.CallAsync("POST", "staff/customers", JsonSerializer.Serialize(new { id = long.Parse(id), updated = u1, name = "مشتری همگام زنده", mobile, address = "نشانی B دوم (دیرتر)", notes = "یادداشت B" }), ct)).Status);
