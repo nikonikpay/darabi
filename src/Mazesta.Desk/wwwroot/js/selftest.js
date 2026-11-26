@@ -18,7 +18,7 @@ window.deskSelfTest = async (server, user, pass) => {
     // the real login screen
     showLogin(); const form = await wait(() => document.querySelector('form.login')); ok('login screen shown', !!form);
     set(form.querySelector('input[name=username]'), user); set(form.querySelector('input[name=password]'), pass); submit(form);
-    ok('sign-in through the screen opens the shell', !!(await wait(() => document.querySelector('aside nav') && S.me)), S.me ? S.me.name : '');
+    ok('sign-in through the screen opens the shell', !!(await wait(() => document.querySelector('aside nav') && S.me, 120000)), S.me ? S.me.name : '');   // (a first sign-in takes the whole copy first)
     ok('token never reaches the page', !JSON.stringify(S.me).includes('token'));
     const cards = await wait(() => document.querySelectorAll('.card b').length && [...document.querySelectorAll('.card b')].every(b => b.textContent !== '…') && document.querySelectorAll('.card b'), 20000);
     ok('home counts loaded from the site', !!cards && [...cards].some(b => /^\d+$/.test(b.textContent)), cards ? [...cards].map(b => b.textContent).join(',') : '');
