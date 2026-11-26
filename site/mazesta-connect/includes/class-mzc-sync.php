@@ -53,7 +53,8 @@ final class MZC_Db extends wpdb
  */
 final class MZC_Sync
 {
-    const PAGE = 150;          // records per answer
+    const PAGE = 150;          // changed records per answer
+    const FIRST = 400;         // records per answer of a first copy: starting WordPress costs more than the records, so fewer, larger answers
     const SETTLE = 15;         // seconds: a change younger than this is sent again next time, so one committed late under a smaller number is not skipped
     const KEEP_DAYS = 90;      // older changes are dropped; a program further behind than that takes the whole copy again
     const SHAPE = 1;           // raise when what a synced record holds changes (a new field): every program takes its copy again after the plugin is updated
@@ -250,9 +251,10 @@ final class MZC_Sync
         }
         $up = array(); $del = array(); $n = 0;
         if ($s['p']) {   // the first copy (or a kind taken again): by id, kind after kind; what changes meanwhile comes with the numbers afterwards
-            while ($s['p'] && $n < self::PAGE) {
+            $until = microtime(true) + 12;   // a slow host answers with fewer rather than running out of its time
+            while ($s['p'] && $n < self::FIRST && ($n === 0 || microtime(true) < $until)) {
                 $k = $s['p'][0]; if (!isset(self::$kinds[$k])) { array_shift($s['p']); $s['a'] = 0; continue; }
-                $room = self::PAGE - $n;
+                $room = min(100, self::FIRST - $n);
                 $ids = $db->get_col($db->prepare('SELECT id FROM `' . MZC_Crm_Db::t(self::$kinds[$k]) . '` WHERE id > %d ORDER BY id LIMIT %d', (int) $s['a'], $room));
                 foreach ($ids as $id) { if ($r = self::record($k, (int) $id, $a)) { $up[$k][] = $r; } $s['a'] = (int) $id; $n++; }
                 if (count($ids) < $room) { array_shift($s['p']); $s['a'] = 0; }

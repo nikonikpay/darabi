@@ -7,6 +7,8 @@ namespace Mazesta.Desk;
 /// (the money reports, a product's history, a Persian date range) returns null and goes to the site.</summary>
 internal sealed partial class Replica
 {
+    // names in the order the site's database gives them: Latin first, then Persian in its alphabet (by code point پ، چ، ژ and گ would fall after ی)
+    private static readonly StringComparer Names = StringComparer.InvariantCultureIgnoreCase;
     private static string Str(JsonObject o, string k) => o[k] is { } v ? v.ToString() : "";
     private static long Num(JsonObject o, string k) => o[k] is JsonValue v && long.TryParse(v.ToString(), out long n) ? n : 0;
 
@@ -172,7 +174,7 @@ internal sealed partial class Replica
             case "customers": sorted = Same(rows, "group", "group").OrderByDescending(Id).ToList(); break;
             case "products":
                 rows = Same(rows, "category", "category"); if (P("instock") is not ("" or "0")) rows = rows.Where(r => Num(r.Doc, "stock") > 0);
-                sorted = rows.OrderBy(r => LocalStore.Norm(Str(r.Doc, "name")), StringComparer.Ordinal).ToList(); break;
+                sorted = rows.OrderBy(r => Str(r.Doc, "name"), Names).ThenBy(Id).ToList(); break;
             case "builds": case "jobs": sorted = Same(rows, "status", "status").OrderByDescending(Id).ToList(); break;
             case "invoices":
                 rows = P("kind") is { Length: > 0 } kind ? rows.Where(r => Str(r.Doc, "kind") == kind) : rows.Where(r => Str(r.Doc, "kind") != "template");
@@ -202,7 +204,7 @@ internal sealed partial class Replica
             shape = r => { var c = (JsonObject)r.Doc.DeepClone(); if (b) c["builds"] = builds.GetValueOrDefault(Id(r)); if (j) c["jobs"] = jobs.GetValueOrDefault(Id(r)); return c; };
         }
         var page = Page(sorted, q, shape);
-        if (what == "ships") page["vendors"] = new JsonArray(Load("vendors").Values.OrderBy(r => Str(r.Doc, "name"), StringComparer.Ordinal)
+        if (what == "ships") page["vendors"] = new JsonArray(Load("vendors").Values.OrderBy(r => Str(r.Doc, "name"), Names)
             .Select(r => (JsonNode)new JsonObject { ["id"] = Id(r), ["name"] = Str(r.Doc, "name"), ["kind"] = Str(r.Doc, "kind") }).ToArray());
         if (what == "shortages") foreach (var (k, v) in extras("shortages")!) page[k] = v?.DeepClone();
         return page;
@@ -253,7 +255,7 @@ internal sealed partial class Replica
     {
         if (!Holds("purchases") || !Holds("vendors")) return null;   // the route is the warehouse's
         var by = Load("purchases").Values.GroupBy(r => Num(r.Doc, "vendor_id")).ToDictionary(g => g.Key, g => (Count: g.Count(), Last: g.OrderByDescending(r => Str(r.Doc, "bought_at"), StringComparer.Ordinal).First().Doc));
-        return new JsonObject { ["items"] = new JsonArray(Load("vendors").Values.OrderByDescending(r => Str(r.Doc, "kind") == "supplier").ThenBy(r => Str(r.Doc, "name"), StringComparer.Ordinal).Select(r =>
+        return new JsonObject { ["items"] = new JsonArray(Load("vendors").Values.OrderByDescending(r => Str(r.Doc, "kind") == "supplier").ThenBy(r => Str(r.Doc, "name"), Names).Select(r =>
         {
             var v = (JsonObject)r.Doc.DeepClone(); bool has = by.TryGetValue(Num(v, "id"), out var b);
             v["purchases"] = has ? b.Count : 0; v["last_at"] = has ? Str(b.Last, "bought_at") : ""; v["last_at_j"] = has ? Str(b.Last, "bought_at_j") : "";
