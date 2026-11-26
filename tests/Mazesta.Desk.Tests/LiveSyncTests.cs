@@ -9,13 +9,14 @@ namespace Mazesta.Desk.Tests;
 /// Two desks on one real site (a local WordPress, never the live one): both open a customer, one loses the line and saves, the other saves meanwhile, the line comes back. Runs only when MAZESTA_DESK_LIVE is
 /// "site|userA|passA|userB|passB" (the site's address and two staff users who may change customers); each desk reaches the site through a small proxy that can be cut.
 /// </summary>
+[Collection("live-site")]
 public class LiveSyncTests : IDisposable
 {
     private readonly string _dirA = Path.Combine(Path.GetTempPath(), "mzlive-a-" + Guid.NewGuid().ToString("N")), _dirB = Path.Combine(Path.GetTempPath(), "mzlive-b-" + Guid.NewGuid().ToString("N"));
     public LiveSyncTests() { Directory.CreateDirectory(_dirA); Directory.CreateDirectory(_dirB); }
     public void Dispose() { foreach (var d in new[] { _dirA, _dirB }) try { Directory.Delete(d, true); } catch (IOException) { } }
 
-    private sealed class Proxy : IDisposable
+    internal sealed class Proxy : IDisposable
     {
         private readonly HttpListener _l = new(); private readonly HttpClient _c = new(); private readonly string _target;
         public volatile bool Up = true; public int Port { get; } = FreePort();
@@ -33,8 +34,8 @@ public class LiveSyncTests : IDisposable
                         try
                         {
                             using var req = new HttpRequestMessage(new HttpMethod(ctx.Request.HttpMethod), _target + ctx.Request.Url!.PathAndQuery);
-                            foreach (var h in new[] { "X-MZC-Token", "X-MZC-Op" }) if (ctx.Request.Headers[h] is { } v) req.Headers.TryAddWithoutValidation(h, v);
-                            if (ctx.Request.HasEntityBody) { using var ms = new MemoryStream(); await ctx.Request.InputStream.CopyToAsync(ms); req.Content = new ByteArrayContent(ms.ToArray()); req.Content.Headers.TryAddWithoutValidation("Content-Type", "application/json"); }
+                            foreach (var h in new[] { "X-MZC-Token", "X-MZC-Op", "X-MZC-Gzip" }) if (ctx.Request.Headers[h] is { } v) req.Headers.TryAddWithoutValidation(h, v);
+                            if (ctx.Request.HasEntityBody) { using var ms = new MemoryStream(); await ctx.Request.InputStream.CopyToAsync(ms); req.Content = new ByteArrayContent(ms.ToArray()); req.Content.Headers.TryAddWithoutValidation("Content-Type", ctx.Request.ContentType); }
                             using var res = await _c.SendAsync(req); byte[] b = await res.Content.ReadAsByteArrayAsync();
                             ctx.Response.StatusCode = (int)res.StatusCode; ctx.Response.ContentType = "application/json";
                             if (res.Headers.TryGetValues("X-MZC-Conflict", out var cv)) ctx.Response.Headers["X-MZC-Conflict"] = cv.First();

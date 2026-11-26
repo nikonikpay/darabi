@@ -281,7 +281,9 @@ final class MZC_Rev
         if (!empty($p['release'])) { self::unlock($e, $id, $a['id']); return MZC_Api::ok(array('ok' => true)); }
         self::baseline($e, $id);
         $h = self::lock($e, $id, $a['id']);
-        return $h ? MZC_Api::fail(self::busy_text($h), 423, array('holder' => $h)) : MZC_Api::ok(array('ok' => true, 'seconds' => self::LOCK_SECONDS));
+        if ($h) { return MZC_Api::fail(self::busy_text($h), 423, array('holder' => $h)); }
+        $s = self::snap($e, $id);   // `updated`: a program showing its own copy sees whether it is the current one
+        return MZC_Api::ok(array('ok' => true, 'seconds' => self::LOCK_SECONDS, 'updated' => $s ? (string) $s['row']['updated'] : ''));
     }
 
     public static function rest_versions($req)

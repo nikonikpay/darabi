@@ -5,6 +5,7 @@
     if (busy || typeof S === 'undefined' || !S.me || !window.bridge) return;   // S is a top-level const: it is not on window
     busy = true;
     try {
+      if (typeof syncWatch === 'function' && document.body.classList.contains('in')) await syncWatch();
       let q = await bridge.queue();
       if (q.status === 200 && q.data && q.data.pending > 0) { const f = await bridge.flush(); if (f.status === 200 && f.data && f.data.sent > 0) { toast(f.data.sent + ' مورد از صف آفلاین به سایت فرستاده شد.'); if (typeof route === 'function') route(); } q = await bridge.queue(); }
       // a change made offline that met someone else's change: both are in the record's history; say so (the texts come once)

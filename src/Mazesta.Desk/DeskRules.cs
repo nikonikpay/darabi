@@ -20,7 +20,7 @@ public static partial class DeskRules
     }
 
     /// <summary>The page's path ("staff/jobs?q=R-12") when it is a staff route with a harmless query; the address to call is <c>server + ApiRoot + path</c>.</summary>
-    public static bool PathAllowed(string? path) => path is { Length: > 0 and <= 600 } && Route().IsMatch(path);
+    public static bool PathAllowed(string? path) => path is { Length: > 0 and <= 2000 } && Route().IsMatch(path);   // (staff/sync's cursor is the long one)
 
     public static bool MethodAllowed(string? m) => m is "GET" or "POST";
 

@@ -39,7 +39,8 @@ function showLogin(msg) {
 }
 
 async function enter() {
-  try { S.cfg = await GET('staff/config'); } catch (e) { return fail(e); }
+  if (!await syncGate()) return;
+  try { S.cfg = await GET('staff/config'); } catch (e) { showLogin(e.message); return; }
   document.body.classList.add('in'); drawShell(); route();
 }
 
@@ -50,7 +51,7 @@ function drawShell() {
   const quick = h('div', { class: 'quick' }, can('jobs', 2) ? h('a', { class: 'btn primary', href: '#/job/new' }, '+ پذیرش سرویس') : null, can('builds', 2) ? h('a', { class: 'btn primary', href: '#/build/new' }, '+ سیستم نو') : null, can('customers', 2) ? h('a', { class: 'btn', href: '#/customer/new' }, '+ مشتری') : null);
   const who = h('div', { class: 'who' }, h('strong', {}, S.me.name), h('small', {}, S.me.admin ? 'مدیر سایت' : S.me.roles.map(r => r.label).join(' + ')),
     h('div', {}, h('button', { class: 'link', onclick: () => settingsDialog() }, 'تنظیمات'), ' · ', h('button', { class: 'link', onclick: async () => { await bridge.logout(); S.me = null; showLogin(); } }, 'خروج')));
-  app.append(h('aside', {}, h('div', { class: 'brand' }, h('span', { class: 'mark' }, 'M'), 'میز کار'), nav, who), h('div', { class: 'col' }, h('header', { class: 'top' }, liveFind(search), quick), h('main', { id: 'main' })));
+  app.append(h('aside', {}, h('div', { class: 'brand' }, h('span', { class: 'mark' }, 'M'), 'میز کار'), nav, who), h('div', { class: 'col' }, h('header', { class: 'top' }, liveFind(search), syncChip(), quick), h('main', { id: 'main' })));
 }
 
 // the top search: from 3 characters the nearest customers, systems and services show under it as one types; Enter still opens an exact number at once
@@ -123,7 +124,7 @@ function editLock(entity, id, el) {
   if (S.lock) clearInterval(S.lock.t);
   const note = h('p', { class: 'panel err', hidden: true }), l = S.lock = { entity, id, path: S.path };
   const take = async () => {
-    try { await POST('staff/lock', { entity, id }); }
+    try { const r = await POST('staff/lock', { entity, id }); if (r.stale && S.lock === l) { toast('این پرونده تازه روی سایت تغییر کرده بود؛ نسخهٔ تازه باز شد.'); route(); } }
     catch (e) {
       if (e.status !== 423) return;
       clearInterval(l.t); if (S.lock === l) S.lock = null;

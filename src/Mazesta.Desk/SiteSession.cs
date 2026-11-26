@@ -10,7 +10,9 @@ namespace Mazesta.Desk;
 /// <summary>The sign-in and every call to the site. The token is kept (sealed with the Windows user's key, in Data next to the exe) and sent as a header; the page only ever gets the answers.</summary>
 internal sealed partial class SiteSession : IDisposable
 {
-    private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    // answers come compressed (the site compresses when asked: a first copy is mostly text). A redirect is not followed: it would carry the sign-in token to wherever it points
+    private readonly HttpClient _http = new(new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All, AllowAutoRedirect = false, PooledConnectionLifetime = TimeSpan.FromMinutes(5) })
+    { Timeout = TimeSpan.FromSeconds(60), MaxResponseContentBufferSize = 64 * 1024 * 1024 };
     private readonly string _file;
     private Uri _server = new(DeskRules.DefaultServer + "/");
     private string _token = "", _user = "";
@@ -18,7 +20,7 @@ internal sealed partial class SiteSession : IDisposable
     public SiteSession(string dataDir)
     {
         _file = Path.Combine(dataDir, "desk.json");
-        Queue = new OfflineQueue(Path.Combine(dataDir, "desk-queue.json")); _cache = new LocalStore(Path.Combine(dataDir, "desk-store.db"));
+        Queue = new OfflineQueue(Path.Combine(dataDir, "desk-queue.json")); _cache = new LocalStore(Path.Combine(dataDir, "desk-store.db")); _replica = new Replica(Path.Combine(dataDir, "desk-replica.db"));
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("MazestaDesk/1");
         try
         {
@@ -74,7 +76,10 @@ internal sealed partial class SiteSession : IDisposable
     private readonly List<string> _conflicts = []; private readonly object _gate = new();
     private static readonly TimeSpan Fresh = TimeSpan.FromSeconds(60);
 
-    private void ForgetReads() { _cache.Clear(); _putEpoch.Clear(); }
+    private readonly Replica _replica;
+    private volatile bool _noGzip;
+
+    private void ForgetReads() { _cache.Clear(); _putEpoch.Clear(); _replica.Clear(); _noSync = false; _noGzip = false; _lastAsked = DateTime.MinValue; }
 
     [GeneratedRegex(@"^staff/(revisions|lock|backup|me|shortages/count)")] private static partial Regex VolatileRoute();
     [GeneratedRegex(@"^staff/(products|customers|suppliers)(\?(.*))?$")] private static partial Regex KeptList();
@@ -102,17 +107,25 @@ internal sealed partial class SiteSession : IDisposable
 
     private static JsonElement? Parse(string json) { try { using var doc = JsonDocument.Parse(json); return doc.RootElement.Clone(); } catch (JsonException) { return null; } }
 
-    /// <summary>One call. <paramref name="data"/> is the site's answer as JSON (an object), or null when the site sent something that is not JSON. A read answered a minute ago with nothing written since is not asked again.
-    /// With the site out of reach: a stock, customer or supplier search is answered from the PC's own copy, any other read gives the last good answer (marked "offline"), a new record or a change waits in the queue
+    /// <summary>One call. <paramref name="data"/> is the site's answer as JSON (an object), or null when the site sent something that is not JSON. A list or record the PC's copy can answer is answered
+    /// from it without asking the site; another read answered a minute ago with nothing written since is not asked again.
+    /// With the site out of reach: a stock, customer or supplier search is answered from the PC's own lists, any other read gives the last good answer (marked "offline"), a new record or a change waits in the queue
     /// (status 202), and anything else is refused with the reason.</summary>
     public async Task<(int Status, JsonElement? Data, string? Error)> CallAsync(string method, string path, string? body, CancellationToken ct)
     {
         bool read = method == "GET";
         if (SignedOut) return (401, null, "اول وارد شوید.");
+        if (read && FromCopy(path) is { } copied) return (200, WithPending(path, copied), null);
         if (read && !VolatileRoute().IsMatch(path) && _cache.Get(path) is { } hit && DateTime.Now - hit.At < Fresh && _putEpoch.TryGetValue(path, out int ep) && ep == Volatile.Read(ref _epoch) && Parse(hit.Json) is { } cached) return (200, WithPending(path, cached), null);
         var r = await SendAsync(method, path, body, null, ct);
-        if (!read && r.Status is >= 200 and < 300 && !path.StartsWith("staff/lock", StringComparison.Ordinal)) Interlocked.Increment(ref _epoch);   // (the lock renewals every 45 s are not a change of anything)
-        if (r.Status == 200 && read && r.Raw.Length > 0) { _cache.Put(path, r.Raw); _putEpoch[path] = Volatile.Read(ref _epoch); Learn(path, r.Data); return (r.Status, WithPending(path, r.Data), r.Error); }
+        if (!read && r.Status is >= 200 and < 300)
+        {
+            if (path.StartsWith("staff/lock", StringComparison.Ordinal)) return (r.Status, await CheckStaleAsync(body, r.Data, ct), r.Error);   // (the lock renewals every 45 s are not a change of anything)
+            Interlocked.Increment(ref _epoch);
+            if (CopyUsable) { _replica.Written(path, r.Data); _ = Task.Run(() => SyncAsync(ct), ct); }   // the save shows at once; what follows from it (stock, totals) comes right after
+        }
+        if (!read && r.Status == 409 && CopyUsable) await SyncAsync(ct);   // someone saved first: their version is fetched, so opening it again shows it
+        if (r.Status == 200 && read && r.Raw.Length > 0) { _cache.Put(path, r.Raw); _putEpoch[path] = Volatile.Read(ref _epoch); Learn(path, r.Data); if (r.Data is { } fresh) KeepExtras(path, fresh); return (r.Status, WithPending(path, r.Data), r.Error); }
         if (r.Status != 0 || ct.IsCancellationRequested || !DeskRules.MethodAllowed(method) || !DeskRules.PathAllowed(path)) return (r.Status, r.Data, r.Error);
         if (read)
         {
@@ -144,7 +157,14 @@ internal sealed partial class SiteSession : IDisposable
     }
 
     /// <summary>Sends what waited while the line was down, oldest first; each call carries its own id so the site books a repeat once, and a change made offline carries its time.</summary>
-    public Task<(int Sent, int Refused, bool Stopped)> FlushAsync(CancellationToken ct) => Queue.FlushAsync(async q =>
+    public async Task<(int Sent, int Refused, bool Stopped)> FlushAsync(CancellationToken ct)
+    {
+        var f = await SendQueueAsync(ct);
+        if (f.Sent > 0 && CopyUsable) await SyncAsync(ct);
+        return f;
+    }
+
+    private Task<(int Sent, int Refused, bool Stopped)> SendQueueAsync(CancellationToken ct) => Queue.FlushAsync(async q =>
     {
         var r = await SendAsync("POST", q.Path, WithTime(q), q.Id, ct);
         if (r.Status is >= 200 and < 300)
@@ -201,7 +221,14 @@ internal sealed partial class SiteSession : IDisposable
         using var req = new HttpRequestMessage(new HttpMethod(method), new Uri(_server, DeskRules.ApiRoot + path));
         if (_token.Length > 0) req.Headers.TryAddWithoutValidation("X-MZC-Token", _token);
         if (opId is not null) req.Headers.TryAddWithoutValidation("X-MZC-Op", opId);
-        if (method == "POST") req.Content = new StringContent(string.IsNullOrEmpty(body) ? "{}" : body, Encoding.UTF8, "application/json");
+        // a large save goes gzipped, once the site has shown (by answering staff/sync) that its plugin opens it
+        bool zip = method == "POST" && !_noGzip && body is { Length: > 1400 } && _replica.Known;
+        if (zip)
+        {
+            using var ms = new MemoryStream(); using (var gz = new System.IO.Compression.GZipStream(ms, System.IO.Compression.CompressionLevel.Optimal, true)) gz.Write(Encoding.UTF8.GetBytes(body!));
+            req.Content = new ByteArrayContent(ms.ToArray()); req.Content.Headers.ContentType = new("application/octet-stream"); req.Headers.TryAddWithoutValidation("X-MZC-Gzip", "1");
+        }
+        else if (method == "POST") req.Content = new StringContent(string.IsNullOrEmpty(body) ? "{}" : body, Encoding.UTF8, "application/json");
         try
         {
             using var res = await _http.SendAsync(req, ct);
@@ -209,6 +236,9 @@ internal sealed partial class SiteSession : IDisposable
             JsonElement? data = null;
             try { using var doc = JsonDocument.Parse(text); if (doc.RootElement.ValueKind == JsonValueKind.Object) data = doc.RootElement.Clone(); } catch (JsonException) { }
             int status = (int)res.StatusCode;
+            // a firewall in front of the site that will not take the compressed form: the same save goes as it is, and the rest too
+            if (zip && (status == 415 || (data is null && status is >= 400 and < 500))) { _noGzip = true; return await RawAsync(method, path, body, opId, ct); }
+            if (status is >= 300 and < 400) return (status, null, $"نشانی سایت به «{res.Headers.Location}» تغییر مسیر می‌دهد؛ همان نشانی را در تنظیمات اتصال بنویسید.", "", "");
             string conflict = res.Headers.TryGetValues("X-MZC-Conflict", out var cv) ? cv.FirstOrDefault() ?? "" : "";
             return (status, data, data is null ? $"پاسخ نامعتبر از سایت ({status}). نشانی سایت را بررسی کنید." : null, data is null ? "" : text, conflict);
         }
@@ -236,7 +266,7 @@ internal sealed partial class SiteSession : IDisposable
         if (who != _user) ForgetReads();   // someone else than last time: they may see less than that person did
         string me = JsonSerializer.Serialize(d.EnumerateObject().Where(p => p.Name != "token").ToDictionary(p => p.Name, p => p.Value));
         byte[] salt = RandomNumberGenerator.GetBytes(16);
-        _token = tok; _user = who; _pass = null; _proof = new Proof(who, salt, Hash(password, salt), DateTime.UtcNow); Save(); _warmed = DateTime.MinValue;
+        _token = tok; _user = who; _pass = null; _proof = new Proof(who, salt, Hash(password, salt), DateTime.UtcNow); Save(); _warmed = DateTime.MinValue; _noSync = false; _noGzip = false; _lastAsked = DateTime.MinValue;
         _cache.Put("staff/me", me); Interlocked.Increment(ref _epoch);   // who this is, for a start without the site
         return (200, Parse(me), null);
     }
@@ -259,5 +289,5 @@ internal sealed partial class SiteSession : IDisposable
         _token = ""; Save();
     }
 
-    public void Dispose() { _http.Dispose(); _cache.Dispose(); }
+    public void Dispose() { _http.Dispose(); _cache.Dispose(); _replica.Dispose(); }
 }

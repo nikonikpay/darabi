@@ -32,6 +32,9 @@
     queue: async () => wv ? send({ op: 'queue' }) : { status: 200, data: { pending: 0, refused: [] } },
     flush: async () => wv ? send({ op: 'flush' }) : { status: 200, data: { sent: 0, refused: 0, stopped: false, pending: 0 } },
     discard: async queueId => wv ? send({ op: 'discard', queueId }) : { status: 200 },
+    // this PC's copy of the records (the program only): `sync` brings it up to date and answers when done; `syncState` says how far it is
+    sync: async () => wv ? send({ op: 'sync' }) : { status: 200, data: { supported: false } },
+    syncState: async () => wv ? send({ op: 'sync-state' }) : { status: 200, data: { supported: false } },
     // the backup kept on this PC (the program only): op is '', '-set' or '-run'
     pcBackup: async (op, o) => wv ? send(Object.assign({ op: 'backup' + op }, o || {})) : { status: 400, error: 'پشتیبان‌گیری روی PC فقط در خود برنامه کار می‌کند.' },
     print: async () => wv ? send({ op: 'print' }) : (window.print(), { status: 200 }),

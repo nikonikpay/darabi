@@ -269,7 +269,7 @@ final class MZC_Sync
             $s['s'] = max((int) $s['s'], $next);
             if (mt_rand(1, 500) === 1) { $db->query($db->prepare("DELETE FROM `$ch` WHERE at < %d AND seq < %d LIMIT 20000", time() - self::KEEP_DAYS * 86400, $head)); }
         }
-        return MZC_Api::ok(array('cursor' => self::pack($s), 'more' => $more, 'reset' => $reset, 'drop' => array_values(array_unique($drop)), 'up' => (object) $up, 'del' => (object) $del,
-            'seq' => (int) $s['s'], 'head' => $head, 'flag' => self::flush()));
+        return MZC_Api::ok(array('cursor' => self::pack($s), 'more' => $more, 'reset' => $reset, 'drop' => array_values(array_unique($drop)), 'up' => (object) $up, 'del' => (object) $del, 'kinds' => array_keys($s['v']),
+            'seq' => (int) $s['s'], 'head' => $head, 'epoch' => $m['epoch'], 'flag' => self::flush()));
     }
 }
