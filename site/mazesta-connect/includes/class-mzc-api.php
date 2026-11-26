@@ -148,7 +148,7 @@ final class MZC_Api
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $c = self::cfg(); $labels = array();
         foreach (self::$label_fields as $kind => $f) { $labels[$kind] = array('fields' => $f, 'chosen' => self::label_keys($kind, $c)); }
-        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'callReasons' => MZC_Crm::$call_reasons, 'callResults' => MZC_Crm::$call_results,'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'checklists' => MZC_Crm::$checklists, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)) + MZC_Acc_Api::config($a));
+        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'team' => MZC_Tasks::team(), 'teamRoles' => array_map(function ($r) { return $r['label']; }, MZC_Staff::roles()), 'callReasons' => MZC_Crm::$call_reasons,'callResults' => MZC_Crm::$call_results,'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'checklists' => MZC_Crm::$checklists, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)) + MZC_Acc_Api::config($a));
     }
 
     private static function label_keys($kind, $c)
@@ -330,6 +330,7 @@ final class MZC_Api
             foreach ($parts as $x) { $x['build_id'] = $id; if (!$db->insert(self::t('build_parts'), $x)) { $ok = false; break; } }
         }
         if (!self::end($db, $ok)) { return self::fail('ذخیره نشد: ' . $db->last_error, 500); }
+        if (!$old) { MZC_Tasks::start_for('build', $id, $a['id']); }   // the workflow of a new computer, which may set its first status
         $b = MZC_Crm::build($id); $out = self::build_out($b, true, $a);
         self::log($a, $old ? 'update' : 'create', 'build', $id, (string) ($b['invoice_no'] ?: $b['service_no']));
         // a serial already on another system: said, not refused (a part can legitimately come back and be sold again)
@@ -417,6 +418,7 @@ final class MZC_Api
         }
         if ($ok && $pays !== null) { $db->delete(self::t('job_pays'), array('job_id' => $id)); foreach ($pays as $x) { $x['job_id'] = $id; if (!$db->insert(self::t('job_pays'), $x)) { $ok = false; break; } } }
         if (!self::end($db, $ok)) { return self::fail('ذخیره نشد: ' . $db->last_error, 500); }
+        if (!$old) { MZC_Tasks::start_for('job', $id, $a['id']); }
         $j = MZC_Crm::job($id);
         self::log($a, $old ? 'update' : 'create', 'job', $id, (string) $j['service_no']);
         return self::ok(self::job_out($j, true, self::money_seen($a), self::cost_seen($a)), $old ? 200 : 201);

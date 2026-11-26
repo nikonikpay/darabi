@@ -184,7 +184,8 @@ final class MZC_Sync
         if ($can('accounting')) { $v['invoices'] = '1' . $cost; $v['payments'] = '1'; $v['cheques'] = '1'; }
         if ($can('ships')) { $v['ships'] = '1'; }
         $v['shortages'] = '1';
-        if (class_exists('MZC_Tasks')) { $v['tasks'] = '1' . (MZC_Tasks::manager($u) ? 'a' : ''); $v['flows'] = '1'; }
+        $rec = MZC_Staff::record($u);   // which tasks are a person's follows from their roles
+        $v['tasks'] = '1' . (MZC_Tasks::manager($u) ? 'a' : '') . implode(',', $rec['roles']); $v['flows'] = '1';
         return $v;
     }
 
@@ -209,8 +210,8 @@ final class MZC_Sync
             case 'cheques': $q = MZC_Acc::cheque($id); return $q ? MZC_Acc_Api::cheque_out($q) : null;
             case 'ships': $s = MZC_Ships::ship($id); return $s ? MZC_Desk_Api::ship_out($s) : null;
             case 'shortages': $x = MZC_Desk_Api::shortage($id); return $x ? MZC_Desk_Api::short_out($x) : null;
-            case 'tasks': return class_exists('MZC_Tasks') ? MZC_Tasks::record($id, $a) : null;
-            case 'flows': return class_exists('MZC_Tasks') ? MZC_Tasks::flow_record($id) : null;
+            case 'tasks': return MZC_Tasks::record($id, $a);
+            case 'flows': return MZC_Tasks::flow_record($id);
         }
         return null;
     }

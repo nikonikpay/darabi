@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 22;
+    const SCHEMA = 23;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -187,6 +187,15 @@ final class MZC_Crm_Db
             who VARCHAR(120) NOT NULL DEFAULT '', created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY status (status, created), KEY customer_id (customer_id)) $engine";
         // schema 20: every write to a synced table, numbered, so a staff program takes only what changed since the number it has (MZC_Sync)
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('changes')}` (seq BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, kind VARCHAR(10) NOT NULL, rid BIGINT UNSIGNED NOT NULL, at INT UNSIGNED NOT NULL) $engine";
+        // schema 23: tasks (steps worked one after another, each for people or roles), what was done to them, and the saved workflows (MZC_Tasks)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('tasks')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, title VARCHAR(190) NOT NULL, body TEXT NULL, status VARCHAR(10) NOT NULL DEFAULT 'open', progress TINYINT NOT NULL DEFAULT 0,
+            priority TINYINT NOT NULL DEFAULT 0, due_at DATE NULL, flow_id BIGINT UNSIGNED NULL, flow_name VARCHAR(120) NULL, steps TEXT NOT NULL, step SMALLINT NOT NULL DEFAULT 0, marks TEXT NULL, confirm TINYINT NOT NULL DEFAULT 0,
+            ref_kind VARCHAR(10) NULL, ref_id BIGINT UNSIGNED NULL, customer_id BIGINT UNSIGNED NULL, created_by BIGINT UNSIGNED NOT NULL DEFAULT 0, who VARCHAR(120) NOT NULL DEFAULT '', created DATETIME NOT NULL, updated DATETIME NOT NULL, done_at DATETIME NULL,
+            KEY status (status, due_at), KEY ref (ref_kind, ref_id), KEY flow_id (flow_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('task_log')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, task_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL DEFAULT 0, who VARCHAR(120) NOT NULL DEFAULT '', at DATETIME NOT NULL,
+            action VARCHAR(10) NOT NULL, note VARCHAR(1000) NULL, step SMALLINT NOT NULL DEFAULT 0, progress TINYINT NULL, KEY task_id (task_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('flows')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, kind VARCHAR(10) NOT NULL DEFAULT 'general', steps TEXT NOT NULL, auto TINYINT NOT NULL DEFAULT 0, active TINYINT NOT NULL DEFAULT 1,
+            created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY kind (kind, active)) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }
@@ -232,6 +241,7 @@ final class MZC_Crm_Db
             }
         }
         $db->query('ALTER TABLE `' . $t('customers') . '` MODIFY mobile VARCHAR(20) NULL');
+        MZC_Tasks::seed();
         $db->query($db->prepare("REPLACE INTO `{$t('meta')}` (k, v) VALUES ('schema', %s)", (string) self::SCHEMA));
         return '';
     }

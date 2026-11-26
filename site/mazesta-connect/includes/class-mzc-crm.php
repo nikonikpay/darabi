@@ -432,6 +432,7 @@ final class MZC_Crm
         foreach ($parts as $p) { if (!$ok) { break; } if ($p['model'] === null) { continue; } $p['build_id'] = $id; $ok = (bool) $db->insert(self::t('build_parts'), $p); }
         $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
         if (!$ok) { MZC_Log::error('crm', 'build not saved', array('id' => $was, 'error' => $err)); MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
+        if (!$was) { MZC_Tasks::start_for('build', $id, get_current_user_id()); }
         MZC_Rev::record('build', $id, get_current_user_id(), $was ? 'update' : 'create'); MZC_Rev::unlock('build', $id, get_current_user_id());
         MZC_Admin::back('mzc-builds', 'ok:ثبت شد.', array('view' => $id));
     }
@@ -440,7 +441,7 @@ final class MZC_Crm
     {
         MZC_Admin::guard('build_delete');
         $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        if ($db && $id) { self::delete_photos('build', $id); $db->delete(self::t('job_calls'), array('build_id' => $id)); $db->delete(self::t('build_parts'), array('build_id' => $id));$db->delete(self::t('builds'), array('id' => $id)); }
+        if ($db && $id) { MZC_Tasks::cancel_for('build', $id); self::delete_photos('build', $id); $db->delete(self::t('job_calls'), array('build_id' => $id));$db->delete(self::t('build_parts'), array('build_id' => $id));$db->delete(self::t('builds'), array('id' => $id)); }
         MZC_Admin::back('mzc-builds', 'ok:سیستم پاک شد.');
     }
 
@@ -550,6 +551,7 @@ final class MZC_Crm
         $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
         if ($lock) { $db->query("DO RELEASE_LOCK('" . self::t('svc') . "')"); }
         if (!$ok) { MZC_Log::error('crm', 'job not saved', array('id' => $was, 'error' => $err)); MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
+        if (!$was) { MZC_Tasks::start_for('job', $id, get_current_user_id()); }
         MZC_Rev::record('job', $id, get_current_user_id(), $was ? 'update' : 'create'); MZC_Rev::unlock('job', $id, get_current_user_id());
         $bad = self::add_photos('job', $id);
         MZC_Admin::back('mzc-jobs', 'ok:ثبت شد.' . ($bad ? ' (' . $bad . ')' : ''), array('view' => $id));
@@ -559,7 +561,7 @@ final class MZC_Crm
     {
         MZC_Admin::guard('job_delete');
         $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        if ($db && $id) { self::delete_photos('job', $id); $db->delete(self::t('job_parts'), array('job_id' => $id)); $db->delete(self::t('job_pays'), array('job_id' => $id)); $db->delete(self::t('job_calls'), array('job_id' => $id)); $db->delete(self::t('jobs'), array('id' => $id)); }
+        if ($db && $id) { MZC_Tasks::cancel_for('job', $id); self::delete_photos('job', $id);$db->delete(self::t('job_parts'), array('job_id' => $id)); $db->delete(self::t('job_pays'), array('job_id' => $id)); $db->delete(self::t('job_calls'), array('job_id' => $id)); $db->delete(self::t('jobs'), array('id' => $id)); }
         MZC_Admin::back('mzc-jobs', 'ok:سرویس پاک شد.');
     }
 
@@ -839,7 +841,7 @@ final class MZC_Crm
         $db = self::db(); if (!$db) { MZC_Admin::back('mzc-settings', 'err:' . MZC_Crm_Db::error()); }
         if (self::post('confirm', 20) !== 'پاک‌کن') { MZC_Admin::back('mzc-settings', 'err:برای پاک کردن، کلمهٔ «پاک‌کن» را دقیق بنویسید.'); }
         foreach ((array) $db->get_col('SELECT file FROM `' . self::t('photos') . '`') as $f) { if (preg_match('/^[a-f0-9]{32}\.(jpg|png|webp)$/', (string) $f)) { @unlink(self::photo_dir() . '/' . $f . '.dat'); } }
-        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'job_calls', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items', 'invoices', 'invoice_items', 'payments', 'cheques') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
+        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'job_calls', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items', 'invoices', 'invoice_items', 'payments', 'cheques', 'tasks', 'task_log') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
         $db->query('DELETE FROM `' . self::t('meta') . "` WHERE k = 'import'");
         MZC_Sync::reset();   // emptied tables note nothing: every staff program takes the whole copy again
         MZC_Admin::back('mzc-settings', 'ok:همهٔ اطلاعات CRM پاک شد؛ فایل واردسازی را دوباره بارگذاری کنید.');

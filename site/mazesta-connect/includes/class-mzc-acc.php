@@ -256,6 +256,8 @@ final class MZC_Acc
             if ($ok && $v['kind'] === 'sale' && $v['ref_id']) { MZC_Sync::mark('invoices', $v['ref_id']); }
             $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
             if (!$ok) { return 'قطعی نشد: ' . $err; }
+            // the new computer's way starts with the invoice: the next people are told by their task list
+            if ($made = self::invoice($id)) { if ($makeBuild && $made['build_id']) { MZC_Tasks::start_for('build', (int) $made['build_id'], (int) $made['created_by']); } }
             MZC_Woo::touch(array_column($v['items'], 'product_id'));
             return array((int) $id, $warn);
         });

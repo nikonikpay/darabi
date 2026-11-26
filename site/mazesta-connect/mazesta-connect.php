@@ -30,7 +30,8 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-acc.php          the accounting: sales and return invoices, proformas, ready-made invoices, payments, cheques, the accounts of customers and suppliers
  *   includes/class-mzc-acc-api.php      the accounting's staff API routes
  *   includes/class-mzc-desk-api.php     the shortage list, the warranty shipments' staff API and the daily backup of the CRM database to a folder
- *   includes/class-mzc-ledger.php       the double-entry ledger and trial balance, worked out from the invoices, payments, cheques and purchases (stores nothing)
+ *   includes/class-mzc-tasks.php        tasks in steps for people or roles, and the workflows a manager draws (a new computer's way from invoice to customer)
+ *   includes/class-mzc-ledger.php      the double-entry ledger and trial balance, worked out from the invoices, payments, cheques and purchases (stores nothing)
  *   includes/class-mzc-woo.php          the stock and the site's WooCommerce shop in step: prices and counts both ways, paid orders as invoices
  *   includes/class-mzc-report.php       the money and counts of a period (services, new computers, profit, the best-selling parts)
  *   includes/class-mzc-ships.php        parts sent to warranty companies and repair shops, and those companies
@@ -45,7 +46,7 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-portal.php       the customer's page ([mazesta_portal]) and its REST routes
  *   includes/class-mzc-admin.php        menus and the shared admin shell; admin/*.php are the pages; assets/ the styles and scripts
  */
-foreach (array('mazesta-connect', 'mzc-log', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-sync','mzc-crm', 'mzc-rev', 'mzc-stock', 'mzc-acc', 'mzc-woo', 'mzc-report', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-access', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-acc-api', 'mzc-desk-api', 'mzc-ledger', 'mzc-oauth', 'mzc-mcp', 'mzc-admin') as $mzc_file) {
+foreach (array('mazesta-connect', 'mzc-log', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-sync','mzc-crm', 'mzc-rev', 'mzc-stock', 'mzc-acc', 'mzc-woo', 'mzc-report', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-access', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-acc-api', 'mzc-desk-api', 'mzc-tasks', 'mzc-ledger','mzc-oauth', 'mzc-mcp', 'mzc-admin') as $mzc_file) {
     require_once MZC_DIR . 'includes/class-' . $mzc_file . '.php';
 }
 
@@ -62,6 +63,7 @@ MZC_Stock::boot();
 MZC_Acc::boot();
 MZC_Acc_Api::boot();
 MZC_Desk_Api::boot();
+MZC_Tasks::boot();
 MZC_Woo::boot();
 MZC_Oauth::boot();
 MZC_Mcp::boot();
