@@ -134,8 +134,21 @@ final class Mazesta_Connect
     /** At most $max calls an hour from one address. */
     public static function allowed($bucket, $max)
     {
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
-        return self::hit($bucket . ':' . md5($ip)) <= $max;
+        return self::hit($bucket . ':' . md5(self::client_ip())) <= $max;
+    }
+
+    /** The headers a CDN in front of the site may carry the visitor's address in. */
+    public static $ip_headers = array('HTTP_AR_REAL_IP' => 'AR-Real-IP (ابرآروان)', 'HTTP_X_REAL_IP' => 'X-Real-IP', 'HTTP_CF_CONNECTING_IP' => 'CF-Connecting-IP (Cloudflare)');
+
+    /**
+     * The visitor's address. Behind a CDN whose server does not put it in REMOTE_ADDR, every visitor looks like the CDN and one hourly limit is shared by everybody; the site
+     * administrator then names the CDN's header on the settings page. Never guessed: a header anyone can send would let one visitor pass for any number of others.
+     */
+    public static function client_ip()
+    {
+        $c = self::read('config'); $h = isset($c['ipHeader']) ? (string) $c['ipHeader'] : '';
+        if (isset(self::$ip_headers[$h], $_SERVER[$h]) && filter_var($_SERVER[$h], FILTER_VALIDATE_IP)) { return (string) $_SERVER[$h]; }
+        return isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
     }
 
     /**
@@ -1304,6 +1317,7 @@ final class Mazesta_Connect
             if (!empty($_POST['new_key'])) { $c['key'] = self::new_key(); }
             if (!empty($_POST['new_release_key'])) { $c['releaseKey'] = self::new_key(); }
             if (!empty($_POST['new_read_key'])) { $c['readKey'] = self::new_key(); }
+            $h = isset($_POST['ip_header']) ? (string) wp_unslash($_POST['ip_header']) : ''; $c['ipHeader'] = isset(self::$ip_headers[$h]) ? $h : '';
             self::write('config', $c);
         });
         self::back('settings', 'saved');
@@ -1460,7 +1474,13 @@ final class Mazesta_Connect
             . '<label><input type="checkbox" name="new_read_key" value="1"> کلید تازه بساز</label></td></tr>'
             . '<tr><th>اشتراک‌گذاری کاربران</th><td><label><input type="checkbox" name="sharing" value="1"' . checked(!empty($c['sharing']), true, false) . '> کاربران بتوانند آخرین نتیجه بنچمارکشان را بدون کلید بفرستند و پیوند صفحه آن را بگیرند</label></td></tr>'
             . '<tr><th>بارگذاری بدون کلید</th><td><label><input type="checkbox" name="open_uploads" value="1"' . checked(!empty($c['openUploads']), true, false) . '> نتیجه کاربران بدون کلید به صف بررسی فهرست‌های مقایسه هم برود (بعد از تأیید شما وارد فهرست می‌شود)</label></td></tr>'
-            . '<tr><th>پیوند گزارش</th><td><label><input type="checkbox" name="public_links" value="1"' . checked(!empty($c['publicLinks']), true, false) . '> هر گزارش با پیوند خودش بدون ورود به سایت هم باز شود (هر کس پیوند را داشته باشد گزارش را می‌بیند)</label></td></tr></table>';
+            . '<tr><th>پیوند گزارش</th><td><label><input type="checkbox" name="public_links" value="1"' . checked(!empty($c['publicLinks']), true, false) . '> هر گزارش با پیوند خودش بدون ورود به سایت هم باز شود (هر کس پیوند را داشته باشد گزارش را می‌بیند)</label></td></tr>';
+        // what this request looks like from here, so the right header (if any) can be picked
+        $seen = array('REMOTE_ADDR: ' . (isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '—'));
+        foreach (self::$ip_headers as $h => $l) { if (!empty($_SERVER[$h])) { $seen[] = $l . ': ' . (string) $_SERVER[$h]; } }
+        $opts = '<option value="">همان REMOTE_ADDR (پیش‌فرض)</option>';
+        foreach (self::$ip_headers as $h => $l) { $opts .= '<option value="' . esc_attr($h) . '"' . selected(isset($c['ipHeader']) ? $c['ipHeader'] : '', $h, false) . '>' . esc_html($l) . '</option>'; }
+        echo '<tr><th>نشانی بازدیدکننده</th><td><select name="ip_header">' . $opts . '</select><p class="description">آنچه از همین درخواست شما دیده می‌شود: <code dir="ltr">' . esc_html(implode('  |  ', $seen)) . '</code>. اگر REMOTE_ADDR نشانی اینترنت شما نیست (نشانی CDN است) و یکی از سرآیندها هست، همان را انتخاب کنید؛ وگرنه سقف تلاش ورود و پیامک برای همهٔ کاربران یکی می‌شود. سرآیندی را که CDN شما نمی‌فرستد انتخاب نکنید.</p></td></tr></table>';
         submit_button('ذخیره');
         echo '</form>';
     }

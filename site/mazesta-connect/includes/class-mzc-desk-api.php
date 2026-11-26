@@ -144,6 +144,13 @@ final class MZC_Desk_Api
         return $a;
     }
 
+    /** Which folder of the server the dumps are written to (and old ones removed from) is the site administrator's to say. */
+    private static function backup_dir_auth($req)
+    {
+        $a = self::backup_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        return MZC_Staff::is_admin($a['id']) ? $a : self::fail('پوشهٔ پشتیبان روی سرور را فقط مدیر سایت عوض می‌کند.', 403);
+    }
+
     public static function rest_backup($req)
     {
         $a = self::backup_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
@@ -152,7 +159,7 @@ final class MZC_Desk_Api
 
     public static function rest_backup_save($req)
     {
-        $a = self::backup_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $a = self::backup_dir_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $p = MZC_Api::body($req); $e = MZC_Backup::save(MZC_Api::s($p, 'dir', 300), max(1, min(365, MZC_Api::n($p, 'keep') ?: 14)));
         if ($e !== '') { return self::fail($e, 422); }
         MZC_Api::log($a, 'update', 'backup', 0, 'folder');

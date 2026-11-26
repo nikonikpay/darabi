@@ -108,8 +108,10 @@ final class MZC_Rev
         $prev = self::last($e, $id);
         $ch = self::diff($prev, $now);
         if ($prev && !$ch) { if ($side) { self::write($e, $id, $ctx['cur'], false); } return 0; }
+        // an offline save that met someone else's change is an overlap for a manager to look at: the version that is NOT the record now carries the mark (this one when it was the older, the other person's when this one won)
+        if ($ctx && !$side && $ctx['stale']) { $db->query($db->prepare('UPDATE `' . self::t('revisions') . '` SET clash = 1 WHERE entity = %s AND entity_id = %d AND applied = 1 ORDER BY id DESC LIMIT 1', $e, (int) $id)); }
         $db->insert(self::t('revisions'), array('entity' => $e, 'entity_id' => (int) $id, 'user_id' => (int) $uid, 'who' => self::who($uid), 'action' => mb_substr((string) $action, 0, 12), 'at' => $ctx ? gmdate('Y-m-d H:i:s', $ctx['at']) : self::now(),
-            'changes' => wp_json_encode($prev ? $ch : array(), JSON_UNESCAPED_UNICODE), 'snap' => wp_json_encode($now, JSON_UNESCAPED_UNICODE), 'applied' => $side ? 0 : 1, 'offline' => $ctx ? 1 : 0));
+            'changes' => wp_json_encode($prev ? $ch : array(), JSON_UNESCAPED_UNICODE), 'snap' => wp_json_encode($now, JSON_UNESCAPED_UNICODE), 'applied' => $side ? 0 : 1, 'offline' => $ctx ? 1 : 0, 'clash' => $side ? 1 : 0));
         $rid = (int) $db->insert_id;
         if ($side) { self::write($e, $id, $ctx['cur'], false); self::$flag = 'side'; }   // the older edit is kept in the history only: the record goes back to what the other person saved
         elseif ($ctx && $ctx['stale']) { self::$flag = 'apply'; }
@@ -210,7 +212,28 @@ final class MZC_Rev
         if (!$n) { return 'فیلد انتخاب‌شده درست نیست.'; }
         $err = self::write($e, $id, $merged, true); if ($err !== '') { return $err; }
         self::record($e, $id, $uid, 'pick');
+        self::resolve($rev);
         return array($e, $id);
+    }
+
+    /** An overlap has been looked at: the record is as someone decided it should be. */
+    public static function resolve($rev) { $db = MZC_Crm_Db::db(); if ($db) { $db->query($db->prepare('UPDATE `' . self::t('revisions') . '` SET clash = 2 WHERE id = %d AND clash = 1', (int) $rev)); } }
+
+    /** The overlaps nobody has decided yet, oldest first, each with the record's name and the fields in which the marked version differs from the record now (an overlap with no difference is closed by itself). */
+    public static function clashes($limit = 100)
+    {
+        $db = MZC_Crm_Db::db(); if (!$db) { return array(); }
+        $out = array();
+        foreach ((array) $db->get_results($db->prepare('SELECT id, entity, entity_id, who, at, offline, applied FROM `' . self::t('revisions') . '` WHERE clash = 1 ORDER BY id LIMIT %d', (int) $limit), ARRAY_A) as $r) {
+            $c = self::compare((int) $r['id']);
+            if (!$c || !$c['fields']) { self::resolve((int) $r['id']); continue; }
+            $e = $r['entity']; $row = self::snap($e, (int) $r['entity_id'])['row'];
+            $name = ''; foreach (array('invoice_no', 'service_no', 'name', 'part_name', 'title', 'no') as $k) { if (!empty($row[$k])) { $name = (string) $row[$k]; break; } }
+            $cur = $db->get_row($db->prepare('SELECT who, at FROM `' . self::t('revisions') . '` WHERE entity = %s AND entity_id = %d AND applied = 1 ORDER BY id DESC LIMIT 1', $e, (int) $r['entity_id']), ARRAY_A);
+            $out[] = array('rev' => (int) $r['id'], 'entity' => $e, 'id' => (int) $r['entity_id'], 'name' => $name, 'who' => $r['who'], 'at' => MZC_Crm::jtime(strtotime($r['at'] . ' UTC')), 'offline' => (bool) $r['offline'], 'older' => !$r['applied'],
+                'now_who' => $cur ? $cur['who'] : '', 'now_at' => $cur ? MZC_Crm::jtime(strtotime($cur['at'] . ' UTC')) : '', 'fields' => $c['fields'], 'area' => self::$kinds[$e][2]);
+        }
+        return $out;
     }
 
     /** Puts a version back as the record's current state (and keeps that as a new version). Returns array(entity, id) or an error text. */
@@ -226,6 +249,7 @@ final class MZC_Rev
         $err = self::write($e, $id, $snap, true);
         if ($err !== '') { MZC_Log::error('rev', 'restore failed', array('rev' => (int) $rev, 'error' => $err)); return 'برنگشت: ' . $err; }
         self::record($e, $id, $uid, 'restore');
+        self::resolve($rev);
         MZC_Log::info('rev', 'restored', array('entity' => $e, 'id' => $id, 'rev' => (int) $rev, 'user' => (int) $uid));
         return array($e, $id);
     }
@@ -261,7 +285,8 @@ final class MZC_Rev
 
     public static function routes()
     {
-        foreach (array(array('/staff/lock', 'POST', 'lock'), array('/staff/revisions', 'GET', 'versions'), array('/staff/revisions/restore', 'POST', 'restore'), array('/staff/revisions/compare', 'GET', 'compare'), array('/staff/revisions/pick', 'POST', 'pick')) as $x) {
+        foreach (array(array('/staff/lock', 'POST', 'lock'), array('/staff/revisions', 'GET', 'versions'), array('/staff/revisions/restore', 'POST', 'restore'), array('/staff/revisions/compare', 'GET', 'compare'), array('/staff/revisions/pick', 'POST', 'pick'),
+            array('/staff/conflicts', 'GET', 'clashes'), array('/staff/conflicts/resolve', 'POST', 'resolve')) as $x) {
             register_rest_route(Mazesta_Connect::NS, $x[0], array('methods' => $x[1], 'callback' => array(__CLASS__, 'rest_' . $x[2]), 'permission_callback' => '__return_true'));
         }
     }
@@ -270,8 +295,31 @@ final class MZC_Rev
     {
         $e = isset($p['entity']) ? (string) $p['entity'] : ''; $id = isset($p['id']) ? (int) $p['id'] : 0;
         if (!isset(self::$kinds[$e]) || !$id) { return array(null, 0, MZC_Api::fail('پرونده مشخص نیست.')); }
-        $a = MZC_Staff::auth($req, self::$kinds[$e][2], $need);
+        $a = self::allowed($req, $e, $need);
         return $a instanceof WP_REST_Response ? array(null, 0, $a) : array($e, $id, $a);
+    }
+
+    /** The record's own area, or the manager who decides overlaps. */
+    private static function allowed($req, $e, $need)
+    {
+        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response || MZC_Staff::can($a['id'], 'manage', 2)) { return $a; }
+        return MZC_Staff::auth($req, self::$kinds[$e][2], $need);
+    }
+
+    public static function rest_clashes($req)
+    {
+        $a = MZC_Staff::auth($req, 'manage', 2); if ($a instanceof WP_REST_Response) { return $a; }
+        if ($req->get_param('count')) { $db = MZC_Crm_Db::db(); return MZC_Api::ok(array('count' => $db ? (int) $db->get_var('SELECT COUNT(*) FROM `' . self::t('revisions') . '` WHERE clash = 1') : 0)); }
+        return MZC_Api::ok(array('items' => self::clashes()));
+    }
+
+    /** {rev}: the record stays as it is now; the overlap is closed (both versions stay in its history). */
+    public static function rest_resolve($req)
+    {
+        $a = MZC_Staff::auth($req, 'manage', 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $p = MZC_Api::body($req); $rev = isset($p['rev']) ? (int) $p['rev'] : 0; if (!isset(self::$kinds[self::rev_entity($rev)])) { return MZC_Api::fail('این نسخه پیدا نشد.', 404); }
+        self::resolve($rev); MZC_Api::log($a, 'resolve', 'conflict', $rev);
+        return MZC_Api::ok(array('ok' => true));
     }
 
     /** {entity, id} takes or renews the lock (423 with the holder when someone else has it); {release: true} lets it go. Opening also takes the first version of an old record. */
@@ -297,7 +345,7 @@ final class MZC_Rev
         $p = MZC_Api::body($req); $db = MZC_Crm_Db::db();
         $e = $db ? (string) $db->get_var($db->prepare('SELECT entity FROM `' . self::t('revisions') . '` WHERE id = %d', isset($p['rev']) ? (int) $p['rev'] : 0)) : '';
         if (!isset(self::$kinds[$e])) { return MZC_Api::fail('این نسخه پیدا نشد.', 404); }
-        $a = MZC_Staff::auth($req, self::$kinds[$e][2], 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $a = self::allowed($req, $e, 2); if ($a instanceof WP_REST_Response) { return $a; }
         $r = self::restore((int) $p['rev'], $a['id']);
         if (!is_array($r)) { return MZC_Api::fail($r, 422); }
         MZC_Api::log($a, 'restore', $r[0], $r[1], 'نسخهٔ ' . (int) $p['rev']);
@@ -310,7 +358,7 @@ final class MZC_Rev
     public static function rest_compare($req)
     {
         $rev = (int) $req->get_param('rev'); $e = self::rev_entity($rev); if (!isset(self::$kinds[$e])) { return MZC_Api::fail('این نسخه پیدا نشد.', 404); }
-        $a = MZC_Staff::auth($req, self::$kinds[$e][2], 1); if ($a instanceof WP_REST_Response) { return $a; }
+        $a = self::allowed($req, $e, 1); if ($a instanceof WP_REST_Response) { return $a; }
         $c = self::compare($rev); if (!$c) { return MZC_Api::fail('این نسخه یا پرونده پیدا نشد.', 404); }
         $c['at'] = MZC_Crm::jtime(strtotime($c['at'] . ' UTC'));
         return MZC_Api::ok($c);
@@ -321,7 +369,7 @@ final class MZC_Rev
     {
         $p = MZC_Api::body($req); $rev = isset($p['rev']) ? (int) $p['rev'] : 0; $e = self::rev_entity($rev);
         if (!isset(self::$kinds[$e])) { return MZC_Api::fail('این نسخه پیدا نشد.', 404); }
-        $a = MZC_Staff::auth($req, self::$kinds[$e][2], 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $a = self::allowed($req, $e, 2); if ($a instanceof WP_REST_Response) { return $a; }
         $r = self::pick($rev, isset($p['fields']) ? $p['fields'] : array(), $a['id']); if (!is_array($r)) { return MZC_Api::fail($r, 422); }
         MZC_Api::log($a, 'pick', $r[0], $r[1], 'نسخهٔ ' . $rev);
         return MZC_Api::ok(array('entity' => $r[0], 'id' => $r[1]));

@@ -41,7 +41,7 @@ function showLogin(msg) {
 async function enter() {
   if (!await syncGate()) return;
   try { S.cfg = await GET('staff/config'); } catch (e) { showLogin(e.message); return; }
-  document.body.classList.add('in'); drawShell(); route();
+  document.body.classList.add('in'); drawShell(); route(); onSynced();
 }
 
 function drawShell() {
