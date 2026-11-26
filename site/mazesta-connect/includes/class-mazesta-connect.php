@@ -34,6 +34,7 @@ final class Mazesta_Connect
     public static function boot()
     {
         add_action('rest_api_init', array(__CLASS__, 'routes'));
+        add_filter('rest_pre_dispatch', array(__CLASS__, 'no_cache'), 1, 3);
         add_action('init', array(__CLASS__, 'public_pages'));
         foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'list_delete', 'share_delete', 'share_add', 'settings', 'rebuild') as $a) {
             add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
@@ -167,6 +168,20 @@ final class Mazesta_Connect
     public static function unhit($slot) { $db = self::db(); if ($db) { $db->delete(self::t('limits'), array('slot' => $slot)); } }
 
     /* ---------- REST ---------- */
+
+    /**
+     * Nothing of this plugin may be kept by a page cache: who asks is told by a header (a token or a key), which the cache does not look at, so one person's answer is handed to the next
+     * caller, signed out too. LiteSpeed keeps REST answers whatever their Cache-Control says; it is told in its own words.
+     */
+    public static function no_cache($res, $server, $req)
+    {
+        if (strpos($req->get_route(), '/' . self::NS . '/') === 0) {
+            if (!defined('DONOTCACHEPAGE')) { define('DONOTCACHEPAGE', true); }
+            do_action('litespeed_control_set_nocache', 'mazesta-connect');
+            if (!headers_sent()) { header('X-LiteSpeed-Cache-Control: no-cache'); }
+        }
+        return $res;
+    }
 
     public static function routes()
     {
