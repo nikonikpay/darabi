@@ -170,7 +170,8 @@ internal sealed partial class SiteSession : IDisposable
             for (int page = 1; page <= 400 && !ct.IsCancellationRequested; page++)
             {
                 var r = await SendAsync("GET", $"staff/{kind}?per=50&page={page}", null, null, ct);
-                if (r.Status != 200 || r.Data is not { } d || !d.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) break;
+                if (r.Status == 0) { _warmed = DateTime.MinValue; return; }   // no line: not this hour's copy, the next tick tries again
+                if (r.Status != 200 || r.Data is not { } d|| !d.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array) break;
                 _cache.Upsert(kind, items);
                 if (kind == "suppliers" || items.GetArrayLength() < 50 || (d.TryGetProperty("total", out var t) && t.TryGetInt32(out int total) && page * 50 >= total)) break;
             }
