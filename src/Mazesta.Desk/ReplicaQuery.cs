@@ -147,6 +147,8 @@ internal sealed partial class Replica
     private JsonObject? List(string what, System.Collections.Specialized.NameValueCollection q, Func<string, JsonObject?> extras, JsonObject? config)
     {
         if (what == "followups") return Followups();
+        if (what == "tasks") return Tasks(q);
+        if (what == "flows") return Holds("flows") ? new JsonObject { ["items"] = new JsonArray(Load("flows").Values.OrderBy(r => Num(r.Doc, "id")).Select(r => (JsonNode)r.Doc.DeepClone()).ToArray()) } : null;
         if (what == "counts") return Counts(config);
         if (what == "find") return Find(q["q"]);
         if (what == "suppliers") return Suppliers();
@@ -204,6 +206,27 @@ internal sealed partial class Replica
             .Select(r => (JsonNode)new JsonObject { ["id"] = Id(r), ["name"] = Str(r.Doc, "name"), ["kind"] = Str(r.Doc, "kind") }).ToArray());
         if (what == "shortages") foreach (var (k, v) in extras("shortages")!) page[k] = v?.DeepClone();
         return page;
+    }
+
+    private static bool IsTrue(JsonObject o, string k) => o[k] is JsonValue v && v.GetValueKind() == JsonValueKind.True;
+
+    /// <summary>The task lists as the site's boxes (the copy holds only the tasks this person is part of; "mine" is the site's own word on whose turn it is).</summary>
+    private JsonObject? Tasks(System.Collections.Specialized.NameValueCollection q)
+    {
+        if (!Holds("tasks")) return null;
+        string box = q["box"] ?? "", kind = q["ref_kind"] ?? "", ref_ = q["ref_id"] ?? "";
+        bool Closed(Row r) => Str(r.Doc, "status") is "done" or "cancelled";
+        IEnumerable<Row> rows = Load("tasks").Values;
+        if (kind.Length > 0) rows = rows.Where(r => Str(r.Doc, "ref_kind") == kind && Str(r.Doc, "ref_id") == ref_);
+        else rows = box switch
+        {
+            "done" => rows.Where(Closed), "review" => rows.Where(r => Str(r.Doc, "status") == "review" && IsTrue(r.Doc, "by_me")), "sent" => rows.Where(r => !Closed(r) && IsTrue(r.Doc, "by_me")),
+            "mine" => rows.Where(r => !Closed(r) && IsTrue(r.Doc, "mine")), _ => rows.Where(r => !Closed(r)),
+        };
+        var words = LocalStore.Norm(q["q"] ?? "").Trim();
+        if (words.Length > 0) rows = rows.Where(r => LocalStore.Norm(Str(r.Doc, "title") + " " + Str(r.Doc, "body") + " " + Str(r.Doc, "flow_name")).Contains(words));
+        var sorted = rows.OrderByDescending(r => Num(r.Doc, "priority")).ThenBy(r => Str(r.Doc, "due_at").Length == 0).ThenBy(r => Str(r.Doc, "due_at"), StringComparer.Ordinal).ThenByDescending(r => Num(r.Doc, "id")).ToList();
+        return Page(sorted, q, r => (JsonObject)r.Doc.DeepClone());
     }
 
     private JsonObject? Counts(JsonObject? config)

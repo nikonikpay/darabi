@@ -124,7 +124,7 @@ window.deskSelfTest = async (server, user, pass) => {
       ok('F9 makes it final with a number', gi && gi.status === 'final' && gi.no > 0, gi && gi.status + ' ' + gi.no);
       const st = await GET('staff/products/' + pid); ok('the sale took the part out of the stock', st.totals.stock === 0, st.totals.stock);
       await wait(() => document.querySelector('#main h2') && document.querySelector('#main h2').textContent.includes(String(gi.no)));
-      key('F6'); const pm = await wait(() => document.querySelector('.modal input[name=amount]')); ok('F6 opens the payment of this invoice with what is left', !!pm && digits(pm.value) === '2000000', pm && pm.value);
+      key('F6'); const pm = await wait(() => document.querySelector('.modal input[name=amount]')); ok('F6 opens the payment of this invoice with what is left', !!pm && digits(pm.value).replace(/\D/g, '') === '2000000', pm && pm.value);   // (the box groups the digits)
       if (pm) { [...document.querySelectorAll('.modal button')].find(b => b.textContent === 'ثبت').click(); }
       let gp = null; for (let i = 0; i < 40 && !(gp && gp.remaining === 0); i++) { await new Promise(r => setTimeout(r, 150)); gp = await GET('staff/invoices/' + ivid); }
       ok('payment recorded: nothing left', gp && gp.paid === 2000000 && gp.remaining === 0, gp && gp.remaining);

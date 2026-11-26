@@ -1,5 +1,5 @@
 // What the manager decides: two saves of one record that overlapped (made without the site). Each shows both sides; the manager takes fields from the other one, or keeps the record as it is.
-NAV.push(['#/conflicts', 'تداخل‌ها', () => can('manage', 2)]);
+NAV.push(['#/conflicts', 'تداخل‌ها', () => can('manage', 2)]);   // (only a plugin that keeps overlaps gives anyone the "manage" area)
 routes.push([/^\/conflicts$/, () => viewConflicts()]);
 
 const ENTITIES = { customer: ['مشتری', 'customer'], build: ['سیستم', 'build'], job: ['سرویس', 'job'], invoice: ['فاکتور', 'invoice'], product: ['کالا', 'product'], ship: ['ارسال به گارانتی'], shortage: ['درخواست قطعه'] };

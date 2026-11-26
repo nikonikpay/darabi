@@ -78,6 +78,7 @@ internal sealed partial class SiteSession : IDisposable
 
     private readonly Replica _replica;
     private volatile bool _noGzip;
+    private volatile Task _after = Task.CompletedTask; private volatile string _afterRecord = "\n";
 
     private void ForgetReads() { _cache.Clear(); _putEpoch.Clear(); _replica.Clear(); _noSync = false; _noGzip = false; _lastAsked = DateTime.MinValue; }
 
@@ -115,6 +116,8 @@ internal sealed partial class SiteSession : IDisposable
     {
         bool read = method == "GET";
         if (SignedOut) return (401, null, "اول وارد شوید.");
+        // right after a save, what follows from it (the stock, a new product, a task that started) is still on its way: any read but the saved record itself waits for it
+        if (read && !_after.IsCompleted && !path.StartsWith(_afterRecord, StringComparison.Ordinal)) await Task.WhenAny(_after, Task.Delay(TimeSpan.FromSeconds(8), ct));
         if (read && FromCopy(path) is { } copied) return (200, WithPending(path, copied), null);
         if (read && !VolatileRoute().IsMatch(path) && _cache.Get(path) is { } hit && DateTime.Now - hit.At < Fresh && _putEpoch.TryGetValue(path, out int ep) && ep == Volatile.Read(ref _epoch) && Parse(hit.Json) is { } cached) return (200, WithPending(path, cached), null);
         var r = await SendAsync(method, path, body, null, ct);
@@ -122,7 +125,12 @@ internal sealed partial class SiteSession : IDisposable
         {
             if (path.StartsWith("staff/lock", StringComparison.Ordinal)) return (r.Status, await CheckStaleAsync(body, r.Data, ct), r.Error);   // (the lock renewals every 45 s are not a change of anything)
             Interlocked.Increment(ref _epoch);
-            if (CopyUsable) { _replica.Written(path, r.Data); _ = Task.Run(() => SyncAsync(ct), ct); }   // the save shows at once; what follows from it (stock, totals) comes right after
+            if (CopyUsable)
+            {
+                _replica.Written(path, r.Data);   // the saved record shows at once; what follows from it (stock, totals) is asked for right away
+                _afterRecord = r.Data is { } saved && saved.TryGetProperty("id", out var sid) && path.Split('/') is { Length: >= 2 } seg ? $"staff/{seg[1]}/{sid.GetRawText()}" : "\n";
+                _after = Task.Run(() => SyncAsync(ct), ct);
+            }
         }
         if (!read && r.Status == 409 && CopyUsable) await SyncAsync(ct);   // someone saved first: their version is fetched, so opening it again shows it
         if (r.Status == 200 && read && r.Raw.Length > 0) { _cache.Put(path, r.Raw); _putEpoch[path] = Volatile.Read(ref _epoch); Learn(path, r.Data); if (r.Data is { } fresh) KeepExtras(path, fresh); return (r.Status, WithPending(path, r.Data), r.Error); }

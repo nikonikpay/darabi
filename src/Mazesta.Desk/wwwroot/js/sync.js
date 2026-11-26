@@ -45,7 +45,8 @@ async function syncWatch() {
   if (SYNC.chip) {
     SYNC.chip.hidden = !on;
     SYNC.chip.className = 'syncchip' + (stale || s.error ? ' old' : '');
-    SYNC.chip.textContent = s.syncing ? 'در حال همگام‌سازی…' : s.ageMinutes <= 1 ? '✓ به‌روز' : s.ageMinutes < 90 ? 'به‌روزرسانی ' + s.ageMinutes + ' دقیقه پیش' : 'به‌روزرسانی ' + s.lastSync;
+    const when = s.ageMinutes <= 1 ? 'همین حالا' : s.ageMinutes < 90 ? s.ageMinutes + ' دقیقه پیش' : s.lastSync;
+    SYNC.chip.textContent = s.syncing ? 'در حال همگام‌سازی…' : s.error ? 'بدون اتصال · آخرین بار ' + when : s.ageMinutes <= 1 ? '✓ به‌روز' : 'به‌روزرسانی ' + when;
   }
   if (SYNC.bar) { SYNC.bar.remove(); SYNC.bar = null; }
   if (stale) {

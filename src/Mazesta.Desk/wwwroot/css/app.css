@@ -88,4 +88,39 @@ tr.muted td { color: var(--muted); text-decoration: line-through; }
 .panel.accent-bad { border-color: #e8a29c; border-inline-start: 4px solid #c4352b; } .panel.accent-warn { border-color: #e9cf8e; border-inline-start: 4px solid #c98a04; }
 .pill.warn { background: #fdefc9; color: #7a5300; }
 .callform { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin-bottom: 10px; } .callform .field { flex: 0 1 190px; } .callform .field.grow { flex: 1 1 280px; }
+[hidden] { display: none !important; }   /* a class that sets display must not show what is hidden */
+/* the groups of the menu, each with its colour; the page open under a group carries it on its heading, its boxes' headings and its tables */
+[data-sec=day] { --sec: #4b57c9; --sec-lit: #9aa4ff; } [data-sec=shop] { --sec: #0b7d72; --sec-lit: #5fd6c8; } [data-sec=sales] { --sec: #1c5fc0; --sec-lit: #86b6ff; } [data-sec=stock] { --sec: #9a5b00; --sec-lit: #ffc266; } [data-sec=manage] { --sec: #6f3fb0; --sec-lit: #c9a2ff; }
+aside nav { overflow-y: auto; min-height: 0; gap: 6px; scrollbar-width: thin; scrollbar-color: #2c4a3d transparent; }
+.navsec { display: flex; flex-direction: column; flex: none; border-inline-start: 3px solid var(--sec-lit); padding-inline-start: 6px; }
+.navhead { margin: 0; padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--sec-lit); }
+aside { padding-block: 8px; } aside .brand { padding-bottom: 6px; }
+aside nav a { display: flex; align-items: center; gap: 8px; padding: 0 10px; line-height: 1.8; font-size: 13.5px; } aside nav a.on { background: var(--sec); }
+@media (min-height: 960px) { aside nav a { padding-block: 3px; } aside nav { gap: 10px; } }
+main[data-sec] .title h2 { border-inline-start: 6px solid var(--sec); padding-inline-start: 10px; line-height: 1.35; }
+main[data-sec] .panel > h3, main[data-sec] .panel > .title h3 { color: var(--sec); font-size: 15.5px; }
+main[data-sec] .panel { box-shadow: 0 1px 2px #0000000a; }
+main[data-sec] th { background: color-mix(in srgb, var(--sec) 8%, #fff); color: #39424e; border-bottom: 2px solid color-mix(in srgb, var(--sec) 35%, #fff); }
+main[data-sec] .lbl { border-bottom: 1px solid color-mix(in srgb, var(--sec) 25%, #fff); padding-bottom: 2px; }
+header.top { flex-wrap: wrap; } .quick { flex-wrap: wrap; }
+.panel.accent-task { border-inline-start: 4px solid #4b57c9; }
+/* tasks: a card each, its steps in a row (done ticked, the current one standing out) and how far it is */
+.tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.task { background: #fff; border: 1px solid var(--line); border-inline-start: 4px solid #4b57c9; border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.task.urgent { border-inline-start-color: #c4352b; } .task.bad { background: #fffafa; border-color: #eab5b0; } .task header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; } .task h3 { margin: 0; } .task p { margin: 0; }
+.pipe { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; } .pipe li { display: flex; gap: 7px; align-items: center; padding: 4px 10px 4px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fafbfc; color: var(--muted); min-width: 0; }
+.pipe li > div { display: flex; flex-direction: column; line-height: 1.35; } .pipe li b { font-size: 12.5px; } .pipe li small { font-size: 11.5px; } .pipe li i { font-style: normal; width: 22px; height: 22px; border-radius: 99px; background: #e4e7ec; display: grid; place-items: center; font-size: 12px; flex: none; color: var(--ink); }
+.pipe li.done { color: #14603f; border-color: #bfe0cf; background: #eef8f2; } .pipe li.done i { background: #17794d; color: #fff; }
+.pipe li.now { color: var(--ink); border-color: #4b57c9; background: #eef0ff; box-shadow: 0 0 0 1px #4b57c9; } .pipe li.now i { background: #4b57c9; color: #fff; } .pipe li.now.bad { border-color: #c4352b; background: #fdecea; box-shadow: 0 0 0 1px #c4352b; } .pipe li.now.bad i { background: #c4352b; }
+.pipe.full { flex-direction: column; align-items: stretch; } .pipe.full li { align-items: flex-start; } .pipe.full p { margin: 0; font-size: 12.5px; }
+.meter { position: relative; height: 18px; border-radius: 99px; background: #e9ecf1; overflow: hidden; } .meter span { position: absolute; inset-block: 0; inset-inline-start: 0; background: #8d96e6; } .meter b { position: relative; display: block; text-align: center; font-size: 11.5px; line-height: 18px; }
+/* the workflow editor: step cards from right to left; drag the handle to reorder, drag a role or a person onto a card */
+.palette { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+.who-chip { font: inherit; font-size: 12.5px; padding: 2px 10px; border-radius: 99px; border: 1px solid #b9c0ee; background: #eef0ff; color: #2c3592; cursor: pointer; user-select: none; } .who-chip.u { border-color: #c9cfd6; background: #f3f5f7; color: var(--ink); } .palette .who-chip { cursor: grab; }
+.tasks.one { grid-template-columns: 1fr; }
+.flowrow { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 2px 6px; align-items: stretch; } .flowrow .arrow { align-self: center; color: #8b93a0; font-size: 22px; flex: none; }
+.flowcard { flex: 0 1 232px; background: #fbfbfe; border: 1px solid #c7ccf0; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; } .flowcard.over { outline: 2px dashed #4b57c9; outline-offset: 2px; }
+.flowcard header { display: flex; align-items: center; gap: 8px; } .flowcard .handle { cursor: grab; font-size: 18px; color: #6b73b8; user-select: none; } .flowcard .n { width: 24px; height: 24px; border-radius: 99px; background: #4b57c9; color: #fff; display: grid; place-items: center; font-size: 12.5px; }
+.flowcard .moves { margin-inline-start: auto; display: flex; gap: 2px; } .flowcard .moves button { border: 1px solid #c4cad2; background: #fff; border-radius: 6px; cursor: pointer; width: 28px; height: 26px; } .flowcard .moves button:disabled { opacity: .4; cursor: default; } .flowcard .moves .x { color: var(--bad); }
+.flowcard .whos { display: flex; flex-wrap: wrap; gap: 5px; min-height: 26px; } .flowadd { flex: 0 0 120px; border: 2px dashed #b9c0ee; border-radius: 10px; background: none; color: #2c3592; font: inherit; font-weight: 600; cursor: pointer; }
 .timeline { display: flex; flex-direction: column; } .call { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid #edf0f3; } .call .when { display: flex; flex-direction: column; } .call p { margin: 2px 0; }

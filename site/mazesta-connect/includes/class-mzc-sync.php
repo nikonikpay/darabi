@@ -56,6 +56,7 @@ final class MZC_Sync
     const PAGE = 150;          // records per answer
     const SETTLE = 15;         // seconds: a change younger than this is sent again next time, so one committed late under a smaller number is not skipped
     const KEEP_DAYS = 90;      // older changes are dropped; a program further behind than that takes the whole copy again
+    const SHAPE = 1;           // raise when what a synced record holds changes (a new field): every program takes its copy again after the plugin is updated
 
     /** table => the (kind, column) pairs a row of it changes */
     private static $map = array(
@@ -186,7 +187,7 @@ final class MZC_Sync
         $v['shortages'] = '1';
         $rec = MZC_Staff::record($u);   // which tasks are a person's follows from their roles
         $v['tasks'] = '1' . (MZC_Tasks::manager($u) ? 'a' : '') . implode(',', $rec['roles']); $v['flows'] = '1';
-        return $v;
+        return array_map(function ($x) { return self::SHAPE . ':' . $x; }, $v);
     }
 
     /** One record as this person's copy keeps it (what the record's own route answers, with the names the lists show), or null when it is gone or not theirs. */

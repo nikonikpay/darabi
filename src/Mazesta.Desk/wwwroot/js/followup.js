@@ -4,6 +4,7 @@ const stamp = () => new Date().toLocaleString('fa-IR-u-nu-latn', { dateStyle: 's
 
 /** The calls of a case, newest first, with the line that writes a new one. kind: 'build' or 'job'. */
 function callsPanel(kind, rec) {
+  if (!S.cfg.callResults) return h('div');   // a site whose plugin is from before the calls
   const may = can(kind + 's') && (can(kind + 's', 2) || can('customers', 2));
   const calls = (rec.calls || []).slice(), list = h('div', { class: 'timeline' });
   const row = c => h('div', { class: 'call' }, h('div', { class: 'when' }, h('span', { class: 'lat' }, c.at_j), h('small', { class: 'muted' }, c.who)),
@@ -11,7 +12,7 @@ function callsPanel(kind, rec) {
       c.next_at_j ? pill('پیگیری بعدی: ' + c.next_at_j, 'warn') : null, c.waiting ? pill('در صف فرستادن') : null));
   const draw = () => { clear(list).append(...(calls.length ? calls.slice().reverse().map(row) : [h('p', { class: 'muted' }, 'هنوز گفتگویی ثبت نشده است.')])); };
   draw();
-  const head = h('h3', {}, 'پیگیری و گفتگو با مشتری', rec.customer_mobile ? h('span', { class: 'lat muted' }, '  ' + rec.customer_mobile) : null);
+  const head = h('h3', {}, 'پیگیری و گفتگو با مشتری ', rec.customer_mobile ? h('span', { class: 'lat muted' }, rec.customer_mobile) : null);
   if (!may) return h('section', { class: 'panel calls' }, head, list);
   const f = { reason: select('reason', S.cfg.callReasons || {}, kind === 'build' ? 'ready' : 'quote'), result: select('result', Object.assign({ '': '— نتیجه —' }, S.cfg.callResults || {}), ''),
     note: text('note', '', { placeholder: 'چه گفته شد؟ مثلاً: هزینه را تأیید کرد، فردا عصر می‌آید' }), next: h('input', { type: 'date', name: 'next_at' }) };
@@ -31,7 +32,7 @@ function callsPanel(kind, rec) {
 /** The home page's list: whom to call again today (or earlier and not yet done). */
 function followupsPanel() {
   const box = h('div');
-  if (can('jobs') || can('builds')) GET('staff/followups').then(r => {
+  if (S.cfg.callResults && (can('jobs') || can('builds'))) GET('staff/followups').then(r => {
     if (r.items.length) box.append(h('section', { class: 'panel accent-warn' }, h('h3', {}, 'پیگیری‌های امروز (' + r.items.length + ')'),
       table(['قرار', 'پرونده', 'مشتری', 'موبایل', 'آخرین گفتگو'], r.items.map(x => clickRow(`#/${x.kind}/${x.record}`, [h('span', { class: 'lat' }, x.next_at_j), (x.kind === 'job' ? 'سرویس ' : 'سیستم ') + (x.number || ''), x.customer_name,
         h('span', { class: 'lat' }, x.customer_mobile), x.resultText + (x.note ? ' — ' + x.note : '')])))));

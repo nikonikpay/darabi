@@ -115,7 +115,8 @@ final class MZC_Tasks
             'ref_kind' => (string) $t['ref_kind'], 'ref_id' => (int) $t['ref_id'], 'ref_label' => $ref, 'customer_id' => (int) $t['customer_id'], 'customer_name' => $c ? $c['name'] : '', 'customer_mobile' => $c ? (string) $c['mobile'] : '',
             'created_by' => (int) $t['created_by'], 'who' => $t['who'], 'created_j' => MZC_Crm::jtime(strtotime($t['created'] . ' UTC')), 'done_at_j' => $t['done_at'] ? MZC_Crm::jtime(strtotime($t['done_at'] . ' UTC')) : '', 'updated' => $t['updated'],
             // what this person may do now
-            'mine' => $open && self::acts($t, $uid), 'by_me' => (int) $t['created_by'] === $uid, 'boss' => $boss, 'log' => $log);
+            // `mine`: it is this person's turn (their lists); `can_act`: the current step's buttons work for them (a manager may answer for others)
+            'mine' => $open && self::acts($t, $uid), 'can_act' => $open && (self::acts($t, $uid) || self::manager($uid)), 'by_me' => (int) $t['created_by'] === $uid, 'boss' => $boss, 'log' => $log);
     }
 
     /** ?box=mine|review|sent|done|all, or ?ref_kind=&ref_id= (a record's tasks). Urgent first, then the nearest due day. */

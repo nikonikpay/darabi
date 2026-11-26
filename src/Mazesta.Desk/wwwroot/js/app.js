@@ -44,11 +44,33 @@ async function enter() {
   document.body.classList.add('in'); drawShell(); route(); onSynced();
 }
 
+// the menu in named groups, each with its own colour, which the pages under it carry too (a heading, a bar on their boxes): where one is can be seen at a glance
+const NAV_GROUPS = [
+  ['day', 'کار روزانه', ['#/', '#/tasks']],
+  ['shop', 'کارگاه', ['#/builds', '#/jobs', '#/ships', '#/reports']],
+  ['sales', 'فروش و حسابداری', ['#/customers', '#/invoices', '#/payments', '#/cheques', '#/accounts', '#/acc', '#/ledger']],
+  ['stock', 'انبار', ['#/stock', '#/purchases', '#/shortages']],
+  ['manage', 'مدیریت', ['#/stats', '#/flows', '#/conflicts', '#/backup']],
+];
+/** The menu line a page belongs to ('#/task/5' is under '#/tasks'; '/accounts' is not under '#/acc'). */
+function navOf(path) {
+  const one = { '/customer': '#/customers', '/build': '#/builds', '/job': '#/jobs', '/product': '#/stock', '/purchase': '#/purchases', '/invoice': '#/invoices', '/task': '#/tasks', '/flow': '#/flows' };
+  return one['/' + path.split('/')[1]] || '#' + path;
+}
+function drawNav() {
+  const open = NAV.filter(n => n[2]()), used = new Set(NAV_GROUPS.flatMap(g => g[2]));
+  const link = n => h('a', { href: n[0], 'data-r': n[0] }, h('span', {}, n[1]));
+  return h('nav', {}, NAV_GROUPS.map(([key, label, refs]) => {
+    const lines = refs.map(r => open.find(n => n[0] === r)).filter(Boolean).concat(key === 'manage' ? open.filter(n => !used.has(n[0])) : []);
+    return lines.length ? h('div', { class: 'navsec', 'data-sec': key }, h('p', { class: 'navhead' }, label), lines.map(link)) : null;
+  }));
+}
+
 function drawShell() {
   const app = clear($('#app'));
   const search = h('input', { type: 'search', id: 'gsearch', placeholder: 'جستجو یا اسکن: شمارهٔ سرویس، موبایل، نام، سریال…', autocomplete: 'off', onkeydown: e => { if (e.key === 'Enter') globalFind(e.target.value.trim()); } });
-  const nav = h('nav', {}, NAV.filter(n => n[2]()).map(n => h('a', { href: n[0], 'data-r': n[0] }, n[1])));
-  const quick = h('div', { class: 'quick' }, can('jobs', 2) ? h('a', { class: 'btn primary', href: '#/job/new' }, '+ پذیرش سرویس') : null, can('builds', 2) ? h('a', { class: 'btn primary', href: '#/build/new' }, '+ سیستم نو') : null, can('customers', 2) ? h('a', { class: 'btn', href: '#/customer/new' }, '+ مشتری') : null);
+  const nav = drawNav();
+  const quick = h('div', { class: 'quick' }, can('jobs', 2) ? h('a', { class: 'btn primary', href: '#/job/new' }, '+ پذیرش سرویس') : null, can('builds', 2) ? h('a', { class: 'btn primary', href: '#/build/new' }, '+ سیستم نو') : null, can('customers', 2) ? h('a', { class: 'btn', href: '#/customer/new' }, '+ مشتری') : null, hasTasks() ? h('a', { class: 'btn', href: '#/task/new' }, '+ کار') : null);
   const who = h('div', { class: 'who' }, h('strong', {}, S.me.name), h('small', {}, S.me.admin ? 'مدیر سایت' : S.me.roles.map(r => r.label).join(' + ')),
     h('div', {}, h('button', { class: 'link', onclick: () => settingsDialog() }, 'تنظیمات'), ' · ', h('button', { class: 'link', onclick: async () => { await bridge.logout(); S.me = null; showLogin(); } }, 'خروج')));
   app.append(h('aside', {}, h('div', { class: 'brand' }, h('span', { class: 'mark' }, 'M'), 'میز کار'), nav, who), h('div', { class: 'col' }, h('header', { class: 'top' }, liveFind(search), syncChip(), quick), h('main', { id: 'main' })));
@@ -100,7 +122,9 @@ async function route(ev) {
   const my = ++routeSeq;
   const { path, q } = parseHash(); const main = $('#main'); if (!main) return;
   document.querySelectorAll('.backdrop').forEach(b => b.remove());   // a dialog of the page just left
-  document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('on', a.dataset.r === '#' + path || (a.dataset.r !== '#/' && path.startsWith(a.dataset.r.slice(1).replace(/s$/, '')))));
+  const line = navOf(path);
+  document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('on', a.dataset.r === line));
+  main.dataset.sec = (NAV_GROUPS.find(g => g[2].includes(line)) || ['day'])[0];
   const r = routes.find(x => x[0].test(path)), soft = S.soft && path === S.path; S.soft = false; S.path = path;
   if (S.lock && S.lock.path !== path) dropLock();
   if (!soft) clear(main).append(h('div', { class: 'loading' }, 'در حال بارگذاری…'));
@@ -201,7 +225,7 @@ async function viewHome() {
     });
     return h('section', { class: 'panel' }, h('h3', {}, label), row);
   };
-  out.append(followupsPanel());   // followup.js
+  out.append(myTasksPanel(), followupsPanel());   // tasks.js, followup.js
   if (can('builds')) out.append(cards('سیستم‌های نو در جریان', 'build', S.cfg.buildStatuses));
   if (can('jobs')) out.append(cards('سرویس‌ها', 'job', S.cfg.jobStatuses));
   if (can('accounting')) out.append(duePanel());   // acc.js: cheques near their due date
@@ -407,7 +431,7 @@ async function viewBuild(id, q) {
       h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el), checks.el,
       soft.el, mediaLinks(b.media), field('یادداشت', f.notes, '', 'wide'), ro && !(can('tests', 2) && can('builds')) ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
   if (!isNew && can('builds', 2)) page.insertBefore(editLock('build', b.id, page), $('form', page));
-  if (!isNew) page.append(callsPanel('build', b));
+  if (!isNew) { page.insertBefore(workflowPanel('build', b), $('form', page)); page.append(callsPanel('build', b)); }   // where the work is comes first; what was said, last
   return page;
 }
 
@@ -461,7 +485,7 @@ async function viewJob(id, q) {
       checks.el, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات دیگری که مشتری تحویل داده'), recv.el), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات اضافه‌شده'), parts.el),
       soft.el, costs, field('لینک عکس و فیلم در تلگرام', f.media, '', 'wide'), mediaLinks(j.media), field('یادداشت داخلی', f.notes, '', 'wide'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
   if (!isNew && !ro) el.insertBefore(editLock('job', j.id, el), $('form', el));
-  if (!isNew) el.append(callsPanel('job', j));
+  if (!isNew) { el.insertBefore(workflowPanel('job', j), $('form', el)); el.append(callsPanel('job', j)); }
   recalc(); return el;
 }
 function offerPrint(job) {
