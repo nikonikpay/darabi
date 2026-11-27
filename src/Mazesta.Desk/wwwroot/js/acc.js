@@ -17,6 +17,8 @@ document.addEventListener('keydown', e => {
   if ($('.backdrop')) return;   // a dialog is open: a second F1 (or F4, F6) must not stack another one on it
   const here = S.keys && S.keys.hash === location.hash ? S.keys : {};
   if (here[e.key]) return here[e.key]();
+  // right after a save the next invoice page is not drawn yet: a save, final or print key says so instead of doing nothing
+  if (/^F(8|9|10)$/.test(e.key) && location.hash.startsWith('#/invoice/')) return toast('صفحهٔ فاکتور هنوز در حال باز شدن است؛ کلید را دوباره بزنید.', 'err');
   if (e.key === 'F1') return keysHelp();
   if (!can('accounting')) return;
   ({ F2: () => { location.hash = '#/invoice/new'; }, F4: () => pickTemplate(), F6: () => paymentDialog({}), F11: () => { location.hash = '#/invoice/new?kind=proforma'; }, F12: () => { location.hash = '#/invoices'; }, F3: () => { location.hash = '#/stock'; }, F5: () => { location.hash = '#/customers'; } }[e.key] || (() => { }))();
