@@ -82,7 +82,7 @@ internal sealed class MainForm : Form
                 case "backup-set": { string e = _backup.Set(Str("dir"), msg.TryGetProperty("keep", out var kp) && kp.TryGetInt32(out int kk) ? kk : 14); reply = e.Length == 0 ? (object)new { status = 200, data = _backup.State() } : new { status = 422, data = _backup.State(), error = e }; break; }
                 case "backup-run": { string e = await _backup.RunAsync(_closing.Token); reply = e.Length == 0 ? (object)new { status = 200, data = _backup.State() } : new { status = 422, data = _backup.State(), error = e }; break; }
                 case "selftest-done" when _selftest is not null: _selftestDone.TrySetResult(Str("result")); reply = new { status = 200 }; break;
-                case "print": _web.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.System); reply = new { status = 200 }; break;
+                case "print": _web.CoreWebView2.ShowPrintUI(Str("dialog") == "system" ? CoreWebView2PrintDialogKind.System : CoreWebView2PrintDialogKind.Browser); reply = new { status = 200 }; break;
                 case "fonts": reply = new { status = 200, data = new { fonts = WindowsFonts() } }; break;
                 default: reply = new { status = 400, error = "درخواست ناشناخته." }; break;
             }

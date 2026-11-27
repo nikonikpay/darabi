@@ -124,11 +124,14 @@ async function viewInvoice(id, q) {
   const pay = () => paymentDialog({ invoice: v, customer: cust });
 
   S.keys = { hash: location.hash, F3: () => { if (!ro) finder.focus(); }, F5: () => { const i = picker && $('input', picker.el); if (i) i.focus(); }, F6: () => sale && v.status === 'final' ? pay() : paymentDialog({ customer: cust }),
-    F7: () => { if (!ro) f.discount.focus(); }, F8: () => save(), F9: () => finalize(), F10: () => printInvoice(v), F4: () => pickTemplate(v.kind === 'proforma' ? 'proforma' : 'sale') };
+    F7: () => { if (!ro) f.discount.focus(); }, F8: () => save(), F9: () => finalize(), F10: () => print(), F4: () => pickTemplate(v.kind === 'proforma' ? 'proforma' : 'sale') };
+  // what is printed is the saved invoice: say so when the page holds changes that are not saved yet
+  let clean = null;
+  const print = () => { if (clean !== null && JSON.stringify(body()) !== clean) toast('تغییرهای ذخیره‌نشده در چاپ نمی‌آید؛ اول ذخیره (F8) کنید.', 'err'); printInvoice(v); };
 
   const can2 = can('accounting', 2);
   const actions = h('div', { class: 'row' },
-    !ro ? keyBtn('ذخیره', 'F8', () => save(), sale ? '' : 'primary') : null, !ro && sale ? keyBtn('قطعی', 'F9', finalize, 'primary') : null, !isNew && !tpl ? keyBtn('چاپ', 'F10', () => printInvoice(v)) : null,
+    !ro ? keyBtn('ذخیره', 'F8', () => save(), sale ? '' : 'primary') : null, !ro && sale ? keyBtn('قطعی', 'F9', finalize, 'primary') : null, !isNew && !tpl ? keyBtn('چاپ', 'F10', print) : null,
     can2 && sale && v.status === 'final' && v.kind === 'sale' ? keyBtn('دریافت', 'F6', pay) : null,
     can2 && v.kind === 'proforma' && v.status === 'draft' && !isNew ? h('button', { class: 'btn primary', onclick: () => act('staff/invoices/copy', { id: v.id, kind: 'sale' }, 'فاکتور فروش از پیش‌فاکتور ساخته شد.') }, 'تبدیل به فاکتور فروش') : null,
     can2 && v.kind === 'sale' && v.status === 'final' ? h('button', { class: 'btn', onclick: () => act('staff/invoices/copy', { id: v.id, kind: 'return' }, 'پیش‌نویس برگشت ساخته شد؛ ردیف‌های برنگشته را حذف کنید.') }, 'برگشت از فروش') : null,
@@ -153,25 +156,10 @@ async function viewInvoice(id, q) {
       h('div', { class: 'wide money' }, field('تخفیف (تومان) — F7', f.discount, discWords), vatBox, h('div', { class: 'sum' }, h('span', {}, 'جمع ردیف‌ها'), out.sub), h('div', { class: 'sum' }, h('span', {}, 'مالیات'), out.tax),
         h('div', { class: 'sum big' }, h('span', {}, 'مبلغ نهایی'), out.total), out.words, S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود (بدون مالیات)'), out.profit) : null,
         !isNew && sale && v.status === 'final' ? h('div', { class: 'sum' }, h('span', {}, 'پرداخت‌شده / مانده'), h('b', { class: 'lat' }, money(v.paid) + ' / ' + money(v.total - v.paid))) : null),
-      tpl ? null : field('یادداشت', f.notes, '', 'wide')));
+      tpl ? null : field('توضیحات', f.notes, 'روی فاکتور هم چاپ می‌شود.', 'wide')));
   if (v.payments && v.payments.length) el.append(h('section', { class: 'panel' }, h('h3', {}, 'پرداخت‌های این فاکتور'), paymentsTable(v.payments)));
   if (!isNew && !ro) el.insertBefore(editLock('invoice', v.id, el), el.children[1]);
-  recalc(); return el;
-}
-
-/* ---------- printing ---------- */
-function printInvoice(v) {
-  if (!v.id) return;
-  const a = A(), p = prefs.get(), proforma = v.kind === 'proforma';
-  const node = h('div', { class: 'receipt invoice' }, h('header', {}, h('div', {}, h('h1', {}, a.shop || p.shop), a.phone || p.phone ? h('div', { class: 'lat' }, a.phone || p.phone) : null, a.address ? h('div', {}, a.address) : null),
-    h('div', {}, h('h2', {}, v.kindText), h('div', {}, 'شماره: ', h('b', { class: 'lat' }, v.no || '—')), h('div', {}, 'تاریخ: ', h('span', { class: 'lat' }, v.at_j)), proforma && v.valid_until_j ? h('div', {}, 'اعتبار تا: ', h('span', { class: 'lat' }, v.valid_until_j)) : null)),
-    h('dl', {}, [['خریدار', v.customer_name], ['موبایل', v.customer_mobile], ['کد ملی', v.customer_national_id], ['نشانی', v.customer_address]].filter(x => x[1]).map(x => [h('dt', {}, x[0]), h('dd', {}, x[1])])),
-    h('table', { class: 'lines' }, h('thead', {}, h('tr', {}, ['#', 'نوع', 'شرح', 'تعداد', 'قیمت واحد', 'جمع'].map(x => h('th', {}, x)))),
-      h('tbody', {}, v.items.map((x, i) => h('tr', {}, h('td', {}, i + 1), h('td', {}, (S.cfg.categories || {})[x.category] || ''), h('td', {}, x.name, x.serials.length ? h('div', { class: 'lat small' }, x.serials.join(', ')) : null, x.warranty_months ? h('div', { class: 'small' }, x.warranty_months + ' ماه گارانتی') : null), h('td', {}, x.qty), h('td', { class: 'lat' }, money(x.unit_price)), h('td', { class: 'lat' }, money(x.line_total)))))),
-    h('dl', { class: 'totals' }, [['جمع', v.subtotal], v.discount ? ['تخفیف', v.discount] : null, v.tax ? ['مالیات بر ارزش افزوده (' + v.tax_pct + '٪)', v.tax] : null, ['مبلغ قابل پرداخت', v.total],
-      v.kind === 'sale' && v.status === 'final' ? ['پرداخت‌شده', v.paid] : null, v.kind === 'sale' && v.status === 'final' && v.total - v.paid ? ['مانده', v.total - v.paid] : null].filter(Boolean).map(x => [h('dt', {}, x[0]), h('dd', { class: 'lat' }, money(x[1]))])),
-    v.status === 'void' ? h('p', { class: 'foot' }, 'باطل شده') : null, v.notes ? h('p', {}, v.notes) : null, h('p', { class: 'foot' }, a.foot || p.foot), h('div', { class: 'sign' }, h('span', {}, 'مهر و امضای فروشنده'), h('span', {}, 'امضای خریدار')));
-  printOverlay(v.kindText + ' ' + (v.no || ''), node, `@page{size:${p.paper};margin:10mm}`);
+  recalc(); if (!ro && !isNew) clean = JSON.stringify(body()); return el;
 }
 
 /* ---------- payments ---------- */

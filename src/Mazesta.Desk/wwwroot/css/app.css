@@ -60,19 +60,7 @@ a.card:hover { border-color: var(--brand); text-decoration: none; background: va
 .backdrop { position: fixed; inset: 0; background: #0006; display: grid; place-items: center; z-index: 50; } .modal { background: #fff; border-radius: 12px; width: min(520px, 94vw); max-height: 92vh; display: flex; flex-direction: column; } .modal.wide { width: min(1000px, 96vw); }
 .modal header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); } .modal .x { border: 0; background: none; font-size: 22px; cursor: pointer; } .mbody { padding: 14px 16px; overflow: auto; }
 .split { display: grid; grid-template-columns: 300px 1fr; gap: 12px; margin-top: 10px; min-height: 380px; } .results.tall { max-height: 460px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; } .rview iframe { width: 100%; height: 460px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-/* printing: the label / receipt only */
-.preview { display: grid; place-items: center; padding: 14px; background: #e9ecef; border-radius: 8px; overflow: auto; }
-.label { background: #fff; border: 1px dashed #999; padding: 2.5mm 3mm; overflow: hidden; color: #000; font-size: 9pt; line-height: 1.35; display: flex; flex-direction: column; gap: 1.2mm; }
-.label .lhead { display: flex; align-items: center; justify-content: space-between; gap: 2mm; } .label .lnum { font-size: 17pt; font-weight: 700; } .label .lqr { width: 15mm; height: 15mm; flex: none; } .label .lqr svg { width: 100%; height: 100%; }
-.label dl, .receipt dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0 3mm; } .label dt { color: #333; } .label dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-.receipt { background: #fff; color: #000; width: 130mm; padding: 8mm; font-size: 11pt; } .receipt header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #000; padding-bottom: 4mm; margin-bottom: 4mm; } .receipt h1 { font-size: 18pt; } .receipt .lqr.big { width: 26mm; height: 26mm; } .receipt .lqr svg { width: 100%; height: 100%; }
-.receipt h2 { font-size: 14pt; margin-bottom: 1mm; } .receipt .rnum { font-size: 24pt; font-weight: 700; margin-bottom: 4mm; } .receipt dl { gap: 1.5mm 5mm; } .receipt dt { color: #333; } .receipt dd { margin: 0; font-weight: 600; } .receipt .foot { margin-top: 8mm; font-size: 10pt; border-top: 1px dashed #000; padding-top: 3mm; }
-/* the invoice (A5/A4) */
-.receipt.invoice { width: 180mm; } .invoice header > div:last-child { text-align: end; } .invoice table.lines { margin: 4mm 0; border: 1px solid #000; } .invoice .lines th, .invoice .lines td { border: 1px solid #000; padding: 1.5mm 2mm; color: #000; font-size: 10pt; }
-.invoice .small { font-size: 8.5pt; } .invoice dl.totals { width: 75mm; margin-inline-start: auto; } .invoice dl.totals dd { text-align: end; } .invoice .sign { display: flex; justify-content: space-between; margin-top: 14mm; }
 tr.muted td { color: var(--muted); text-decoration: line-through; }
-#printArea { display: none; }
-@media print { body > *:not(#printArea) { display: none !important; } #printArea { display: block; } .label { border: 0; } html, body { background: #fff; height: auto; } }
 /* the tick lists (what came in with a device, the checks before it leaves): as many columns as fit */
 .ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; margin: 4px 0 8px; } .tick { display: flex; align-items: center; gap: 6px; }
 /* live search under a field (app.js suggest): fixed to the window so a table's or dialog's scroll does not cut it */
@@ -105,7 +93,6 @@ aside nav a.on { background: var(--sec); }
 .navsec a .ico { color: var(--sec-lit); } .navsec a.on .ico { color: #fff; }
 @media (max-height: 1100px) { aside nav { gap: 8px; } .navhead { padding-block: 1px; margin-bottom: 3px; } aside nav .navsec a { line-height: 1.65; } .navsec { padding-bottom: 3px; } }   /* a short window: the same boxes, packed closer */
 .fontsample { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; font-size: 15px; }
-.label, .receipt { font-family: "Segoe UI", Tahoma, sans-serif; }   /* what is printed keeps the face its sizes were set for, whatever is chosen for the screen */
 main[data-sec] .title h2 { border-inline-start: 6px solid var(--sec); padding-inline-start: 10px; line-height: 1.35; }
 main[data-sec] .panel > h3, main[data-sec] .panel > .title h3 { color: var(--sec); font-size: 15.5px; }
 main[data-sec] .panel { box-shadow: 0 1px 2px #0000000a; }

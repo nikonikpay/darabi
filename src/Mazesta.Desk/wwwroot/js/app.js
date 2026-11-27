@@ -444,6 +444,7 @@ async function viewBuild(id, q) {
     }
   };
   const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => historyDialog('build', b.id, 'builds') }, 'تاریخچه'), h('button', { type: 'button', class: 'btn', onclick: () => printLabel('build', b.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('build', b.id) }, 'پیامک رسید'),
+    h('button', { type: 'button', class: 'btn', onclick: () => printBuildSheet(b) }, 'برگهٔ اسمبل'),
     can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('build', b) }, b.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null,
     can('accounting', 2) ? h('button', { type: 'button', class: 'btn', onclick: async () => { try { const v = await POST('staff/invoices/from-build', { build_id: b.id }); location.hash = '#/invoice/' + v.id; } catch (e) { fail(e); } } }, 'فاکتور فروش') : null);
   const page = h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.number}`, actions),
@@ -514,36 +515,11 @@ function offerPrint(job) {
     S.cfg.receiptReady ? h('button', { class: 'btn', onclick: () => { close(); sendReceipt('job', job.id); } }, 'پیامک رسید') : null, h('button', { class: 'btn', onclick: close }, 'بعداً'))); });
 }
 
-/* ---------- SMS receipt, label and receipt printing ---------- */
+/* ---------- SMS receipt (printing is in print.js) ---------- */
 async function sendReceipt(kind, id) {
   if (!S.cfg.receiptReady) return toast('پیامک روی سایت فعال نیست یا اجازهٔ فرستادن ندارید.', 'err');
   if (!await ask('پیامک رسید برای مشتری فرستاده شود؟', 'بفرست')) return;
   try { const r = await POST('staff/sms/receipt', { kind, id }); toast('پیامک به ' + r.to + ' فرستاده شد.'); } catch (e) { fail(e); }
-}
-
-function printOverlay(titleText, node, css) {
-  document.getElementById('printcss')?.remove(); document.head.append(h('style', { id: 'printcss' }, css));
-  document.getElementById('printArea')?.remove(); document.body.append(h('div', { id: 'printArea' }, node.cloneNode(true)));
-  modal(titleText, (b, close) => { b.append(h('div', { class: 'preview' }, node), h('div', { class: 'row end' }, h('button', { class: 'btn', onclick: close }, 'بستن'), h('button', { class: 'btn primary', onclick: () => bridge.print() }, 'چاپ…'))); }, true);
-}
-
-async function printLabel(kind, id) {
-  try {
-    const d = await GET(`staff/label/${kind}/${id}`), p = prefs.get();
-    const node = h('div', { class: 'label', style: `width:${p.labelW}mm;height:${p.labelH}mm` }, h('div', { class: 'lhead' }, h('div', { class: 'lnum lat' }, d.number), h('div', { class: 'lqr', html: qrSvg(d.qr) })),
-      h('dl', {}, d.lines.filter(l => l.key !== 'service_no' && l.value).map(l => [h('dt', {}, l.label), h('dd', {}, l.value)])));
-    printOverlay('برچسب ' + d.number, node, `@page{size:${p.labelW}mm ${p.labelH}mm;margin:0}`);
-  } catch (e) { fail(e); }
-}
-
-function printReceipt(j) {
-  const p = prefs.get(), qr = j.service_no;
-  const node = h('div', { class: 'receipt' }, h('header', {}, h('div', {}, h('h1', {}, p.shop), p.phone ? h('div', { class: 'lat' }, p.phone) : null), h('div', { class: 'lqr big', html: qrSvg(qr, 5) })),
-    h('h2', {}, 'رسید پذیرش'), h('div', { class: 'rnum lat' }, j.service_no),
-    h('dl', {}, [['مشتری', j.customer_name], ['موبایل', j.customer_mobile], ['دستگاه', j.device], ['تاریخ پذیرش', j.received_at_j], ['قول تحویل', j.due_at_j], ['مشکل اعلام‌شده', j.complaint],
-      ['لوازم تحویل‌گرفته‌شده', ((j.checks || {}).recv || []).map(k => ((S.cfg.checklists || { recv: {} }).recv[j.device_type] || {})[k]).filter(Boolean).concat((j.recv || []).map(x => x.name + (x.serial ? ' (' + x.serial + ')' : ''))).join('، ')],
-      ['توضیحات لوازم', (j.checks || {}).note]].filter(x => x[1]).map(x => [h('dt', {}, x[0]), h('dd', {}, x[1])])), h('p', { class: 'foot' }, p.foot));
-  printOverlay('رسید ' + j.service_no, node, `@page{size:${p.paper};margin:12mm}`);
 }
 
 /* ---------- the period report: money and counts ---------- */
@@ -675,17 +651,14 @@ function settingsDialog() {
   const p = prefs.get(), srv = text('server', '', { dir: 'ltr', placeholder: 'https://www.dfmrendering.com' });
   bridge.session().then(r => { if (r.data) srv.value = r.data.server; });
   modal('تنظیمات', (b, close) => {
-    const w = text('w', p.labelW, { dir: 'ltr' }), hh = text('h', p.labelH, { dir: 'ltr' }), shop = text('shop', p.shop), phone = text('phone', p.phone, { dir: 'ltr' }), foot = text('foot', p.foot), paper = select('paper', { A5: 'A5', A4: 'A4' }, p.paper);
     // the font list comes from Windows (the program only); a choice shows on the sample line at once and on the screens after saving
-    const own = 'وزیرمتن (پیش‌فرض برنامه)', fontPick = select('font', Object.assign({ '': own }, p.font ? { [p.font]: p.font } : {}), p.font);
     const sample = h('div', { class: 'fontsample wide' }, 'نمونه: مشتری گرامی، سرویس شمارهٔ ۱۲۵۰ آمادهٔ تحویل است. RTX 4070 — 12,500,000');
     const preview = () => { sample.style.fontFamily = cssFont(fontPick.value) + ', "Segoe UI", Tahoma, sans-serif'; };
-    fontPick.addEventListener('change', preview); preview();
-    bridge.fonts().then(r => { const now = fontPick.value; clear(fontPick).append(h('option', { value: '' }, own), ...((r.data && r.data.fonts) || []).filter(f => f !== 'Vazirmatn').map(f => h('option', { value: f }, f))); fontPick.value = now; });
-    b.append(h('div', { class: 'grid' }, field('نشانی سایت', srv, bridge.dev ? 'در حالت آزمایشی مرورگر این بخش اثری ندارد.' : 'با عوض شدن سایت باید دوباره وارد شوید.', 'wide'), field('فونت برنامه', fontPick, 'از فونت‌های نصب‌شدهٔ ویندوز؛ برچسب و رسیدِ چاپی تغییر نمی‌کنند.', 'wide'), sample, field('عرض برچسب (mm)', w), field('ارتفاع برچسب (mm)', hh), field('نام روی رسید', shop), field('تلفن روی رسید', phone), field('کاغذ رسید', paper), field('متن پایین رسید', foot, '', 'wide')),
+    const fontPick = fontSelect('font', p.font, 'وزیرمتن (پیش‌فرض برنامه)', preview); preview();
+    b.append(h('div', { class: 'grid' }, field('نشانی سایت', srv, bridge.dev ? 'در حالت آزمایشی مرورگر این بخش اثری ندارد.' : 'با عوض شدن سایت باید دوباره وارد شوید.', 'wide'), field('فونت برنامه', fontPick, 'از فونت‌های نصب‌شدهٔ ویندوز؛ فونت چاپ در پیش‌نمایش چاپ انتخاب می‌شود.', 'wide'), sample,
+      typeof printSetup === 'function' ? h('div', { class: 'wide' }, h('button', { type: 'button', class: 'btn', onclick: () => printSetup() }, 'سرفاکتور و توضیحات آمادهٔ چاپ…')) : null),
       h('div', { class: 'row end' }, h('button', { class: 'btn primary', onclick: async () => {
-        const cw = Math.min(200, Math.max(20, +digits(w.value) || 70)), ch = Math.min(200, Math.max(20, +digits(hh.value) || 50));
-        prefs.set({ labelW: cw, labelH: ch, shop: shop.value, phone: phone.value, foot: foot.value, paper: paper.value, font: fontPick.value }); applyFont(fontPick.value);
+        prefs.set({ font: fontPick.value }); applyFont(fontPick.value);
         const r = await bridge.setServer(srv.value); if (r.status !== 200) return toast(r.error || 'نشانی سایت درست نیست.', 'err');
         close(); toast('ذخیره شد.');
       } }, 'ذخیره')));

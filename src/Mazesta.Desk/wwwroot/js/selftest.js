@@ -66,6 +66,13 @@ window.deskSelfTest = async (server, user, pass) => {
     ok('label preview has the number and a QR', !!lab && lab.textContent.includes(no) && !!lab.querySelector('svg'));
     ok('print copy is in the page for the print stylesheet', !!document.querySelector('#printArea .label'));
     document.querySelectorAll('.backdrop').forEach(b => b.remove());
+    // the intake receipt: its page size, the chosen face, and a ready text made for it
+    const printWas = prefs.get().print; setPrint({ tpl: { receipt: { font: 'Tahoma' } }, last: {}, notes: null, shop: {} });
+    const pageRule = () => (document.getElementById('printcss') || {}).textContent || '';
+    printReceipt(gj); const rc = await wait(() => document.querySelector('.modal .sheet.receipt'));
+    ok('receipt preview: number, customer, QR, its ready text, an A5 page', !!rc && rc.textContent.includes(no) && rc.textContent.includes('مشتری خودآزمون') && !!rc.querySelector('.qr svg') && rc.textContent.includes(prefs.get().foot) && pageRule().includes('size:148mm 210mm'), pageRule());
+    ok('the chosen print font reaches the receipt', rc && /^"?Tahoma/.test(getComputedStyle(rc).fontFamily), rc && getComputedStyle(rc).fontFamily);
+    setPrint({ tpl: {} }); document.querySelectorAll('.backdrop').forEach(b => b.remove());
     // find by service number (what a scanner types) opens the record
     location.hash = '#/'; await wait(() => document.querySelector('.cards') && ![...document.querySelectorAll('.card b')].some(b => b.textContent === '…'), 20000);   // away from the record first: the scan must be what opens it
     set(document.getElementById('gsearch'), no); document.getElementById('gsearch').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -129,7 +136,28 @@ window.deskSelfTest = async (server, user, pass) => {
       let gp = null; for (let i = 0; i < 40 && !(gp && gp.remaining === 0); i++) { await new Promise(r => setTimeout(r, 150)); gp = await GET('staff/invoices/' + ivid); }
       ok('payment recorded: nothing left', gp && gp.paid === 2000000 && gp.remaining === 0, gp && gp.remaining);
       document.querySelectorAll('.backdrop').forEach(b => b.remove());
-      await wait(() => document.querySelector('#main h2')); key('F10'); const pv = await wait(() => document.querySelector('.modal .invoice')); ok('F10 prints the invoice (number, line, total)', !!pv && pv.textContent.includes(String(gi.no)) && pv.textContent.includes(money(2000000)));
+      await wait(() => document.querySelector('#main h2')); key('F10'); const pv = await wait(() => document.querySelector('.modal .invoice')); const read = e => digits(e ? e.textContent : '');   // the page is in Persian digits
+      ok('F10 previews the invoice (number, line, total, words)', !!pv && read(pv.querySelector('.meta')).includes(String(gi.no)) && read(pv.querySelector('.lines')).includes('2,000,000') && read(pv.querySelector('.totals .big')).includes('2,000,000') && pv.textContent.includes(toWords(2000000) + ' تومان'), pv && read(pv).slice(0, 200));
+      const full = await GET('staff/invoices/' + ivid), got2 = pv && pv.querySelector('.totals .paid dd');
+      ok('the payments on the page add up to what the site says was paid', pv && pv.querySelectorAll('.pays tbody tr').length === 1 && read(got2) === Number(full.paid).toLocaleString('en-US') && read(pv.querySelector('.totals .left dd')) === '0', read(got2) + ' / ' + full.paid);
+      ok('a ready text made for a sale is on it', pv && pv.querySelector('.notes') && pv.querySelector('.notes').textContent.includes(defaultNotes()[0].text));
+      const pick = (name, v) => { const el = document.querySelector('.modal .pside [name=' + name + ']'); el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); };
+      const sheet = () => document.querySelector('.modal .sheet'), copy = () => document.querySelector('#printArea .sheet');
+      ok('the full template prints on A4', pageRule().includes('size:210mm 297mm'), pageRule());
+      pick('tpl', 'a5'); ok('the A5 template sets an A5 page, and the print copy follows', pageRule().includes('size:148mm 210mm') && copy().style.width === '148mm', pageRule());
+      pick('pfont', ''); pick('size', '12'); ok('a look chosen in the preview reaches the print copy', copy().style.getPropertyValue('--psize') === '12pt' && /^"?Vazirmatn/.test(getComputedStyle(sheet()).fontFamily));
+      pick('tpl', 'assembly'); const as = sheet();
+      ok('the assembly sheet: customer and parts, no price and no invoice number', as.classList.contains('assembly') && as.textContent.includes('مشتری خودآزمون') && as.textContent.includes(pname) && !/تومان|مبلغ|قیمت|2,000,000/.test(read(as)) && !as.textContent.includes('شمارهٔ فاکتور') && copy().classList.contains('assembly'), read(as).slice(0, 200));
+      document.querySelector('.modal .plines input').click(); ok('a line can be left off the assembly sheet', !sheet().textContent.includes(pname)); document.querySelector('.modal .plines input').click();
+      setPrint({ tpl: {} }); pick('tpl', 'full');
+      // the shop's header and a ready text of one's own
+      [...document.querySelectorAll('.modal .pside button')].find(b => b.textContent.startsWith('سرفاکتور')).click();
+      const sh = await wait(() => document.querySelector('.modal input[name=slogan]')); ok('the header dialog opens over the preview', !!sh);
+      const top = sh.closest('.modal'); set(top.querySelector('input[name=slogan]'), 'آزمون سرفاکتور'); set(top.querySelector('input[name=eco]'), '411111111111');
+      [...top.querySelectorAll('button')].find(b => b.textContent === '+ توضیح تازه').click(); const nr = [...top.querySelectorAll('.noterow')].pop(); set(nr.querySelector('input[name=title]'), 'آزمون'); set(nr.querySelector('textarea'), 'متن آمادهٔ خودآزمون'); nr.querySelector('input[name=sale]').click();
+      [...top.querySelectorAll('button')].find(b => b.textContent === 'ذخیره').click();
+      ok('the saved header and ready text show on the page', !!(await wait(() => sheet() && sheet().textContent.includes('آزمون سرفاکتور') && read(sheet()).includes('411111111111') && sheet().textContent.includes('متن آمادهٔ خودآزمون'), 4000)));
+      setPrint(printWas || { tpl: {}, last: {}, notes: null, shop: {} });
       document.querySelectorAll('.backdrop').forEach(b => b.remove());
       key('F1'); const hp = await wait(() => [...document.querySelectorAll('.modal h3')].find(x => x.textContent === 'کلیدهای میانبر')); ok('F1 lists the keys', !!hp && document.querySelectorAll('.modal tbody tr').length === 13);
       key('F1'); key('F1'); await new Promise(r => setTimeout(r, 200)); ok('F1 again does not open a second key list', document.querySelectorAll('.modal').length === 1, document.querySelectorAll('.modal').length);

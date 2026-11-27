@@ -49,7 +49,7 @@ function modal(title, build, wide) {
   const close = () => { back.remove(); document.removeEventListener('keydown', esc); };
   const esc = e => { if (e.key === 'Escape') close(); };
   const back = h('div', { class: 'backdrop', onmousedown: e => { if (e.target === back) close(); } },
-    h('div', { class: 'modal' + (wide ? ' wide' : ''), role: 'dialog', 'aria-label': title }, h('header', {}, h('h3', {}, title), h('button', { class: 'x', 'aria-label': 'بستن', onclick: close }, '×')), body));
+    h('div', { class: 'modal' + (wide === 'full' ? ' full' : wide ? ' wide' : ''), role: 'dialog', 'aria-label': title }, h('header', {}, h('h3', {}, title), h('button', { class: 'x', 'aria-label': 'بستن', onclick: close }, '×')), body));
   document.addEventListener('keydown', esc); document.body.append(back);
   build(body, close);
   return { close, body };

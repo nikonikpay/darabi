@@ -37,7 +37,8 @@
     syncState: async () => wv ? send({ op: 'sync-state' }) : { status: 200, data: { supported: false } },
     // the backup kept on this PC (the program only): op is '', '-set' or '-run'
     pcBackup: async (op, o) => wv ? send(Object.assign({ op: 'backup' + op }, o || {})) : { status: 400, error: 'پشتیبان‌گیری روی PC فقط در خود برنامه کار می‌کند.' },
-    print: async () => wv ? send({ op: 'print' }) : (window.print(), { status: 200 }),
+    // dialog '' is the preview that keeps to the page's own paper; 'system' is Windows' own print window
+    print: async dialog => wv ? send({ op: 'print', dialog: dialog || '' }) : (window.print(), { status: 200 }),
     fonts: async () => wv ? send({ op: 'fonts' }) : { status: 200, data: { fonts: [] } },
   };
 })();

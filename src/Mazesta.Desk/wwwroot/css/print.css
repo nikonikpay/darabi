@@ -1,0 +1,49 @@
+/* The printed pages and their preview. A page's font, size and colour are set on it (--pfont, --psize, --pc) by print.js; its paper and margins by the @page rule it writes. */
+.modal.full { width: 98vw; height: 94vh; max-height: 94vh; } .modal.full .mbody { flex: 1; min-height: 0; display: grid; grid-template-columns: 290px 1fr; gap: 12px; padding: 12px; overflow: hidden; }
+.pside { overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-inline-end: 4px; } .pside > * { flex: none; } .pside input[type=color] { height: 34px; padding: 2px; }
+.pside fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; gap: 3px; margin: 0; min-width: 0; } .pside legend { font-size: 12.5px; color: var(--muted); padding: 0 4px; }
+.pstage { overflow: auto; background: #d9dde2; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; align-items: center; } .pstage > * { flex: none; box-shadow: 0 2px 14px #0003; }
+
+.sheet { box-sizing: border-box; background: #fff; color: #111; font-family: var(--pfont); font-size: var(--psize); line-height: 1.5; direction: rtl; display: flex; flex-direction: column; gap: 2.5mm; --pc: #14533c; }
+.sheet .n { unicode-bidi: isolate; direction: ltr; display: inline-block; } .sheet .serialno { white-space: nowrap; }
+.sheet h1, .sheet h2, .sheet h3, .sheet p, .sheet dl, .sheet dd { margin: 0; }
+.sheet header { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr); align-items: center; gap: 4mm; border-bottom: .8mm solid var(--pc); padding-bottom: 2mm; }
+.sheet .shop { display: flex; align-items: center; gap: 3mm; min-width: 0; } .sheet .logo { max-height: 16mm; max-width: 28mm; object-fit: contain; flex: none; }
+.sheet h1 { font-size: 1.6em; line-height: 1.35; color: var(--pc); } .sheet h2 { font-size: 1.35em; text-align: center; white-space: nowrap; } .sheet .shop p { font-size: .88em; line-height: 1.45; color: #333; }
+.sheet .meta { justify-self: end; display: flex; align-items: center; gap: 3mm; } .sheet .meta dd { white-space: nowrap; } .sheet .meta b.big { font-size: 1.8em; line-height: 1.2; } .sheet .qr { width: 20mm; height: 20mm; flex: none; } .sheet .qr svg { width: 100%; height: 100%; }
+.sheet dl div { display: flex; align-items: baseline; gap: 1.5mm; min-width: 0; } .sheet dt { color: #555; white-space: nowrap; } .sheet dd { font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.sheet .stamp { border: .6mm solid #b00020; color: #b00020; border-radius: 1.5mm; padding: .5mm 3mm; font-weight: 800; }
+.sheet .parties { display: grid; grid-template-columns: 1.15fr 1fr; gap: 3mm; align-items: stretch; } .sheet .parties.one { grid-template-columns: 1fr; } .sheet .parties > :only-child { grid-column: 1 / -1; }
+.sheet .box { border: .25mm solid #b9bec5; border-radius: 2mm; overflow: hidden; break-inside: avoid; } .sheet .box h3, .sheet .notes h3, .sheet .pays h3 { font-size: 1em; color: var(--pc); background: color-mix(in srgb, var(--pc) 11%, #fff); padding: .3mm 2.5mm; }
+.sheet .box dl { display: flex; flex-wrap: wrap; column-gap: 5mm; padding: .8mm 2.5mm; } .sheet.receipt .box dl { flex-direction: column; flex-wrap: nowrap; }
+.sheet table { width: 100%; border-collapse: collapse; } .sheet thead { display: table-header-group; } .sheet tr { break-inside: avoid; }
+.sheet th { background: var(--pc); color: #fff; border: .25mm solid var(--pc); padding: .8mm 1.6mm; font-size: .9em; font-weight: 700; text-align: center; white-space: nowrap; }
+.sheet td { border: .25mm solid #b9bec5; padding: .6mm 1.6mm; font-size: 1em; color: #111; vertical-align: middle; } .sheet tbody tr:nth-child(even) td { background: #f5f6f8; }
+.sheet td.c { text-align: center; width: 1%; white-space: nowrap; } .sheet td.cat { width: 1%; white-space: nowrap; } .sheet td.amt { text-align: end; white-space: nowrap; width: 1%; } .sheet td.desc { overflow-wrap: anywhere; }
+.sheet .sub { display: flex; flex-wrap: wrap; column-gap: 4mm; font-size: .82em; line-height: 1.4; color: #444; }
+.sheet .bottom { display: grid; grid-template-columns: 1fr minmax(56mm, 36%); gap: 3mm; align-items: start; } .sheet .side { display: flex; flex-direction: column; gap: 2mm; min-width: 0; }
+.sheet .totals { display: block; border: .25mm solid #b9bec5; border-radius: 2mm; overflow: hidden; break-inside: avoid; } .sheet .totals div { justify-content: space-between; gap: 2mm; padding: .6mm 2.5mm; border-bottom: .25mm solid #e1e4e8; }
+.sheet .totals div:last-child { border-bottom: 0; } .sheet .totals dt { color: #333; white-space: normal; } .sheet .totals dd { white-space: nowrap; } .sheet .totals .big { background: var(--pc); font-size: 1.1em; } .sheet .totals .big dt, .sheet .totals .big dd { color: #fff; font-weight: 800; } .sheet .totals .left { background: color-mix(in srgb, var(--pc) 11%, #fff); }
+.sheet .pays { break-inside: avoid; } .sheet .pays th { background: #eef0f3; color: #222; border-color: #b9bec5; font-weight: 600; } .sheet .pays td { font-size: .88em; }
+.sheet .notes { border: .25mm solid #b9bec5; border-radius: 2mm; overflow: hidden; break-inside: avoid; } .sheet .notes p { padding: .4mm 2.5mm; white-space: pre-line; }
+.sheet .tail { display: flex; flex-direction: column; gap: 2mm; break-inside: avoid; } .sheet .sign { display: flex; gap: 6mm; } .sheet .sign span { flex: 1; min-height: 5.2em; border: .25mm dashed #8a9099; border-radius: 2mm; padding: .6mm 2.5mm; color: #444; }
+.sheet .foot { border-top: .25mm solid #b9bec5; padding-top: 1.5mm; text-align: center; font-size: .9em; color: #333; white-space: pre-line; }
+.sheet .tickbox { display: inline-block; width: 4.5mm; height: 4.5mm; border: .35mm solid #333; border-radius: .8mm; vertical-align: middle; } .sheet td.serial { min-width: 34mm; height: 8mm; overflow-wrap: anywhere; }
+
+/* the shop's header and the ready texts (print-setup.js) */
+.filebtn { position: relative; margin-inline-start: 8px; } .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; } .filebtn:focus-within { outline: 2px solid #4aa585; outline-offset: 1px; }
+.logobox { display: flex; align-items: center; gap: 10px; margin-top: 6px; } .logobox img { max-height: 56px; max-width: 160px; border: 1px solid var(--line); border-radius: 6px; }
+.notelist { display: flex; flex-direction: column; gap: 10px; } .noterow { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; } .noterow .row { gap: 12px; flex-wrap: wrap; } .noterow input[name=title] { flex: 1 1 260px; }
+
+/* the label: its own small layout, to the size of the printer's sticker */
+.label { box-sizing: border-box; background: #fff; border: 1px dashed #999; padding: 2.5mm 3mm; overflow: hidden; color: #000; font-family: var(--pfont); font-size: var(--psize); line-height: 1.35; display: flex; flex-direction: column; gap: 1.2mm; }
+.label .lhead { display: flex; align-items: center; justify-content: space-between; gap: 2mm; } .label .lnum { font-size: 17pt; font-weight: 700; } .label .lqr { width: 15mm; height: 15mm; flex: none; } .label .lqr svg { width: 100%; height: 100%; }
+.label dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0 3mm; } .label dt { color: #333; } .label dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+#printArea { display: none; }
+@media print {
+  body > *:not(#printArea) { display: none !important; } #printArea { display: block; } html, body { background: #fff; height: auto; }
+  .sheet, .label { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #printArea .sheet { width: auto !important; min-height: 0 !important; padding: 0 !important; }   /* the paper and its margins come from @page */
+  .label { border: 0; }
+}
