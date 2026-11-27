@@ -167,6 +167,20 @@ window.deskSelfTest = async (server, user, pass) => {
       document.querySelectorAll('.backdrop').forEach(b => b.remove());
       location.hash = '#/customer/' + cid; const acc = await wait(() => [...document.querySelectorAll('#main h3')].find(x => x.textContent === 'حساب مشتری'));
       ok('the customer page shows the account with the invoice and the payment', !!acc && document.querySelector('#main').textContent.includes('فاکتور فروش ' + gi.no), acc ? acc.closest('section').textContent.slice(0, 120) : '');
+      // debts and credits: item by item, and one entered and removed by hand
+      const was = await GET('staff/customers/' + cid + '/account'), debts = () => document.querySelector('#main .debts'), sum = c => +debts().querySelector('.card.' + c + ' b').textContent.replace(/\D/g, '');
+      ok('debts: the open items add up to the balance, and the page shows their totals', !!was.open && was.open.owes_total - was.open.owed_total === was.balance && !!debts() && sum('owes') === was.open.owes_total && sum('owed') === was.open.owed_total, JSON.stringify(was.open).slice(0, 200));
+      if (was.open && can('accounting', 2)) {
+        const mine = 'طلب خودآزمون';
+        [...debts().querySelectorAll('button')].find(b => b.textContent.startsWith('+ طلب')).click(); const why = await wait(() => document.querySelector('.modal input[name=text]')), dlg = why.closest('.modal');
+        set(dlg.querySelector('input[name=amount]'), '1234000'); set(why, mine); [...dlg.querySelectorAll('button')].find(b => b.textContent === 'ثبت').click();
+        const added = await wait(() => debts() && debts().textContent.includes(mine), 20000), now = await GET('staff/customers/' + cid + '/account');
+        ok('a credit entered by hand shows with its reason and moves the balance', !!added && now.balance === was.balance - 1234000, now.balance + ' ' + was.balance);
+        const del = await wait(() => [...document.querySelectorAll('#main tr')].filter(r => r.textContent.includes(mine)).map(r => r.querySelector('button')).find(Boolean)); del.click();
+        (await wait(() => [...document.querySelectorAll('.modal button')].find(b => b.textContent === 'پاک کن'))).click();
+        const gone = await wait(() => debts() && !debts().textContent.includes(mine), 20000);
+        ok('removing it puts the balance back', !!gone && (await GET('staff/customers/' + cid + '/account')).balance === was.balance);
+      }
     }
     // the period report
     location.hash = '#/stats'; const rep = await wait(() => [...document.querySelectorAll('#main h3')].find(x => x.textContent.startsWith('سرویس‌ها')) && document.querySelector('#main .cards'));

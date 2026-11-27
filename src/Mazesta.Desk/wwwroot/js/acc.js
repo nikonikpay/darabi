@@ -273,18 +273,55 @@ function duePanel() {
 }
 
 /* ---------- a customer's account (on the customer page) ---------- */
+/** The customer page's money: `pill` (the balance, for the title), `debts` (what is owed and for what, both ways) and `history` (the running account, invoices, payments, cheques). */
 async function accountSection(c) {
-  let r; try { r = await GET('staff/customers/' + c.id + '/account'); } catch (e) { return h('p', { class: 'err' }, e.message); }
-  const bal = r.balance, sec = h('section', { class: 'panel' }, h('div', { class: 'title' }, h('h3', {}, 'حساب مشتری'),
-    h('div', { class: 'row' }, pill((bal > 0 ? 'بدهکار ' : bal < 0 ? 'بستانکار ' : 'تسویه ') + money(Math.abs(bal)), bal > 0 ? 'bad' : 'ok'), r.site ? pill('حساب سایت: ' + r.site.login) : null,
+  let r; try { r = await GET('staff/customers/' + c.id + '/account'); } catch (e) { return { pill: null, debts: h('p', { class: 'err' }, e.message), history: null }; }
+  const bal = r.balance, state = () => pill((bal > 0 ? 'بدهکار ' : bal < 0 ? 'بستانکار ' : 'تسویه ') + money(Math.abs(bal)), bal > 0 ? 'bad' : 'ok');
+  const remove = async x => { if (!await ask('«' + x.text + '» به مبلغ ' + money(x.debit || x.credit) + ' پاک شود؟', 'پاک کن')) return; try { await POST('staff/dues/delete', { id: x.id }); toast('پاک شد.'); route(); } catch (e) { fail(e); } };
+  const sec = h('section', { class: 'panel' }, h('div', { class: 'title' }, h('h3', {}, 'حساب مشتری'),
+    h('div', { class: 'row' }, state(), r.site ? pill('حساب سایت: ' + r.site.login) : null,
       can('accounting', 2) ? h('a', { class: 'btn', href: '#/invoice/new?cid=' + c.id }, '+ فاکتور') : null, can('accounting', 2) || can('payments', 2) ? h('button', { class: 'btn primary', onclick: () => paymentDialog({ customer: c, direction: 'in' }) }, '+ واریزی') : null)),
-    table(['تاریخ', 'شرح', 'بدهکار', 'بستانکار', 'مانده'], r.ledger.map(x => h('tr', { class: 'click' + (x.dead ? ' muted' : ''), onclick: () => { if (x.ref === 'invoice') location.hash = '#/invoice/' + x.id; else if (x.ref === 'job') location.hash = '#/job/' + x.id; } },
-      h('td', { class: 'lat' }, x.at_j), h('td', {}, x.text), h('td', { class: 'lat' }, x.debit ? money(x.debit) : ''), h('td', { class: 'lat' }, x.credit ? money(x.credit) : ''), h('td', { class: 'lat' }, money(x.balance)))), 'گردش مالی ثبت نشده است.'));
+    table(['تاریخ', 'شرح', 'بدهکار', 'بستانکار', 'مانده'], r.ledger.map(x => h('tr', { class: (x.ref === 'due' ? '' : 'click') + (x.dead ? ' muted' : ''), onclick: () => { if (x.ref === 'invoice') location.hash = '#/invoice/' + x.id; else if (x.ref === 'job') location.hash = '#/job/' + x.id; } },
+      h('td', { class: 'lat' }, x.at_j), h('td', {}, x.ref === 'due' ? [pill(x.type), ' ', x.text, can('accounting', 2) ? [' ', h('button', { type: 'button', class: 'btn sm', onclick: () => remove(x) }, 'حذف')] : null] : x.text), h('td', {}, x.debit ? money(x.debit) : ''), h('td', {}, x.credit ? money(x.credit) : ''), h('td', {}, money(x.balance)))), 'گردش مالی ثبت نشده است.'));
   const out = h('div', {}, sec);
   if (r.invoices.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'فاکتورها و پیش‌فاکتورها'), table(['نوع', 'تاریخ', 'وضعیت', 'مبلغ', 'مانده'], r.invoices.map(v => clickRow('#/invoice/' + v.id, [kindPill(v), h('span', { class: 'lat' }, v.at_j), stPill(v), money(v.total), v.kind === 'sale' && v.status === 'final' ? money(v.remaining) : ''])))));
   if (r.payments.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'واریزی‌ها و پرداخت‌ها'), paymentsTable(r.payments)));
   if (r.cheques.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'چک‌ها'), chequesTable(r.cheques)));
-  return out;
+  return { pill: state(), debts: debtPanel(c, r), history: out };
+}
+
+/** What the customer owes and is owed, item by item (the site works it out: each invoice and service less its own payments; money tied to none is set off among itself). */
+function debtPanel(c, r) {
+  const o = r.open; if (!o) return h('p', { class: 'muted' }, 'برای ریز بدهی و ثبت طلب مشتری، افزونهٔ سایت باید نسخهٔ ۲٫۱۸ یا تازه‌تر باشد.');
+  const items = (list, empty) => table(['تاریخ', 'بابت', 'مبلغ', 'تسویه‌شده', 'مانده'], list.map(x => { const go = x.ref === 'invoice' || x.ref === 'job' ? '#/' + x.ref + '/' + x.id : null;
+    return h('tr', go ? { class: 'click', onclick: () => { location.hash = go; } } : {}, h('td', { class: 'lat' }, x.at_j), h('td', {}, h('b', {}, x.text), x.what ? h('div', { class: 'muted' }, x.what) : null),
+      h('td', {}, money(x.amount)), h('td', {}, x.settled ? money(x.settled) : ''), h('td', {}, h('b', {}, money(x.left)))); }), empty);
+  const card = (label, v, cls) => h('div', { class: 'card ' + cls }, h('b', {}, money(v)), h('span', {}, label));
+  return h('section', { class: 'panel debts' }, h('div', { class: 'title' }, h('h3', {}, 'بدهی و طلب'), can('accounting', 2) ? h('div', { class: 'row' },
+      h('button', { type: 'button', class: 'btn', onclick: () => dueDialog(c, 'credit') }, '+ طلب مشتری از ما'), h('button', { type: 'button', class: 'btn', onclick: () => dueDialog(c, 'debit') }, '+ بدهی دیگر مشتری')) : null),
+    h('div', { class: 'cards' }, card('کل بدهی مشتری', o.owes_total, 'owes'), card('طلب مشتری از ما', o.owed_total, 'owed'), card(r.balance > 0 ? 'مانده: مشتری بدهکار است' : r.balance < 0 ? 'مانده: ما بدهکاریم' : 'حساب تسویه است', Math.abs(r.balance), 'net')),
+    h('h4', {}, 'ریز بدهی مشتری'), items(o.owes, 'بدهی بازی ندارد.'),
+    o.owed.length ? [h('h4', {}, 'ریز طلب مشتری از ما'), items(o.owed)] : null,
+    o.owed.length || r.ledger.some(x => x.ref === 'due') ? h('p', { class: 'muted' }, 'از هر فاکتور و سرویس فقط پولی کم شده که به خودِ آن ثبت شده است. پول بدون فاکتور و طلب و بدهیِ دستی با هم تهاتر می‌شوند، از قدیمی‌ترین؛ ستون «تسویه‌شده» همین را نشان می‌دهد و همهٔ ردیف‌ها در «حساب مشتری» پایین‌تر هستند.') : null);
+}
+
+/** A debt or credit no document stands for: other work, a balance from before, money the shop owes the customer. */
+function dueDialog(c, side) {
+  modal((side === 'credit' ? 'طلب مشتری از ما — ' : 'بدهی دیگر مشتری — ') + c.name, (b, close) => {
+    const amount = text('amount', '', { dir: 'ltr', autofocus: true }), words = moneyInput(amount), at = h('input', { type: 'date', value: today() });
+    const why = text('text', '', { maxLength: 255, placeholder: side === 'credit' ? 'مثلاً: پول قطعهٔ برگشتی که هنوز پس نداده‌ایم' : 'مثلاً: خدمات شبکه در محل، ماندهٔ حساب قبلی' });
+    const ok = h('button', { type: 'button', class: 'btn primary', onclick: () => save() }, 'ثبت');
+    const save = async () => {
+      if (ok.disabled) return;
+      if (!+digits(amount.value).replace(/\D/g, '')) return toast('مبلغ را بنویسید.', 'err');
+      if (!why.value.trim()) return toast('بنویسید بابت چیست.', 'err');
+      ok.disabled = true;
+      try { await POST('staff/dues', { customer_id: c.id, side, amount: digits(amount.value), at: at.value, text: why.value.trim() }); close(); toast('ثبت شد.'); route(); } catch (e) { ok.disabled = false; fail(e); }
+    };
+    b.append(h('div', { class: 'grid' }, field('مبلغ (تومان)', amount, words), field('تاریخ', at), field('بابت', why, '', 'wide')), h('p', { class: 'muted' }, 'پولی جابه‌جا نمی‌شود و فروشی ثبت نمی‌شود؛ فقط حساب این مشتری تغییر می‌کند. برای پرداخت یا دریافت پول، «+ واریزی» را بزنید.'),
+      h('div', { class: 'row end' }, h('button', { type: 'button', class: 'btn', onclick: close }, 'انصراف'), ok));
+    b.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); save(); } });
+  });
 }
 
 /* ---------- the period's money ---------- */

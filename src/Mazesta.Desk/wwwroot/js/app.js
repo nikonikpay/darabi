@@ -304,12 +304,14 @@ async function viewCustomer(id, q) {
     field('نام', mk('name', '', { required: true })), h('div', { class: 'field' }, h('span', {}, 'موبایل‌ها'), mobs.el, h('small', {}, 'اولی شمارهٔ اصلی و پیامک است؛ مشتری با هر کدام وارد صفحه‌اش می‌شود')), field('تلفن', mk('phone', '', { dir: 'ltr' })), field('کد ملی', mk('national_id', '', { dir: 'ltr' })),
     field('ایمیل', mk('email', '', { dir: 'ltr' })), field('گروه', f.group), field('آدرس', f.address, '', 'wide'), field('یادداشت', f.notes, '', 'wide'),
     ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره')));
-  const out = h('div', {}, title(isNew ? 'مشتری تازه' : c.name,
+  const acc = !isNew && (can('accounting') || can('payments')) ? await accountSection(c) : null;   // acc.js: debts, invoices, deposits, the running balance
+  const out = h('div', {}, title(isNew ? 'مشتری تازه' : c.name, acc && acc.pill,
     !isNew && can('jobs', 2) ? h('a', { class: 'btn', href: '#/job/new?cid=' + c.id }, '+ سرویس') : null, !isNew && can('builds', 2) ? h('a', { class: 'btn', href: '#/build/new?cid=' + c.id }, '+ سیستم نو') : null,
     !isNew ? h('button', { type: 'button', class: 'btn', onclick: () => historyDialog('customer', c.id, 'customers') }, 'تاریخچه') : null), form);
+  if (acc) out.append(acc.debts);
   if (builds.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سیستم‌های نو'), buildsTable(builds)));
   if (jobs.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سرویس‌ها'), jobsTable(jobs)));
-  if (!isNew && (can('accounting') || can('payments'))) out.append(await accountSection(c));   // acc.js: invoices, deposits, the running balance
+  if (acc && acc.history) out.append(acc.history);
   return out;
 }
 
