@@ -1,7 +1,9 @@
 :root { --bg:#f4f5f7; --panel:#fff; --ink:#1c2128; --muted:#6a7380; --line:#dfe3e8; --brand:#0b6e4f; --brand-ink:#fff; --bad:#b3261e; --ok:#17794d; --sel:#e8f3ee; --radius:8px; }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 14px/1.7 "Segoe UI", Tahoma, sans-serif; }
+@font-face { font-family: "Vazirmatn"; src: url("../fonts/Vazirmatn-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
+:root { --font: "Vazirmatn"; }   /* the face of the screens; a person's choice in the settings replaces it (app.js applyFont) */
+body { background: var(--bg); color: var(--ink); font: 14px/1.7 var(--font), "Segoe UI", Tahoma, sans-serif; }
 .lat, .num, input[dir=ltr] { font-family: "Segoe UI", Consolas, monospace; unicode-bidi: isolate; direction: ltr; display: inline-block; }
 td.lat, td.num { display: table-cell; text-align: end; }   /* a cell stays a cell (inline-block would break the table's columns) */
 a { color: var(--brand); text-decoration: none; } a:hover { text-decoration: underline; }
@@ -46,7 +48,7 @@ tr.click { cursor: pointer; } tr.click:hover td, tr.click:focus td { background:
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; } .card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; color: var(--ink); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 a.card:hover { border-color: var(--brand); text-decoration: none; background: var(--sel); } .card > span { order: -1; font-size: 12.5px; color: var(--muted); }
 /* a sum of hundreds of millions still fits a narrow card */
-.card b { font: 600 18px/1.4 "Segoe UI", Tahoma, sans-serif; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.card b { font: 600 18px/1.4 var(--font), "Segoe UI", Tahoma, sans-serif; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .loading { color: var(--muted); padding: 30px; text-align: center; }
 .gfind { position: relative; flex: 1; max-width: 560px; } .gfind input { max-width: none; } .gfind .results { position: absolute; inset-inline: 0; top: 100%; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px #0002; max-height: 60vh; overflow: auto; margin-top: 4px; }
 .cpick .chosen { padding: 6px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } .cpick .results { display: flex; flex-direction: column; margin-top: 4px; }
@@ -91,12 +93,19 @@ tr.muted td { color: var(--muted); text-decoration: line-through; }
 [hidden] { display: none !important; }   /* a class that sets display must not show what is hidden */
 /* the groups of the menu, each with its colour; the page open under a group carries it on its heading, its boxes' headings and its tables */
 [data-sec=day] { --sec: #4b57c9; --sec-lit: #9aa4ff; } [data-sec=shop] { --sec: #0b7d72; --sec-lit: #5fd6c8; } [data-sec=sales] { --sec: #1c5fc0; --sec-lit: #86b6ff; } [data-sec=stock] { --sec: #9a5b00; --sec-lit: #ffc266; } [data-sec=manage] { --sec: #6f3fb0; --sec-lit: #c9a2ff; }
-aside nav { overflow-y: auto; min-height: 0; gap: 6px; scrollbar-width: thin; scrollbar-color: #2c4a3d transparent; }
-.navsec { display: flex; flex-direction: column; flex: none; border-inline-start: 3px solid var(--sec-lit); padding-inline-start: 6px; }
-.navhead { margin: 0; padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--sec-lit); }
-aside { padding-block: 8px; } aside .brand { padding-bottom: 6px; }
-aside nav a { display: flex; align-items: center; gap: 8px; padding: 0 10px; line-height: 1.8; font-size: 13.5px; } aside nav a.on { background: var(--sec); }
-@media (min-height: 960px) { aside nav a { padding-block: 3px; } aside nav { gap: 10px; } }
+aside { width: 236px; padding-block: 8px; } aside .brand { padding-bottom: 8px; }
+aside nav { overflow-y: auto; min-height: 0; gap: 12px; scrollbar-width: thin; scrollbar-color: #2c4a3d transparent; }
+/* each group in a box of its own: its heading on a band of its colour, its pages one step in, along a line of the same colour */
+.navsec { display: flex; flex-direction: column; flex: none; gap: 1px; padding: 0 0 5px; border-radius: 10px; background: #ffffff09; border: 1px solid color-mix(in srgb, var(--sec-lit) 32%, transparent); }
+.navhead { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; padding: 4px 10px; font-size: 14.5px; font-weight: 800; color: var(--sec-lit); background: color-mix(in srgb, var(--sec-lit) 13%, transparent); border-radius: 9px 9px 0 0; border-bottom: 1px solid color-mix(in srgb, var(--sec-lit) 24%, transparent); }
+aside nav .navsec a { display: flex; align-items: center; gap: 8px; margin-inline: 16px 5px; padding: 1px 9px; line-height: 1.9; font-size: 13.5px; position: relative; }
+aside nav .navsec a::before { content: ''; position: absolute; inset-block: -1px; inset-inline-start: -7px; border-inline-start: 1px solid color-mix(in srgb, var(--sec-lit) 38%, transparent); }
+aside nav a.on { background: var(--sec); }
+.ico { display: inline-flex; flex: none; } .ico svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.navsec a .ico { color: var(--sec-lit); } .navsec a.on .ico { color: #fff; }
+@media (max-height: 900px) { aside nav { gap: 8px; } .navhead { padding-block: 1px; margin-bottom: 3px; } aside nav .navsec a { line-height: 1.65; } .navsec { padding-bottom: 3px; } }   /* a short window: the same boxes, packed closer */
+.fontsample { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; font-size: 15px; }
+.label, .receipt { font-family: "Segoe UI", Tahoma, sans-serif; }   /* what is printed keeps the face its sizes were set for, whatever is chosen for the screen */
 main[data-sec] .title h2 { border-inline-start: 6px solid var(--sec); padding-inline-start: 10px; line-height: 1.35; }
 main[data-sec] .panel > h3, main[data-sec] .panel > .title h3 { color: var(--sec); font-size: 15.5px; }
 main[data-sec] .panel { box-shadow: 0 1px 2px #0000000a; }

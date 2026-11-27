@@ -21,5 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot" />
+    <!-- the test app's own typeface (one copy in the repository), with its licence -->
+    <Content Include="..\Mazesta.App\wwwroot\fonts\Vazirmatn-Variable.woff2;..\Mazesta.App\wwwroot\fonts\Vazirmatn-OFL.txt" Link="wwwroot\fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

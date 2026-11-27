@@ -83,11 +83,19 @@ internal sealed class MainForm : Form
                 case "backup-run": { string e = await _backup.RunAsync(_closing.Token); reply = e.Length == 0 ? (object)new { status = 200, data = _backup.State() } : new { status = 422, data = _backup.State(), error = e }; break; }
                 case "selftest-done" when _selftest is not null: _selftestDone.TrySetResult(Str("result")); reply = new { status = 200 }; break;
                 case "print": _web.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.System); reply = new { status = 200 }; break;
+                case "fonts": reply = new { status = 200, data = new { fonts = WindowsFonts() } }; break;
                 default: reply = new { status = 400, error = "درخواست ناشناخته." }; break;
             }
         }
         catch (Exception e) when (e is not OutOfMemoryException) { reply = new { status = 500, error = e.Message }; }
         if (_web.CoreWebView2 is { } core) core.PostWebMessageAsString(JsonSerializer.Serialize(reply, Opts).Insert(1, $"\"id\":{id},"));
+    }
+
+    /// <summary>The families installed in Windows, by their English names (the ones a page can ask for).</summary>
+    private static string[] WindowsFonts()
+    {
+        using var all = new System.Drawing.Text.InstalledFontCollection();
+        return [.. all.Families.Select(f => f.GetName(1033)).Where(n => n.Length > 0).Distinct().Order(StringComparer.OrdinalIgnoreCase)];
     }
 
     private static readonly JsonSerializerOptions Opts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

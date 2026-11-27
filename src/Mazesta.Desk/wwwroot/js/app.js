@@ -16,9 +16,29 @@ const fail = e => toast(e && e.message ? e.message : String(e), 'err');
 
 /* ---------- local settings (this PC only) ---------- */
 const prefs = {
-  get() { let o = {}; try { o = JSON.parse(localStorage.getItem('mzd') || '{}'); } catch (e) { } return Object.assign({ labelW: 70, labelH: 50, shop: 'مازستا', phone: '', foot: 'لطفاً این رسید را هنگام تحویل همراه داشته باشید.', paper: 'A5' }, o); },
+  get() { let o = {}; try { o = JSON.parse(localStorage.getItem('mzd') || '{}'); } catch (e) { } return Object.assign({ labelW: 70, labelH: 50, shop: 'مازستا', phone: '', foot: 'لطفاً این رسید را هنگام تحویل همراه داشته باشید.', paper: 'A5', font: '' }, o); },
   set(o) { try { localStorage.setItem('mzd', JSON.stringify(Object.assign(prefs.get(), o))); } catch (e) { } },
 };
+// the face of the screens: '' is the program's own (Vazirmatn); a Windows font's name is quoted for CSS, letters it lacks come from the fonts after it
+const cssFont = name => name ? '"' + String(name).replace(/["\\]/g, '') + '"' : '"Vazirmatn"';
+const applyFont = name => document.documentElement.style.setProperty('--font', cssFont(name));
+applyFont(prefs.get().font);
+
+/* the menu's line drawings (24×24, drawn with the current colour) */
+const ICONS = {
+  home: 'M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5', tasks: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10', builds: 'M3 4h18v12H3zM8 20h8M12 16v4',
+  jobs: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.8-.7-.7-2.8z', ships: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4',
+  reports: 'M9 3h6v4H9zM9 5H6v16h12V5h-3M9 17v-3M12 17v-5M15 17v-2', customers: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c0-4 3-6 7-6s7 2 7 6M16 3.5a4 4 0 0 1 0 7M18 15.5c2.5.8 4 2.7 4 5.5',
+  invoices: 'M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h7', payments: 'M4 8h15l-4-4M20 16H5l4 4', cheques: 'M3 6h18v12H3zM6 10h8M6 14h4M14 15l4-4',
+  accounts: 'M4 7h16v13H5a1 1 0 0 1-1-1zM4 7l11-3v3M16 13.5h.01', acc: 'M11 4a8 8 0 1 0 9 9h-9zM15 3.5a7 7 0 0 1 5.5 5.5H15z', ledger: 'M5 4h14v16H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h12M9 8h6',
+  stock: 'M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9', purchases: 'M3 4h2l2.5 11h10L20 7H6M9 20h.01M17 20h.01', shortages: 'M12 4l9 16H3zM12 10v4M12 17h.01',
+  stats: 'M4 3v18h17M8 17v-5M12 17V8M16 17v-9', flows: 'M4 4h6v5H4zM14 15h6v5h-6zM7 9v4a4 4 0 0 0 4 4h3', conflicts: 'M7 3v5a4 4 0 0 0 4 4h2a4 4 0 0 1 4 4v5M17 3v5a4 4 0 0 1-4 4h-2a4 4 0 0 0-4 4v5',
+  backup: 'M12 3c4.4 0 8 1.1 8 2.5S16.4 8 12 8 4 6.9 4 5.5 7.6 3 12 3zM4 5.5v13c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-13M4 12c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5',
+  'sec-day': 'M4 6h16v15H4zM4 10h16M8 3v5M16 3v5', 'sec-shop': 'M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4',
+  'sec-sales': 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.2 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2',
+  'sec-stock': 'M3 21V9l9-5 9 5v12M7 21v-8h10v8M7 17h10', 'sec-manage': 'M4 7h10M18 7h2M14 5v4M4 17h3M11 17h9M7 15v4',
+};
+const icon = name => h('span', { class: 'ico', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24"><path d="' + (ICONS[name] || 'M12 12h.01') + '"/></svg>' });
 
 /* ---------- shell and routing ---------- */
 const NAV = [['#/', 'خانه', () => true], ['#/customers', 'مشتری‌ها', () => can('customers')], ['#/builds', 'سیستم‌های نو', () => can('builds')], ['#/jobs', 'سرویس‌ها', () => can('jobs')], ['#/stock', 'انبار و کالاها', () => can('stock')], ['#/purchases', 'فاکتورهای خرید', () => can('stock')], ['#/stats', 'گزارش مالی و آمار', () => can('reports') && (can('jobs') || can('builds'))], ['#/reports', 'گزارش‌های تست', () => can('tests')]];
@@ -59,10 +79,10 @@ function navOf(path) {
 }
 function drawNav() {
   const open = NAV.filter(n => n[2]()), used = new Set(NAV_GROUPS.flatMap(g => g[2]));
-  const link = n => h('a', { href: n[0], 'data-r': n[0] }, h('span', {}, n[1]));
+  const link = n => h('a', { href: n[0], 'data-r': n[0] }, icon(n[0].slice(2) || 'home'), h('span', {}, n[1]));
   return h('nav', {}, NAV_GROUPS.map(([key, label, refs]) => {
     const lines = refs.map(r => open.find(n => n[0] === r)).filter(Boolean).concat(key === 'manage' ? open.filter(n => !used.has(n[0])) : []);
-    return lines.length ? h('div', { class: 'navsec', 'data-sec': key }, h('p', { class: 'navhead' }, label), lines.map(link)) : null;
+    return lines.length ? h('div', { class: 'navsec', 'data-sec': key }, h('p', { class: 'navhead' }, icon('sec-' + key), label), lines.map(link)) : null;
   }));
 }
 
@@ -123,7 +143,7 @@ async function route(ev) {
   const { path, q } = parseHash(); const main = $('#main'); if (!main) return;
   document.querySelectorAll('.backdrop').forEach(b => b.remove());   // a dialog of the page just left
   const line = navOf(path);
-  document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('on', a.dataset.r === line));
+  document.querySelectorAll('aside nav a').forEach(a => { a.classList.toggle('on', a.dataset.r === line); if (a.dataset.r === line) a.scrollIntoView({ block: 'nearest' }); });
   main.dataset.sec = (NAV_GROUPS.find(g => g[2].includes(line)) || ['day'])[0];
   const r = routes.find(x => x[0].test(path)), soft = S.soft && path === S.path; S.soft = false; S.path = path;
   if (S.lock && S.lock.path !== path) dropLock();
@@ -656,10 +676,16 @@ function settingsDialog() {
   bridge.session().then(r => { if (r.data) srv.value = r.data.server; });
   modal('تنظیمات', (b, close) => {
     const w = text('w', p.labelW, { dir: 'ltr' }), hh = text('h', p.labelH, { dir: 'ltr' }), shop = text('shop', p.shop), phone = text('phone', p.phone, { dir: 'ltr' }), foot = text('foot', p.foot), paper = select('paper', { A5: 'A5', A4: 'A4' }, p.paper);
-    b.append(h('div', { class: 'grid' }, field('نشانی سایت', srv, bridge.dev ? 'در حالت آزمایشی مرورگر این بخش اثری ندارد.' : 'با عوض شدن سایت باید دوباره وارد شوید.', 'wide'), field('عرض برچسب (mm)', w), field('ارتفاع برچسب (mm)', hh), field('نام روی رسید', shop), field('تلفن روی رسید', phone), field('کاغذ رسید', paper), field('متن پایین رسید', foot, '', 'wide')),
+    // the font list comes from Windows (the program only); a choice shows on the sample line at once and on the screens after saving
+    const own = 'وزیرمتن (پیش‌فرض برنامه)', fontPick = select('font', Object.assign({ '': own }, p.font ? { [p.font]: p.font } : {}), p.font);
+    const sample = h('div', { class: 'fontsample wide' }, 'نمونه: مشتری گرامی، سرویس شمارهٔ ۱۲۵۰ آمادهٔ تحویل است. RTX 4070 — 12,500,000');
+    const preview = () => { sample.style.fontFamily = cssFont(fontPick.value) + ', "Segoe UI", Tahoma, sans-serif'; };
+    fontPick.addEventListener('change', preview); preview();
+    bridge.fonts().then(r => { const now = fontPick.value; clear(fontPick).append(h('option', { value: '' }, own), ...((r.data && r.data.fonts) || []).filter(f => f !== 'Vazirmatn').map(f => h('option', { value: f }, f))); fontPick.value = now; });
+    b.append(h('div', { class: 'grid' }, field('نشانی سایت', srv, bridge.dev ? 'در حالت آزمایشی مرورگر این بخش اثری ندارد.' : 'با عوض شدن سایت باید دوباره وارد شوید.', 'wide'), field('فونت برنامه', fontPick, 'از فونت‌های نصب‌شدهٔ ویندوز؛ برچسب و رسیدِ چاپی تغییر نمی‌کنند.', 'wide'), sample, field('عرض برچسب (mm)', w), field('ارتفاع برچسب (mm)', hh), field('نام روی رسید', shop), field('تلفن روی رسید', phone), field('کاغذ رسید', paper), field('متن پایین رسید', foot, '', 'wide')),
       h('div', { class: 'row end' }, h('button', { class: 'btn primary', onclick: async () => {
         const cw = Math.min(200, Math.max(20, +digits(w.value) || 70)), ch = Math.min(200, Math.max(20, +digits(hh.value) || 50));
-        prefs.set({ labelW: cw, labelH: ch, shop: shop.value, phone: phone.value, foot: foot.value, paper: paper.value });
+        prefs.set({ labelW: cw, labelH: ch, shop: shop.value, phone: phone.value, foot: foot.value, paper: paper.value, font: fontPick.value }); applyFont(fontPick.value);
         const r = await bridge.setServer(srv.value); if (r.status !== 200) return toast(r.error || 'نشانی سایت درست نیست.', 'err');
         close(); toast('ذخیره شد.');
       } }, 'ذخیره')));

@@ -155,6 +155,12 @@ window.deskSelfTest = async (server, user, pass) => {
     ok('the list search changes only the rows: the box is never emptied or redrawn', !blank && fb.isConnected);
     // permissions seen by this person
     ok('screens follow the permissions (nav items = areas with at least view)', document.querySelectorAll('aside nav a').length === NAV.filter(n => n[2]()).length);
+    ok('every menu line and group heading has its own drawing', NAV.every(n => ICONS[n[0].slice(2) || 'home']) && NAV_GROUPS.every(g => ICONS['sec-' + g[0]]) && [...document.querySelectorAll('aside nav a, aside .navhead')].every(e => e.querySelector('.ico svg')));
+    const fonts = (await bridge.fonts()).data.fonts, face = () => getComputedStyle(document.body).fontFamily, was = prefs.get().font;
+    applyFont(''); const own = (await document.fonts.load('14px Vazirmatn', 'م')).length > 0 && /^"?Vazirmatn/.test(face());
+    ok('the program\'s own typeface is loaded and used', own, face());
+    applyFont('Tahoma'); const chosen = face(); applyFont(was);
+    ok('Windows fonts are listed and a chosen one is used', fonts.length > 10 && fonts.includes('Tahoma') && /^"?Tahoma/.test(chosen), fonts.length + ' ' + chosen);
     await bridge.logout(); const s = await bridge.session(); ok('sign-out clears the token', s.data && s.data.signedIn === false);
     r = await bridge.api('GET', 'staff/me'); ok('after sign-out the site refuses', r.status === 401);
   } catch (e) { bad++; log.push('FAIL exception ' + e.message + '\n' + (e.stack || '')); }
