@@ -124,11 +124,14 @@ window.deskSelfTest = async (server, user, pass) => {
       const line = await wait(() => document.querySelector(`#main .rows tr[data-pid="${pid}"]`)); ok('Enter in the product search adds the line', !!line, line && line.dataset.pid);
       set(line.querySelector('[name=unit_price]'), '2000000'); key('F8');
       const ivid = await wait(() => (location.hash.match(/#\/invoice\/(\d+)/) || [])[1]); ok('F8 saves the draft', !!ivid, location.hash);
-      await wait(() => document.querySelector('#main .rows tr[data-pid]')); key('F9');
+      // the saved draft's own page, not the new invoice's rows still on screen: its keys are the ones F9 must reach
+      await wait(() => S.keys && S.keys.hash === location.hash && /پیش‌نویس/.test(document.querySelector('#main h2').textContent) && document.querySelector('#main .rows tr[data-pid]'), 20000); key('F9');
       const fin = await wait(() => [...document.querySelectorAll('.modal button')].find(b => b.textContent === 'قطعی شود')); if (fin) fin.click();
       let gi = null;
       for (let i = 0; i < 40 && !(gi && gi.status === 'final'); i++) { await new Promise(r => setTimeout(r, 150)); gi = await GET('staff/invoices/' + ivid); }
-      ok('F9 makes it final with a number', gi && gi.status === 'final' && gi.no > 0, gi && gi.status + ' ' + gi.no);
+      // on failure say what was on screen: the page, a dialog left open, the messages
+      const seen = () => [location.hash, S.keys && S.keys.hash, fin ? 'confirmed' : 'no confirm button', (document.querySelector('.modal') || {}).textContent, document.querySelector('#toasts').textContent].join(' | ').slice(0, 400);
+      ok('F9 makes it final with a number', gi && gi.status === 'final' && gi.no > 0, gi && gi.status + ' ' + gi.no + ' — ' + seen());
       const st = await GET('staff/products/' + pid); ok('the sale took the part out of the stock', st.totals.stock === 0, st.totals.stock);
       await wait(() => document.querySelector('#main h2') && document.querySelector('#main h2').textContent.includes(String(gi.no)));
       key('F6'); const pm = await wait(() => document.querySelector('.modal input[name=amount]')); ok('F6 opens the payment of this invoice with what is left', !!pm && digits(pm.value).replace(/\D/g, '') === '2000000', pm && pm.value);   // (the box groups the digits)

@@ -133,7 +133,8 @@ function printWindow(titleText, spec) {
       const [w, hh] = label ? [o.w, o.h] : o.land ? PAPER[o.paper].slice().reverse() : PAPER[o.paper], margin = label ? 0 : o.margin;
       node.style.setProperty('--pfont', cssFont(o.font) + ', "Segoe UI", Tahoma, sans-serif'); node.style.setProperty('--psize', o.size + 'pt'); if (o.color) node.style.setProperty('--pc', o.color);
       node.style.width = w + 'mm'; node.style[label ? 'height' : 'minHeight'] = hh + 'mm'; if (!label) node.style.padding = margin + 'mm';
-      const count = o.fa ? ',persian' : '', pages = margin >= 5 ? `@bottom-center{content:counter(page${count}) " از " counter(pages${count});font:7pt Tahoma;color:#666}` : '';
+      // the other margin boxes are set empty so the print window does not write its own date, title and address in them
+      const count = o.fa ? ',persian' : '', pages = margin >= 5 ? `@top-left{content:""}@top-center{content:""}@top-right{content:""}@bottom-left{content:""}@bottom-right{content:""}@bottom-center{content:counter(page${count}) " از " counter(pages${count});font:7pt Tahoma;color:#666}` : '';
       document.getElementById('printcss')?.remove(); document.head.append(h('style', { id: 'printcss' }, `@page{size:${w}mm ${hh}mm;margin:${margin}mm;${pages}}`));
       document.getElementById('printArea')?.remove(); document.body.append(h('div', { id: 'printArea' }, node.cloneNode(true)));
       clear(stage).append(node);
