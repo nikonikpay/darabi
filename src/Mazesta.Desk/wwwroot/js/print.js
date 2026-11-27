@@ -65,10 +65,13 @@ const itemsTable = (heads, rows) => h('table', { class: 'lines' }, h('thead', {}
 const deadPay = p => !!p.cheque && (p.cheque.status === 'bounced' || p.cheque.status === 'cancelled');
 function invoiceSheet(v, o, more) {
   const N = numbers(o), s = shopInfo(), settled = (v.kind === 'sale' || v.kind === 'return') && v.status === 'final';
-  const pays = settled && o.pays ? (v.payments || []).filter(p => !deadPay(p)).concat(more.extra) : [];
+  // received and remaining are the invoice's own account; a ticked deposit not tied to it (علی‌الحساب) is shown apart, never mixed into them
+  const pays = settled && o.pays ? (v.payments || []).filter(p => !deadPay(p)) : [], held = settled && o.pays ? more.extra : [];
   const sign = p => (p.direction === 'in') === (v.kind === 'sale') ? 1 : -1;   // on a return, money paid back is what settles it
-  const paid = pays.reduce((a, p) => a + sign(p) * p.amount, 0), left = v.total - paid;
-  const how = p => [p.methodText, p.cheque ? [' ', N.n(p.cheque.no), p.cheque.due_at_j ? [' — سررسید ', N.n(p.cheque.due_at_j)] : null, p.cheque.status === 'pending' ? ' (در جریان)' : null] : null, !p.invoice_id ? ' — علی‌الحساب' : null];
+  const sum = list => list.reduce((a, p) => a + sign(p) * p.amount, 0), paid = sum(pays), left = v.total - paid, adv = sum(held);
+  const rest = (n, owed, over, even, cls) => n > 0 ? [owed, n, cls] : n < 0 ? [over, -n, cls] : [even, 0, cls];
+  const how = p => [p.methodText, p.cheque ? [' ', N.n(p.cheque.no), p.cheque.due_at_j ? [' — سررسید ', N.n(p.cheque.due_at_j)] : null, p.cheque.status === 'pending' ? ' (در جریان)' : null] : null];
+  const paySection = (title, list, cls) => list.length ? h('section', { class: cls }, h('h3', {}, title), itemsTable(['تاریخ', 'روش', 'پیگیری', 'مبلغ (تومان)'], list.map(p => [h('td', {}, N.n(p.at_j)), h('td', {}, how(p)), h('td', {}, N.n(p.tx)), h('td', { class: 'amt' }, sign(p) < 0 ? 'برگشتی ' : null, N.m(p.amount))]))) : null;
   return h('div', { class: 'sheet invoice' },
     sheetHead(o, v.kindText, [o.no ? ['شماره', N.n(v.no || '—')] : null, ['تاریخ', N.n(v.at_j)], v.kind === 'proforma' ? ['اعتبار تا', N.n(v.valid_until_j)] : null],
       v.status === 'void' ? h('div', { class: 'stamp' }, 'باطل شده') : v.status === 'draft' && v.kind !== 'proforma' ? h('div', { class: 'stamp' }, 'پیش‌نویس') : null),
@@ -79,10 +82,11 @@ function invoiceSheet(v, o, more) {
         h('td', { class: 'c' }, N.n(x.qty)), h('td', { class: 'amt' }, N.m(x.unit_price)), h('td', { class: 'amt' }, N.m(x.line_total))]; })),
     h('div', { class: 'bottom' },
       h('div', { class: 'side' }, o.words && v.total > 0 ? h('p', { class: 'words' }, 'مبلغ به حروف: ', h('b', {}, toWords(v.total) + ' تومان')) : null,
-        pays.length ? h('section', { class: 'pays' }, h('h3', {}, v.kind === 'return' ? 'مبالغ بازپرداخت‌شده' : 'دریافتی‌ها'), itemsTable(['تاریخ', 'روش', 'پیگیری', 'مبلغ (تومان)'], pays.map(p => [h('td', {}, N.n(p.at_j)), h('td', {}, how(p)), h('td', {}, N.n(p.tx)), h('td', { class: 'amt' }, sign(p) < 0 ? 'برگشتی ' : null, N.m(p.amount))]))) : null,
+        paySection(v.kind === 'return' ? 'مبالغ بازپرداخت‌شده' : 'دریافتی‌ها', pays, 'pays'), paySection('علی‌الحساب (به این فاکتور وصل نیست)', held, 'pays held'),
         o.pay && s.pay && v.kind !== 'return' ? h('p', { class: 'payinfo' }, 'اطلاعات واریز: ', N.fa(s.pay)) : null, noteBlock(o, (v.notes ? [v.notes] : []).concat(more.notes))),
       h('dl', { class: 'totals' }, [['جمع کل', v.subtotal], v.discount ? ['تخفیف', v.discount] : null, v.discount && v.tax ? ['پس از تخفیف', v.subtotal - v.discount] : null, v.tax ? ['مالیات بر ارزش افزوده (' + N.fa(v.tax_pct) + '٪)', v.tax] : null, ['مبلغ قابل پرداخت', v.total, 'big'],
-        settled && o.pays ? [v.kind === 'return' ? 'بازپرداخت‌شده' : 'دریافت‌شده', paid, 'paid'] : null, settled && o.pays ? left > 0 ? ['مانده', left, 'left'] : left < 0 ? ['اضافه‌دریافت (بستانکار)', -left, 'left'] : ['مانده (تسویه)', 0, 'left'] : null]
+        settled && o.pays ? [v.kind === 'return' ? 'بازپرداخت‌شده' : 'دریافت‌شده', paid, 'paid'] : null, settled && o.pays ? rest(left, 'مانده', 'اضافه‌دریافت (بستانکار)', 'مانده (تسویه)', 'left') : null,
+        held.length ? ['علی‌الحساب', adv, 'held'] : null, held.length ? rest(left - adv, 'مانده پس از کسر علی‌الحساب', 'بستانکار پس از کسر علی‌الحساب', 'تسویه با علی‌الحساب', 'after') : null]
         .filter(Boolean).map(x => h('div', { class: x[2] || '' }, h('dt', {}, x[0]), h('dd', {}, N.m(x[1])))))),
     tail(signs(o, ['مهر و امضای فروشنده', 'امضای خریدار']), s.foot ? h('p', { class: 'foot' }, s.foot) : null));
 }
