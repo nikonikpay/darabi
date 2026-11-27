@@ -103,7 +103,7 @@ aside nav .navsec a::before { content: ''; position: absolute; inset-block: -1px
 aside nav a.on { background: var(--sec); }
 .ico { display: inline-flex; flex: none; } .ico svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .navsec a .ico { color: var(--sec-lit); } .navsec a.on .ico { color: #fff; }
-@media (max-height: 900px) { aside nav { gap: 8px; } .navhead { padding-block: 1px; margin-bottom: 3px; } aside nav .navsec a { line-height: 1.65; } .navsec { padding-bottom: 3px; } }   /* a short window: the same boxes, packed closer */
+@media (max-height: 1100px) { aside nav { gap: 8px; } .navhead { padding-block: 1px; margin-bottom: 3px; } aside nav .navsec a { line-height: 1.65; } .navsec { padding-bottom: 3px; } }   /* a short window: the same boxes, packed closer */
 .fontsample { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; font-size: 15px; }
 .label, .receipt { font-family: "Segoe UI", Tahoma, sans-serif; }   /* what is printed keeps the face its sizes were set for, whatever is chosen for the screen */
 main[data-sec] .title h2 { border-inline-start: 6px solid var(--sec); padding-inline-start: 10px; line-height: 1.35; }
