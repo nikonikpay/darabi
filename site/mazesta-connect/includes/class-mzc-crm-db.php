@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 23;
+    const SCHEMA = 24;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -196,7 +196,10 @@ final class MZC_Crm_Db
             action VARCHAR(10) NOT NULL, note VARCHAR(1000) NULL, step SMALLINT NOT NULL DEFAULT 0, progress TINYINT NULL, KEY task_id (task_id)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('flows')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, kind VARCHAR(10) NOT NULL DEFAULT 'general', steps TEXT NOT NULL, auto TINYINT NOT NULL DEFAULT 0, active TINYINT NOT NULL DEFAULT 1,
             created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY kind (kind, active)) $engine";
-        $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
+        // schema 24: a customer's debt (side debit) or credit (side credit: the shop owes them) entered by hand, where no invoice, service or payment stands for it
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('dues')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, customer_id BIGINT UNSIGNED NOT NULL, side VARCHAR(6) NOT NULL, amount BIGINT NOT NULL, at DATE NOT NULL, text VARCHAR(255) NOT NULL,
+            created_by BIGINT UNSIGNED NOT NULL DEFAULT 0, created DATETIME NOT NULL, KEY customer_id (customer_id)) $engine";
+        $before =(int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }
         // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)

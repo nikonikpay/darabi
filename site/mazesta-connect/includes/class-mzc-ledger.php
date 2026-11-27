@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) { exit; }
 
 /**
- * The double-entry ledger, worked out from the documents the accounting already keeps (final sale and return invoices, payments, cheques, purchase invoices). It stores nothing:
+ * The double-entry ledger, worked out from the documents the accounting already keeps (final sale and return invoices, payments, cheques, purchase invoices, hand-entered debts and credits). It stores nothing:
  * there is no second set of figures to edit, so it cannot drift from the documents. Each document becomes one journal entry whose debits equal its credits (balanced() says so; the
  * trial balance repeats it). Not included: the old-style service jobs and their payments (job_pays); the chart is small on purpose.
  * Simplification: a cheque's entry follows the cheque's status today (pending, cleared) and keeps the payment's date; a bounced or cancelled cheque makes no entry.
@@ -12,7 +12,7 @@ final class MZC_Ledger
     public static $accounts = array(
         '1010' => 'صندوق', '1020' => 'بانک و کارتخوان', '1030' => 'اسناد دریافتنی (چک‌های در راه)', '1100' => 'حساب‌های دریافتنی (مشتریان)', '1200' => 'موجودی کالا',
         '2010' => 'حساب‌های پرداختنی (فروشندگان)', '2020' => 'اسناد پرداختنی (چک‌های صادرشده)', '2100' => 'مالیات بر ارزش افزوده',
-        '4010' => 'فروش', '4900' => 'درآمد متفرقه', '5010' => 'بهای تمام‌شدهٔ کالای فروخته‌شده', '6000' => 'هزینه‌ها',
+        '3010' => 'بدهی و طلب ثبت‌دستی مشتریان', '4010' => 'فروش', '4900' => 'درآمد متفرقه','5010' => 'بهای تمام‌شدهٔ کالای فروخته‌شده', '6000' => 'هزینه‌ها',
     );
 
     private static function t($n) { return MZC_Crm_Db::t($n); }
@@ -53,7 +53,14 @@ final class MZC_Ledger
     /** A supplier's purchase invoice: the goods come into stock, the shop owes the supplier (paid later by a payment to them). */
     public static function post_purchase($total) { $total = (int) $total; return $total > 0 ? array(self::line('1200', $total, 0), self::line('2010', 0, $total)) : array(); }
 
-    /** Every entry from $from to $to (Y-m-d; null $from = from the start), oldest first: array(at, ref, id, text, lines). */
+    /** A customer's debt or credit entered by hand ($d: side, amount): the receivable against its own account, no money and no sale. */
+    public static function post_due($d)
+    {
+        $a = (int) $d['amount'];
+        return $d['side'] === 'debit' ? array(self::line('1100', $a, 0), self::line('3010', 0, $a)) : array(self::line('3010', $a, 0), self::line('1100', 0, $a));
+    }
+
+    /** Every entry from $from to $to(Y-m-d; null $from = from the start), oldest first: array(at, ref, id, text, lines). */
     public static function entries($from, $to)
     {
         $db = MZC_Crm_Db::db(); if (!$db) { return null; }
@@ -69,6 +76,9 @@ final class MZC_Ledger
         foreach ($db->get_results($db->prepare("SELECT u.id, u.invoice_no, u.bought_at, (SELECT COALESCE(SUM(x.qty * x.unit_cost), 0) FROM `$pi` x WHERE x.purchase_id = u.id) AS total FROM `$pu` u WHERE u.bought_at BETWEEN %s AND %s", $from, $to), ARRAY_A) ?: array() as $u) {
             $lines = self::post_purchase($u['total']); if (!$lines) { continue; }
             $out[] = array('at' => (string) $u['bought_at'], 'ref' => 'purchase', 'id' => (int) $u['id'], 'text' => 'فاکتور خرید ' . $u['invoice_no'], 'lines' => $lines);
+        }
+        foreach ($db->get_results($db->prepare('SELECT * FROM `' . self::t('dues') . '` WHERE at BETWEEN %s AND %s', $from, $to), ARRAY_A) ?: array() as $d) {
+            $out[] = array('at' => (string) $d['at'], 'ref' => 'due', 'id' => (int) $d['id'], 'text' => MZC_Acc::$due_sides[$d['side']] . ' — ' . $d['text'], 'lines' => self::post_due($d));
         }
         usort($out, function ($a, $b) { return strcmp($a['at'], $b['at']) ?: strcmp($a['ref'] . $a['id'], $b['ref'] . $b['id']); });
         return $out;

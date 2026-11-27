@@ -16,7 +16,7 @@ final class MZC_Acc_Api
             array('/staff/invoices', 'GET', 'invoices'), array('/staff/invoices/(?P<id>\d+)', 'GET', 'invoice'), array('/staff/invoices', 'POST', 'invoice_save'),
             array('/staff/invoices/finalize', 'POST', 'finalize'), array('/staff/invoices/void', 'POST', 'void'), array('/staff/invoices/copy', 'POST', 'copy'), array('/staff/invoices/delete', 'POST', 'delete'), array('/staff/invoices/from-build', 'POST', 'from_build'),
             array('/staff/payments', 'GET', 'payments'), array('/staff/payments', 'POST', 'payment_save'), array('/staff/payments/delete', 'POST', 'payment_delete'),
-            array('/staff/cheques', 'GET', 'cheques'), array('/staff/cheques', 'POST', 'cheque_save'),
+            array('/staff/cheques', 'GET', 'cheques'), array('/staff/cheques', 'POST', 'cheque_save'), array('/staff/dues', 'POST', 'due_add'), array('/staff/dues/delete', 'POST', 'due_delete'),
             array('/staff/customers/(?P<id>\d+)/account', 'GET', 'customer_account'), array('/staff/suppliers/(?P<id>\d+)/account', 'GET', 'supplier_account'),
             array('/staff/acc/summary', 'GET', 'summary'), array('/staff/acc/ledger', 'GET', 'ledger'), array('/staff/acc/due', 'GET', 'due'),
         );
@@ -312,6 +312,28 @@ final class MZC_Acc_Api
         return MZC_Api::ok(self::cheque_out($q), $id ? 200 : 201);
     }
 
+    /* ---------- debts and credits entered by hand (the accountant's) ---------- */
+
+    public static function rest_due_add($req)
+    {
+        $a = self::auth($req, 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $p = MZC_Api::body($req);
+        $r = MZC_Acc::add_due(array('customer_id' => MZC_Api::n($p, 'customer_id'), 'side' => MZC_Api::s($p, 'side', 6), 'amount' => MZC_Api::n($p, 'amount'), 'at' => MZC_Api::d($p, 'at'), 'text' => MZC_Api::s($p, 'text', 255)), $a['id']);
+        if (!is_int($r)) { return self::fail($r, 422); }
+        $y = MZC_Acc::due($r); MZC_Api::log($a, 'create', 'due', $r, $y['side'] . ' ' . $y['amount'] . ' customer ' . $y['customer_id'] . ' — ' . $y['text']);
+        return MZC_Api::ok(array('id' => $r), 201);
+    }
+
+    public static function rest_due_delete($req)
+    {
+        $a = self::auth($req, 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $id = MZC_Api::n(MZC_Api::body($req), 'id'); $y = MZC_Acc::due($id);
+        $r = MZC_Acc::delete_due($id); if (!is_int($r)) { return self::fail($r, 422); }
+        // the log keeps what was removed: the row itself is gone
+        MZC_Api::log($a, 'delete', 'due', $id, $y['side'] . ' ' . $y['amount'] . ' customer ' . $y['customer_id'] . ' ' . $y['at'] . ' — ' . $y['text']);
+        return MZC_Api::ok(array('deleted' => $id));
+    }
+
     /* ---------- accounts and the period ---------- */
 
     /** A customer's whole money story: the account (running balance), every invoice and proforma, the payments and the cheques. */
@@ -322,7 +344,9 @@ final class MZC_Acc_Api
         $cid = (int) $req['id']; $c = MZC_Crm::customer($cid); if (!$c) { return self::fail('مشتری پیدا نشد.', 404); }
         $l = MZC_Acc::ledger($cid); list($inv) = MZC_Acc::invoices(array('customer' => $cid), 1, 200); list($pay) = MZC_Acc::payments(array('customer' => $cid), 1, 200); list($chq) = MZC_Acc::cheques(array('customer' => $cid), 1, 100);
         foreach ($l['rows'] as &$r) { $r['at_j'] = self::jd($r['at']); } unset($r);
-        return MZC_Api::ok(array('customer_id' => $cid, 'balance' => $l['balance'], 'ledger' => $l['rows'], 'invoices' => array_map(function ($v) use ($a) { return self::invoice_out($v, $a, false); }, $inv),
+        $open = MZC_Acc::open($l['rows']);
+        foreach (array('owes', 'owed') as $s) { foreach ($open[$s] as &$x) { $x['at_j'] = self::jd($x['at']); } unset($x); }
+        return MZC_Api::ok(array('customer_id' => $cid, 'balance' => $l['balance'], 'open' => $open, 'ledger' => $l['rows'],'invoices' => array_map(function ($v) use ($a) { return self::invoice_out($v, $a, false); }, $inv),
             'payments' => array_map(array(__CLASS__, 'payment_out'), $pay), 'cheques' => array_map(array(__CLASS__, 'cheque_out'), $chq), 'site' => self::site_of($c)));
     }
 

@@ -477,28 +477,116 @@ final class MZC_Acc
 
     /**
      * A customer's account, oldest first with the running balance (positive: the customer owes): final sales (debit) and returns (credit), finished services (their total,
-     * debit) and what was paid on them, payments received (credit) and paid back (debit). Payments by a bounced or void cheque are listed but not counted.
+     * debit) and what was paid on them, payments received (credit) and paid back (debit), debts and credits entered by hand. Payments by a bounced or void cheque are listed
+     * but not counted. A row's `key` names the document it counts against ('' for money tied to none): open_items() reads it.
      */
     public static function ledger($cid)
     {
         $db = MZC_Crm_Db::db(); if (!$db) { return array('rows' => array(), 'balance' => 0); }
         $rows = array();
         foreach ($db->get_results($db->prepare('SELECT id, kind, no, at, total FROM `' . self::t('invoices') . "` WHERE customer_id = %d AND status = 'final' AND kind IN ('sale','return')", (int) $cid), ARRAY_A) ?: array() as $v) {
-            $rows[] = array('at' => $v['at'], 'kind' => $v['kind'], 'ref' => 'invoice', 'id' => (int) $v['id'], 'text' => self::$kinds[$v['kind']] . ' ' . $v['no'], 'debit' => $v['kind'] === 'sale' ? (int) $v['total'] : 0, 'credit' => $v['kind'] === 'return' ? (int) $v['total'] : 0);
+            $rows[] = array('at' => $v['at'], 'kind' => $v['kind'], 'ref' => 'invoice', 'id' => (int) $v['id'], 'key' => 'invoice:' . $v['id'], 'text' => self::$kinds[$v['kind']] . ' ' . $v['no'],'debit' => $v['kind'] === 'sale' ? (int) $v['total'] : 0, 'credit' => $v['kind'] === 'return' ? (int) $v['total'] : 0);
         }
         foreach ($db->get_results($db->prepare('SELECT id FROM `' . self::t('jobs') . '` WHERE customer_id = %d AND service_done = 1', (int) $cid)) ?: array() as $j) {
             $j = MZC_Crm::job($j->id); if (!$j) { continue; }
-            $rows[] = array('at' => $j['closed_at'] ?: $j['received_at'], 'kind' => 'job', 'ref' => 'job', 'id' => (int) $j['id'], 'text' => 'سرویس ' . $j['service_no'], 'debit' => max(0, (int) $j['total']), 'credit' => 0);
-            foreach ($j['pays'] as $p) { $rows[] = array('at' => $p['paid_at'] ?: $j['received_at'], 'kind' => 'job_pay', 'ref' => 'job', 'id' => (int) $j['id'], 'text' => 'پرداخت سرویس ' . $j['service_no'] . ($p['account'] ? ' — ' . $p['account'] : ''), 'debit' => 0, 'credit' => (int) $p['amount']); }
+            $rows[] = array('at' => $j['closed_at'] ?: $j['received_at'], 'kind' => 'job', 'ref' => 'job', 'id' => (int) $j['id'], 'key' => 'job:' . $j['id'], 'text' =>'سرویس ' . $j['service_no'], 'debit' => max(0, (int) $j['total']), 'credit' => 0);
+            foreach ($j['pays'] as $p) { $rows[] = array('at' => $p['paid_at'] ?: $j['received_at'], 'kind' => 'job_pay', 'ref' => 'job', 'id' => (int) $j['id'], 'key' => 'job:' . $j['id'],'text' => 'پرداخت سرویس ' . $j['service_no'] . ($p['account'] ? ' — ' . $p['account'] : ''), 'debit' => 0, 'credit' => (int) $p['amount']); }
         }
         foreach ($db->get_results($db->prepare('SELECT y.*, x.name AS via_name, q.status AS cheque_status, q.no AS cheque_no, v.no AS invoice_no FROM `' . self::t('payments') . '` y LEFT JOIN `' . self::t('vendors') . '` x ON x.id = y.via_id LEFT JOIN `' . self::t('cheques') . '` q ON q.id = y.cheque_id LEFT JOIN `' . self::t('invoices') . '` v ON v.id = y.invoice_id WHERE y.customer_id = %d', (int) $cid), ARRAY_A) ?: array() as $p) {
             $dead = $p['cheque_status'] !== null && in_array($p['cheque_status'], array('bounced', 'cancelled'), true);
             $txt = ($p['direction'] === 'in' ? 'دریافت ' : 'پرداخت به مشتری ') . self::$methods[$p['method']] . ($p['cheque_no'] ? ' ' . $p['cheque_no'] : '') . ($p['via_name'] ? ' — به حساب «' . $p['via_name'] . '»' : '') . ($p['invoice_no'] ? ' (فاکتور ' . $p['invoice_no'] . ')' : '') . ($dead ? ' — ' . self::$cheque_statuses[$p['cheque_status']] . '، حساب نمی‌شود' : '');
-            $rows[] = array('at' => $p['at'], 'kind' => 'pay', 'ref' => 'payment', 'id' => (int) $p['id'], 'text' => $txt, 'debit' => !$dead && $p['direction'] === 'out' ? (int) $p['amount'] : 0, 'credit' => !$dead && $p['direction'] === 'in' ? (int) $p['amount'] : 0, 'dead' => $dead,
+            $rows[] = array('at' => $p['at'], 'kind' => 'pay', 'ref' => 'payment', 'id' => (int) $p['id'], 'key' => $p['invoice_id'] ? 'invoice:' . $p['invoice_id'] : '', 'text' => $txt,'debit' => !$dead && $p['direction'] === 'out' ? (int) $p['amount'] : 0, 'credit' => !$dead && $p['direction'] === 'in' ? (int) $p['amount'] : 0, 'dead' => $dead,
                 'type' => $p['direction'] === 'in' ? ($p['via_name'] ? 'دریافت به حساب دیگران' : 'دریافت') : 'پرداخت به مشتری', 'how' => self::$methods[$p['method']] . ($p['account'] ? ' — ' . $p['account'] : '') . ($p['via_name'] ? ' — به حساب «' . $p['via_name'] . '»' : ''), 'tx' => (string) $p['tx']);
+        }
+        foreach ($db->get_results($db->prepare('SELECT * FROM `' . self::t('dues') . '` WHERE customer_id = %d', (int) $cid), ARRAY_A) ?: array() as $d) {
+            $rows[] = array('at' => $d['at'], 'kind' => 'due', 'ref' => 'due', 'id' => (int) $d['id'], 'key' => '', 'text' => $d['text'], 'debit' => $d['side'] === 'debit' ? (int) $d['amount'] : 0, 'credit' => $d['side'] === 'credit' ? (int) $d['amount'] : 0, 'type' => self::$due_sides[$d['side']]);
         }
         foreach ($rows as &$r) { if (!isset($r['type'])) { $r['type'] = $r['kind'] === 'sale' ? 'فروش' : ($r['kind'] === 'return' ? 'برگشت از فروش' : ($r['kind'] === 'job' ? 'سرویس' : 'دریافت (سرویس)')); } } unset($r);
         return self::run($rows);
+    }
+
+    /**
+     * What is still open in a customer's account, from the ledger's rows (oldest first): each sale, return and service less only what was paid on it; the money tied to no
+     * document (deposits, money paid back, entries by hand) is set off among itself, oldest first. owes: what the customer still owes; owed: what the shop owes them.
+     * Each item: at, ref, id, text, amount, settled, left. The two totals differ by exactly the ledger's balance.
+     */
+    public static function open_items($rows)
+    {
+        $docs = array(); foreach ($rows as $r) { if (in_array($r['kind'], array('sale', 'return', 'job'), true)) { $docs[$r['key']] = $r; } }
+        $net = array(); $free = array();
+        foreach ($rows as $r) {
+            $k = isset($r['key']) ? $r['key'] : ''; $v = $r['debit'] - $r['credit'];
+            if (isset($docs[$k])) { $net[$k] = (isset($net[$k]) ? $net[$k] : 0) + $v; continue; }   // a payment on a draft or void invoice counts as tied to none
+            if (!$v) { continue; }
+            while ($v && $free && ($free[0][1] > 0) !== ($v > 0)) {
+                $take = min(abs($v), abs($free[0][1])); $v += $v > 0 ? -$take : $take; $free[0][1] += $free[0][1] > 0 ? -$take : $take;
+                if (!$free[0][1]) { array_shift($free); }
+            }
+            if ($v) { $free[] = array($r, $v); }
+        }
+        $out = array('owes' => array(), 'owed' => array());
+        $add = function ($r, $left, $amount, $text) use (&$out) {
+            $out[$left > 0 ? 'owes' : 'owed'][] = array('at' => $r['at'], 'ref' => $r['ref'], 'id' => $r['id'], 'text' => $text, 'amount' => $amount, 'settled' => $amount - abs($left), 'left' => abs($left));
+        };
+        foreach ($net as $k => $left) {
+            if (!$left) { continue; }
+            $d = $docs[$k]; $back = $d['kind'] === 'return';
+            if (($left < 0) === $back) { $add($d, $left, max($d['debit'] + $d['credit'], abs($left)), $d['text']); }
+            else { $add($d, $left, abs($left), ($back ? 'اضافه‌پرداخت — ' : 'اضافه‌دریافت — ') . $d['text']); }
+        }
+        foreach ($free as $x) { $add($x[0], $x[1], $x[0]['debit'] + $x[0]['credit'], $x[0]['text']); }
+        foreach (array('owes', 'owed') as $s) { usort($out[$s], function ($a, $b) { return strcmp((string) $a['at'], (string) $b['at']); }); $out[$s . '_total'] = array_sum(array_column($out[$s], 'left')); }
+        return $out;
+    }
+
+    /** open_items() with `what` on each invoice and service item: its title and first goods, or the device and what was done to it. */
+    public static function open($rows)
+    {
+        $db = MZC_Crm_Db::db(); $o = self::open_items($rows);
+        foreach (array('owes', 'owed') as $s) {
+            foreach ($o[$s] as &$x) {
+                $x['what'] = '';
+                if ($db && $x['ref'] === 'invoice') {
+                    $names = $db->get_col($db->prepare('SELECT name FROM `' . self::t('invoice_items') . '` WHERE invoice_id = %d ORDER BY id', $x['id'])) ?: array();
+                    $x['what'] = implode(' — ', array_filter(array((string) $db->get_var($db->prepare('SELECT title FROM `' . self::t('invoices') . '` WHERE id = %d', $x['id'])),
+                        implode('، ', array_slice($names, 0, 3)) . (count($names) > 3 ? ' و ' . (count($names) - 3) . ' قلم دیگر' : ''))));
+                } elseif ($db && $x['ref'] === 'job') {
+                    $j = $db->get_row($db->prepare('SELECT device, complaint, work_done FROM `' . self::t('jobs') . '` WHERE id = %d', $x['id']), ARRAY_A) ?: array();
+                    if ($j) { $x['what'] = implode(' — ', array_filter(array((string) $j['device'], (string) ($j['work_done'] ?: $j['complaint'])))); }
+                }
+                $x['what'] = Mazesta_Connect::clip($x['what'], 200);
+            }
+            unset($x);
+        }
+        return $o;
+    }
+
+    /* ---------- debts and credits entered by hand ---------- */
+
+    public static $due_sides = array('debit' => 'بدهی ثبت‌شده', 'credit' => 'طلب مشتری');
+
+    public static function due($id)
+    {
+        $db = MZC_Crm_Db::db(); return $db ? $db->get_row($db->prepare('SELECT * FROM `' . self::t('dues') . '` WHERE id = %d', (int) $id), ARRAY_A) : null;
+    }
+
+    /** A debt or credit that no document stands for (other work, an old balance, money the shop owes them). $d: customer_id, side (debit: they owe; credit: the shop owes them), amount, at, text. The id or an error text. */
+    public static function add_due($d, $uid = 0)
+    {
+        $db = MZC_Crm_Db::db(); if (!$db) { return MZC_Crm_Db::error(); }
+        $g = function ($k) use ($d) { return isset($d[$k]) ? $d[$k] : ''; };
+        $cid = (int) $g('customer_id'); if (!$cid || !MZC_Crm::customer($cid)) { return 'مشتری پیدا نشد.'; }
+        $side = (string) $g('side'); if (!isset(self::$due_sides[$side])) { return 'مشخص کنید بدهی مشتری است یا طلب او.'; }
+        $amount = (int) self::m($g('amount')); if ($amount < 1 || $amount > 999999999999) { return 'مبلغ را درست بنویسید.'; }
+        $text = trim(self::clip($g('text'), 255)); if ($text === '') { return 'بنویسید بابت چیست.'; }
+        $row = array('customer_id' => $cid, 'side' => $side, 'amount' => $amount, 'at' => self::date_in($g('at'), MZC_Crm::ymd()), 'text' => $text, 'created_by' => (int) $uid, 'created' => self::now());
+        return $db->insert(self::t('dues'), $row) ? (int) $db->insert_id : 'ذخیره نشد: ' . $db->last_error;
+    }
+
+    public static function delete_due($id)
+    {
+        $db = MZC_Crm_Db::db(); if (!$db || !self::due($id)) { return 'این ردیف پیدا نشد.'; }
+        return $db->delete(self::t('dues'), array('id' => (int) $id)) ? (int) $id : 'پاک نشد: ' . $db->last_error;
     }
 
     /** What the customer sees of their own final sale and return invoices (newest first): numbers, dates, lines, what was paid. Never a buy price, never a draft or void one. */
@@ -574,7 +662,7 @@ final class MZC_Acc
     public static function debtors($n = 10)
     {
         $db = MZC_Crm_Db::db(); if (!$db) { return array(); }
-        $ids = $db->get_col('SELECT DISTINCT customer_id FROM `' . self::t('invoices') . "` WHERE status = 'final' AND customer_id IS NOT NULL UNION SELECT DISTINCT customer_id FROM `" . self::t('jobs') . '` WHERE service_done = 1 AND customer_id IS NOT NULL LIMIT 3000') ?: array();
+        $ids = $db->get_col('SELECT DISTINCT customer_id FROM `' . self::t('invoices') . "` WHERE status = 'final' AND customer_id IS NOT NULL UNION SELECT DISTINCT customer_id FROM `" . self::t('jobs') . '` WHERE service_done = 1 AND customer_id IS NOT NULL UNION SELECT DISTINCT customer_id FROM `' . self::t('dues') . '` LIMIT 3000') ?: array();
         $out = array();
         // ponytail: a balance per customer is a ledger each (fine for a shop's few thousand customers); a summary table would be the next step if it ever gets slow
         foreach ($ids as $cid) { $b = self::ledger((int) $cid)['balance']; if ($b > 0) { $out[] = array('customer_id' => (int) $cid, 'balance' => $b); } }

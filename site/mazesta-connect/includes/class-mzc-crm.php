@@ -658,8 +658,9 @@ final class MZC_Crm
         MZC_Admin::guard('customer_delete');
         $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
         if ($db && $id) {
-            $n = (int) $db->get_var($db->prepare('SELECT (SELECT COUNT(*) FROM `' . self::t('builds') . '` WHERE customer_id = %d) + (SELECT COUNT(*) FROM `' . self::t('jobs') . '` WHERE customer_id = %d)', $id, $id));
-            if ($n > 0) { MZC_Admin::back('mzc-customers', 'err:این مشتری سیستم یا سرویس ثبت‌شده دارد؛ اول آن‌ها را پاک کنید.', array('view' => $id)); }
+            // a customer with anything on record stays: deleting them would orphan their account
+            $n = 0; foreach (array('builds', 'jobs', 'invoices', 'payments', 'cheques', 'dues') as $tb) { $n += (int) $db->get_var($db->prepare('SELECT COUNT(*) FROM `' . self::t($tb) . '` WHERE customer_id = %d', $id)); }
+            if ($n > 0) { MZC_Admin::back('mzc-customers', 'err:این مشتری سیستم، سرویس یا حساب مالی ثبت‌شده دارد؛ اول آن‌ها را پاک کنید.', array('view' => $id)); }
             $db->delete(self::t('sessions'), array('customer_id' => $id)); $db->delete(self::t('customers'), array('id' => $id));
         }
         MZC_Admin::back('mzc-customers', 'ok:مشتری پاک شد.');

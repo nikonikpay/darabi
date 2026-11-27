@@ -72,8 +72,8 @@ if ($view) {
     echo '<div class="mzc-panel"><header><h3>حساب مشتری</h3>' . MZC_Admin::pill(($led['balance'] > 0 ? 'بدهکار ' : ($led['balance'] < 0 ? 'بستانکار ' : 'تسویه ')) . number_format(abs($led['balance'])) . ' تومان', $led['balance'] > 0 ? 'warn' : 'ok') . '</header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>تاریخ</th><th>شرح</th><th class="n">بدهکار</th><th class="n">بستانکار</th><th class="n">مانده</th></tr></thead><tbody>';
     if (!$led['rows']) { echo '<tr><td class="empty" colspan="5">گردش مالی ثبت نشده است.</td></tr>'; }
     foreach ($led['rows'] as $r) {
-        $href = $r['ref'] === 'invoice' ? MZC_Admin::url('mzc-acc', array('view' => $r['id'])) : ($r['ref'] === 'job' ? MZC_Admin::url('mzc-jobs', array('view' => $r['id'])) : MZC_Admin::url('mzc-acc', array('tab' => 'payments', 'customer' => $view)));
-        echo '<tr class="click' . (!empty($r['dead']) ? ' muted' : '') . '" data-href="' . esc_url($href) . '"><td>' . esc_html($r['at'] ? MZC_Crm::jdate($r['at']) : '—') . '</td><td>' . esc_html($r['text']) . '</td><td class="n">' . ($r['debit'] ? MZC_Admin::num($r['debit']) : '') . '</td><td class="n">' . ($r['credit'] ? MZC_Admin::num($r['credit']) : '') . '</td><td class="n">' . MZC_Admin::num($r['balance']) . '</td></tr>';
+        $href = $r['ref'] === 'due' ? '' : ($r['ref'] === 'invoice' ? MZC_Admin::url('mzc-acc', array('view' => $r['id'])) : ($r['ref'] === 'job' ? MZC_Admin::url('mzc-jobs', array('view' => $r['id'])) : MZC_Admin::url('mzc-acc', array('tab' => 'payments', 'customer' => $view))));
+        echo '<tr class="' . ($href ? 'click' : '') . (!empty($r['dead']) ? ' muted' : '') . '"' . ($href ? ' data-href="' . esc_url($href) . '"' : '') . '><td>' . esc_html($r['at'] ? MZC_Crm::jdate($r['at']) : '—') . '</td><td>' . esc_html($r['text']) . '</td><td class="n">' . ($r['debit'] ? MZC_Admin::num($r['debit']) : '') . '</td><td class="n">' . ($r['credit'] ? MZC_Admin::num($r['credit']) : '') . '</td><td class="n">' . MZC_Admin::num($r['balance']) . '</td></tr>';
     }
     echo '</tbody></table></div></div>';
     if ($invs) {
