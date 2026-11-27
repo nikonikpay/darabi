@@ -106,7 +106,7 @@ list($rows, $total) = MZC_Crm::customers($q, $paged, $per, $grp);
 $linkOf = function ($c) { return MZC_Admin::url('mzc-customers', array('view' => (int) $c['id'])); };
 $defs = array(
     'name' => array('نام', 1, function ($c) use ($linkOf) { return '<a dir="auto" href="' . esc_url($linkOf($c)) . '"><strong>' . esc_html($c['name']) . '</strong></a>'; }),
-    'grp' => array('گروه', 1, function ($c) { return esc_html(isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : MZC_Crm::$groups['customer']); }),
+    'grp' => array('گروه', 1, function ($c) { return esc_html(isset(MZC_Crm::$groups[(string) $c['grp']]) ? MZC_Crm::$groups[$c['grp']] : MZC_Crm::$groups['customer']); }),
     'mobile' => array('موبایل', 1, function ($c) { return '<span class="num">' . esc_html($c['mobile']) . '</span>'; }),
     'builds' => array('سیستم', 1, function ($c) { return MZC_Admin::num($c['builds']); }, 'n'),
     'jobs' => array('سرویس', 1, function ($c) { return MZC_Admin::num($c['jobs']); }, 'n'),

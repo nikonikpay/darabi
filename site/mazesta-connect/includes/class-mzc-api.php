@@ -92,7 +92,7 @@ final class MZC_Api
     public static function cost_seen($a) { return self::money_seen($a) || MZC_Staff::can($a['id'], 'stock', 2); }
     public static function cost_edit($a) { return MZC_Staff::can($a['id'], 'payments', 2) || MZC_Staff::can($a['id'], 'stock', 2); }
     private static function media_out($v) { return MZC_Crm::media_list((string) $v); }
-    private static function dtype($k) { return isset(MZC_Crm::$device_types[$k]) ? MZC_Crm::$device_types[$k] : ''; }
+    private static function dtype($k) { return isset(MZC_Crm::$device_types[(string) $k]) ? MZC_Crm::$device_types[$k] : ''; }   // (string): a service may have no type, and PHP 8.5 warns on a null key
     /** A record's requested programs, for the apps: software = array of (name, done), software_note, software_by_customer (when the customer last saved it on their page). */
     private static function soft_fields($json) { $s = MZC_Crm::soft_out($json); return array('software' => $s['items'], 'software_note' => $s['note'], 'software_by_customer' => $s['by_customer']); }
     /** The software of a save: sent rows/note replace what is stored; a list not sent stays. */
@@ -111,7 +111,7 @@ final class MZC_Api
     public static function customer_out($c)
     {
         return array('id' => (int) $c['id'], 'name' => $c['name'], 'mobile' => (string) $c['mobile'], 'mobile2' => (string) $c['mobile2'], 'mobiles' => MZC_Crm::mobiles_of($c), 'phone' => (string) $c['phone'], 'national_id' => (string) $c['national_id'], 'email' => (string) $c['email'],
-            'address' => (string) $c['address'], 'notes' => (string) $c['notes'], 'group' => (string) $c['grp'], 'groupText' => isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : '', 'updated' => $c['updated']);
+            'address' => (string) $c['address'], 'notes' => (string) $c['notes'], 'group' => (string) $c['grp'], 'groupText' => isset(MZC_Crm::$groups[(string) $c['grp']]) ? MZC_Crm::$groups[$c['grp']] : '', 'updated' => $c['updated']);
     }
 
     public static function build_out($b, $full, $a = null)
