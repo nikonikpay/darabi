@@ -22,7 +22,7 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         var log = loggerFactory.CreateLogger<LibreHardwareMonitorProvider>();
         // LHM loads its PawnIO modules inside Open(), so the driver has to be in place before it.
         return new(new LhmComputerAdapter(), PawnIoDriver.IsInstalled, IsProcessElevated,
-            hw => (hw as StorageDevice)?.Storage?.SerialNumber, clock, log, () => PawnIoDriver.EnsureInstalled(IsProcessElevated(), log), PawnIoDriver.Describe, () => PawnIoDriver.StartIfStopped(log) || PawnIoDriver.Repair(IsProcessElevated(), log));
+            hw => (hw as StorageDevice)?.Storage?.SerialNumber, clock, log, () => PawnIoDriver.EnsureInstalled(IsProcessElevated(), log), PawnIoDriver.Describe, () => PawnIoDriver.StartIfStopped(log));
     }
     private static bool IsProcessElevated() { using var id = WindowsIdentity.GetCurrent(); return new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator); }
 

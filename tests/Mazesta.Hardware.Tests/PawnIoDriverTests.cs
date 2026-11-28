@@ -8,7 +8,7 @@ public class PawnIoDriverTests
     [Fact] public void System32_files_resolve_under_the_windows_folder() => Assert.True(PawnIoDriver.DriverFileExists(@"\SystemRoot\System32\kernel32.dll"));
     [Theory] [InlineData(null, true)] [InlineData("2.1.0", true)] [InlineData("2.2.0", false)] [InlineData("2.2.0.0", false)] [InlineData("2.3.0", false)]
     public void The_setup_is_run_over_an_unrecorded_or_older_driver_only(string? listed, bool worth) => Assert.Equal(worth, PawnIoDriver.WorthSetup(listed is null ? null : Version.Parse(listed)));
-    [Theory] [InlineData(false, "2.2.0", "1", true)] [InlineData(true, "2.2.0", "1", false)] [InlineData(true, null, "1", false)] [InlineData(true, "2.1.0", "1", true)] [InlineData(true, "2.2.0", "0", true)] [InlineData(true, "2.2.0", null, true)]
+    [Theory] [InlineData(false, "2.2.0", "1", true)] [InlineData(true, "2.2.0", "1", false)] [InlineData(true, null, "1", true)] [InlineData(true, "2.1.0", "1", true)] [InlineData(true, "2.2.0", "0", true)] [InlineData(true, "2.2.0", null, true)]
     public void The_driver_is_put_in_again_by_every_new_version_of_the_app(bool installed, string? listed, string? doneBy, bool due) => Assert.Equal(due, PawnIoDriver.IsDue(installed, listed is null ? null : Version.Parse(listed), doneBy, "1"));
     [Theory] [InlineData("0", "install", 0, false)] [InlineData("183,0,0", "install,uninstall,install", 0, true)] [InlineData("183,5", "install,uninstall", 5, false)] [InlineData("183,3010,0", "install,uninstall,install", 0, true)]
     public void A_driver_of_the_same_version_is_taken_out_and_put_in_again(string exits, string ran, int code, bool removed)

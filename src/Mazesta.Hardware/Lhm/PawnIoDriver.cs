@@ -61,21 +61,13 @@ public static class PawnIoDriver
         return null;
     }
 
-    /// <summary>Whether running the carried setup over a driver that reads nothing can help: it was never recorded (what a field report of a 14600K showed: running,
-    /// no version, every CPU, board and memory sensor empty) or an older one is recorded.</summary>
+    /// <summary>A driver with no recorded version, or an older one, does not serve the app. Unrecorded is a service left running without its installation (a field report of a
+    /// 14600K, reproduced by removing the driver while loaded): it cannot be opened, so every CPU, board and memory sensor and the memory's lights are missing.</summary>
     public static bool WorthSetup(Version? listed) => listed is null || listed < Carried;
 
-    /// <summary>For an installed driver whose sensors read nothing: runs the carried setup over it (once a day) when <see cref="WorthSetup"/>; true when the driver is recorded current afterwards, so the sensors are worth opening again.</summary>
-    public static bool Repair(bool elevated, ILogger log, string? setupPath = null)
-    {
-        if (!elevated || !IsInstalled() || !WorthSetup(ListedVersion())) return false;
-        log.LogWarning("The PawnIO driver reads nothing and is recorded as {Version}; running the carried {Carried} setup over it", ListedVersion()?.ToString() ?? "no version", Carried);
-        return RunCarried(setupPath ?? SetupPath, () => WorthSetup(ListedVersion()), log) == PawnIoInstallResult.Installed;
-    }
-
-    /// <summary>The owner's rule: every install or update of the app puts the carried driver in again, even a current one. Due when the driver is missing, recorded
-    /// older than the carried one, or was last put in by another version of the app (the installer also empties Redist, where that note is kept).</summary>
-    public static bool IsDue(bool installed, Version? listed, string? doneBy, string app) => !installed || listed is { } v && v < Carried || doneBy != app;
+    /// <summary>The owner's rule: every install or update of the app puts the carried driver in again, even a current one. Due when the driver is missing, unrecorded or
+    /// older (<see cref="WorthSetup"/>), or was last put in by another version of the app (the installer also empties Redist, where that note is kept).</summary>
+    public static bool IsDue(bool installed, Version? listed, string? doneBy, string app) => !installed || WorthSetup(listed) || doneBy != app;
 
     private static string AppVersion => typeof(PawnIoDriver).Assembly.GetName().Version?.ToString() ?? "";
     private static string Beside(string setupPath, string name) => Path.Combine(Path.GetDirectoryName(Path.GetFullPath(setupPath))!, name);
