@@ -31,4 +31,22 @@ public sealed record RgbZone(int Index, string Name, uint Type, uint LedsMin, ui
     public bool Resizable => LedsMax > LedsMin;
 }
 
-public sealed record RgbDevice(int Index, RgbKind Kind, string Name, string Vendor, string Description, string Location, IReadOnlyList<RgbMode> Modes, int ActiveMode, int LedCount, IReadOnlyList<RgbColor> Colors, IReadOnlyList<RgbZone> Zones);
+/// <summary>Lights of a board that its controller does not count, written to the controller by the app itself (see <see cref="AsusAuraOnboard"/>): they are the device's last <see cref="Leds"/> LEDs.</summary>
+public sealed record RgbOnboard(string Path, IReadOnlyList<byte> Channels, int Leds);
+
+public sealed record RgbDevice(int Index, RgbKind Kind, string Name, string Vendor, string Description, string Location, IReadOnlyList<RgbMode> Modes, int ActiveMode, int LedCount, IReadOnlyList<RgbColor> Colors, IReadOnlyList<RgbZone> Zones, RgbOnboard? Onboard = null)
+{
+    /// <summary>The lengths of the device's separate lines of lights, in LED order, for a gradient or a moving effect to run along each by itself: an output that takes a
+    /// strip (a header) is a line of its own; fixed zones that follow one another are one line.</summary>
+    public IReadOnlyList<int> Runs()
+    {
+        var runs = new List<int>(); bool open = false;
+        foreach (var z in Zones)
+        {
+            int n = (int)z.LedsCount; if (n == 0) continue;
+            if (open && !z.Resizable) runs[^1] += n; else runs.Add(n);
+            open = !z.Resizable;
+        }
+        return runs.Sum() == LedCount ? runs : [LedCount];   // zones that do not add up to the device say nothing about its lines
+    }
+}

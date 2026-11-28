@@ -11,6 +11,7 @@ public sealed class OpenRgbClient : IDisposable
     public const int DefaultPort = 6742;
     private TcpClient? _tcp; private NetworkStream? _stream; private uint _version; private readonly SemaphoreSlim _gate = new(1, 1);
     private IReadOnlyList<RgbDevice> _devices = [];
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, RgbColor[]> _onboard = new();   // what was last written to the lights the server does not know, by controller
 
     public bool Connected => _tcp?.Connected == true;
     public IReadOnlyList<RgbDevice> Devices => _devices;
@@ -40,7 +41,7 @@ public sealed class OpenRgbClient : IDisposable
             var count = await RequestAsync(0, OpenRgbProtocol.RequestControllerCount, [], ct).ConfigureAwait(false);
             int n = count.Length >= 4 ? (int)BinaryPrimitives.ReadUInt32LittleEndian(count) : 0; var list = new List<RgbDevice>(n);
             var ask = new byte[4]; BinaryPrimitives.WriteUInt32LittleEndian(ask, _version);
-            for (int i = 0; i < n; i++) list.Add(OpenRgbProtocol.Device(i, await RequestAsync(i, OpenRgbProtocol.RequestControllerData, ask, ct).ConfigureAwait(false), _version));
+            for (int i = 0; i < n; i++) list.Add(AsusAuraOnboard.Extend(OpenRgbProtocol.Device(i, await RequestAsync(i, OpenRgbProtocol.RequestControllerData, ask, ct).ConfigureAwait(false), _version), _onboard.GetValueOrDefault));
             return _devices = list;
         }
         finally { _gate.Release(); }
@@ -78,11 +79,11 @@ public sealed class OpenRgbClient : IDisposable
     }
 
     /// <summary>Puts a device in one of its modes (an index into <see cref="RgbDevice.Modes"/>); a colour is used only if the mode takes one.</summary>
-    public async Task SetModeAsync(int device, int mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null)
+    public async Task SetModeAsync(int device, int mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null, uint? direction = null)
     {
         var d = Find(device);
         if (mode < 0 || mode >= d.Modes.Count) throw new ArgumentOutOfRangeException(nameof(mode));
-        await SendModeAsync(d, d.Modes[mode], color, ct, speedPercent, brightnessPercent).ConfigureAwait(false);
+        await SendModeAsync(d, d.Modes[mode], color, ct, speedPercent, brightnessPercent, direction).ConfigureAwait(false);
     }
 
     /// <summary>The index of the mode with this name (case does not matter) on a device, or -1: the same effect (Rainbow, Breathing...) has a different index on each device.</summary>
@@ -159,9 +160,9 @@ public sealed class OpenRgbClient : IDisposable
     /// <summary>The wait between a device's mode change and the colours after it, and before they are sent again.</summary>
     private const int SettleMs = 100;
 
-    private async Task SendModeAsync(RgbDevice d, RgbMode mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null)
+    private async Task SendModeAsync(RgbDevice d, RgbMode mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null, uint? direction = null)
     {
-        var send = mode;
+        var send = direction is { } way ? mode with { Direction = way } : mode;
         // The speed and brightness are percentages of what the mode reports (a mode that has none keeps what it has).
         if (speedPercent is { } sp && mode.Flags.HasFlag(RgbModeFlags.Speed)) send = send with { Speed = Scale(mode.SpeedMin, mode.SpeedMax, sp) };
         if (brightnessPercent is { } bp && mode.Flags.HasFlag(RgbModeFlags.Brightness)) send = send with { Brightness = Scale(mode.BrightnessMin, mode.BrightnessMax, bp) };
@@ -184,11 +185,12 @@ public sealed class OpenRgbClient : IDisposable
         finally { _gate.Release(); }
     }
 
-    /// <summary>The colours of a device's LEDs, and of the lights of it that its controller does not count (<see cref="AsusAuraOnboard"/>).</summary>
+    /// <summary>A colour for each of a device's LEDs: the server gets the ones it knows, and the lights the board's controller does not count (the last ones, see <see cref="AsusAuraOnboard"/>) are written to the controller.</summary>
     private async Task SendLedsAsync(RgbDevice d, IReadOnlyList<RgbColor> colors, CancellationToken ct)
     {
-        await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(colors), ct).ConfigureAwait(false);
-        AsusAuraOnboard.Paint(d, colors);
+        int own = d.Onboard?.Leds ?? 0;
+        await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(own == 0 ? colors : [.. colors.SkipLast(own)]), ct).ConfigureAwait(false);
+        if (d.Onboard is { } lights) { RgbColor[] last = [.. colors.TakeLast(own)]; _onboard[lights.Path] = last; AsusAuraOnboard.Paint(lights, last); }
     }
 
     private async Task SendAsync(int device, int id, byte[] payload, CancellationToken ct)

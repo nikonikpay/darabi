@@ -173,24 +173,42 @@ public sealed class RgbSession : IDisposable
                 await Client.SetModeAsync(device, own, color, ct, look.Speed, look.Brightness).ConfigureAwait(false); return RgbHow.Native;
             }
             string? native = fx == RgbEffects.Static ? null : RgbEffects.NativeName(d.Modes.Select(x => x.Name), fx);
+            uint? way = null;
+            // A direction was chosen for an effect that travels: the device's own mode only when it can be told which way, else the app runs it (a mode with no direction would silently run its own way).
+            if (fx == RgbEffects.Rainbow && look.Direction is { } wanted)
+            {
+                var directed = RgbEffects.NativeNames(d.Modes.Select(x => x.Name), fx).Select(n => (Name: n, Way: ModeDirection(d.Modes.First(x => x.Name == n).Flags, wanted))).FirstOrDefault(x => x.Way is not null);
+                if (directed.Way is not null) (native, way) = (directed.Name, directed.Way);
+                else if (Client.HasPerLed(device)) native = null;
+            }
             if (fx == RgbEffects.Flow && palette is not { Count: > 1 }) fx = RgbEffects.Static;   // one colour has nothing to flow through
             var tint = color ?? palette?.FirstOrDefault() ?? new RgbColor(255, 255, 255);
             if (native is not null)
             {
-                await Client.SetModeAsync(device, Client.ModeIndex(device, native), color ?? palette?.FirstOrDefault(), ct, look.Speed, look.Brightness).ConfigureAwait(false); return RgbHow.Native;
+                await Client.SetModeAsync(device, Client.ModeIndex(device, native), color ?? palette?.FirstOrDefault(), ct, look.Speed, look.Brightness, way).ConfigureAwait(false); return RgbHow.Native;
             }
             if (fx == RgbEffects.Static)
             {
-                if (palette is { Count: > 1 } && Client.HasPerLed(device)) { await Client.SetLedsAsync(device, RgbFrames.Gradient(palette, d.LedCount), ct).ConfigureAwait(false); return RgbHow.Static; }
+                if (palette is { Count: > 1 } && Client.HasPerLed(device)) { await Client.SetLedsAsync(device, RgbFrames.Gradient(palette, d.Runs(), look.Direction), ct).ConfigureAwait(false); return RgbHow.Static; }
                 if (color is null && palette is null) return RgbHow.Skipped;
                 await Client.SetColorAsync(device, tint, ct).ConfigureAwait(false); return RgbHow.Static;
             }
             if (!Client.HasPerLed(device)) return RgbHow.Skipped;
-            Runner.Set(new RgbJob(device, fx, tint, palette, look.Speed ?? 50, look.Brightness ?? 100, d.LedCount, look.Direction)); Runner.Start(); return RgbHow.Simulated;
+            Runner.Set(new RgbJob(device, fx, tint, palette, look.Speed ?? 50, look.Brightness ?? 100, d.Runs(), look.Direction)); Runner.Start(); return RgbHow.Simulated;
         }
         if (look.Leds is { Count: > 0 } leds) { await Client.SetLedsAsync(device, [.. leds.Select(h => RgbColor.Parse(h) ?? new RgbColor(0, 0, 0))], ct).ConfigureAwait(false); return RgbHow.Static; }
         if (color is null) return RgbHow.Skipped;
         await Client.SetColorAsync(device, color, ct).ConfigureAwait(false); return RgbHow.Static;
+    }
+
+    /// <summary>OpenRGB's number for the chosen direction on a mode with these flags (0 left, 1 right, 2 up, 3 down), or null when the mode takes none. A mode that takes up
+    /// and down is told those (a memory stick stands upright); left to right and top to bottom are the same way along a line, as in <see cref="RgbEffects.Reverse"/>.</summary>
+    internal static uint? ModeDirection(RgbModeFlags flags, string direction)
+    {
+        bool back = RgbEffects.Reverse(direction);
+        if (flags.HasFlag(RgbModeFlags.DirectionUd)) return back ? 2u : 3u;
+        if (flags.HasFlag(RgbModeFlags.DirectionLr)) return back ? 0u : 1u;
+        return null;
     }
 
     /// <summary>What the devices are doing now, written down so <see cref="RestoreAsync"/> can put it back (the mode with its own speed and colours, and each LED's colour).</summary>

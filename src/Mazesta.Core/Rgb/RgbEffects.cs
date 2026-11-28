@@ -28,11 +28,14 @@ public static class RgbEffects
     public static string? Universal(string? name) => All.FirstOrDefault(e => e.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The name a device gives this effect, from the modes it lists (the first of the effect's names it has), or null when it has none of them.</summary>
-    public static string? NativeName(IEnumerable<string> deviceModes, string effect)
+    public static string? NativeName(IEnumerable<string> deviceModes, string effect) => NativeNames(deviceModes, effect).FirstOrDefault();
+
+    /// <summary>All of a device's modes that are this effect, the best known name first (a memory stick has both "Rainbow" and "Rainbow Wave", and only the second takes a direction).</summary>
+    public static IReadOnlyList<string> NativeNames(IEnumerable<string> deviceModes, string effect)
     {
-        if (!Names.TryGetValue(effect, out var names)) return null;
+        if (!Names.TryGetValue(effect, out var names)) return [];
         var have = deviceModes.ToList();
-        return names.Select(n => have.FirstOrDefault(m => m.Equals(n, StringComparison.OrdinalIgnoreCase))).FirstOrDefault(m => m is not null);
+        return [.. names.Select(n => have.FirstOrDefault(m => m.Equals(n, StringComparison.OrdinalIgnoreCase))).OfType<string>()];
     }
 
     /// <summary>Whether a device's mode name is only another name for one of the effects above (the page lists those once, as the effect).</summary>

@@ -66,6 +66,24 @@ public class RgbEffectTests
         Assert.Single(RgbFrames.Gradient([new RgbColor(1, 2, 3)], 1)); Assert.Equal(3, RgbFrames.Gradient(palette, 3).Length);
     }
 
+    [Fact] public void Each_line_of_a_device_shows_the_whole_gradient_and_the_whole_travelling_effect()
+    {
+        var pal = new[] { new RgbColor(255, 0, 0), new RgbColor(0, 0, 255) };
+        var g = RgbFrames.Gradient(pal, [4, 3]); Assert.Equal(7, g.Length); Assert.Equal(pal[0], g[0]); Assert.Equal(pal[1], g[3]); Assert.Equal(pal[0], g[4]); Assert.Equal(pal[1], g[6]);
+        var r = RgbFrames.Gradient(pal, [4, 3], "rtl"); Assert.Equal(pal[1], r[0]); Assert.Equal(pal[0], r[3]);
+        var f = RgbFrames.Frame(RgbEffects.Flow, 0.3, [8, 8], pal[0], pal, 50, 100); Assert.Equal(f[..8], f[8..]);
+        Assert.NotEqual(f, RgbFrames.Frame(RgbEffects.Flow, 0.3, [8, 8], pal[0], pal, 50, 100, "rtl"));
+        Assert.Equal(16, RgbFrames.Frame(RgbEffects.Random, 1, [8, 8], pal[0], null, 50, 100).Distinct().Count());   // an effect that does not travel is not repeated
+    }
+
+    [Fact] public void A_mode_is_told_the_direction_only_in_a_way_it_takes()
+    {
+        Assert.Equal(1u, RgbSession.ModeDirection(RgbModeFlags.DirectionLr, "ltr")); Assert.Equal(0u, RgbSession.ModeDirection(RgbModeFlags.DirectionLr, "btt"));
+        Assert.Equal(3u, RgbSession.ModeDirection(RgbModeFlags.DirectionLr | RgbModeFlags.DirectionUd, "ttb")); Assert.Equal(2u, RgbSession.ModeDirection(RgbModeFlags.DirectionUd, "rtl"));
+        Assert.Null(RgbSession.ModeDirection(RgbModeFlags.Speed, "ltr"));
+        Assert.Equal(["Rainbow", "Rainbow Wave"], RgbEffects.NativeNames(["Rainbow Wave", "Direct", "Rainbow"], RgbEffects.Rainbow));
+    }
+
     [Fact] public void Every_palette_has_two_or_more_valid_colours()
     {
         foreach (var p in RgbPalettes.All) { Assert.True(p.Colors.Count >= 2, p.Id); Assert.All(p.Colors, c => Assert.NotNull(RgbColor.Parse(c))); }

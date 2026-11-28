@@ -32,6 +32,20 @@ public static class RgbFrames
         return level >= 1 ? frame : [.. frame.Select(c => Scale(c, level))];
     }
 
+    /// <summary>One frame of a device made of several lines of lights (<paramref name="runs"/>, their lengths in LED order): an effect that travels runs along each line by itself,
+    /// so each fan or strip shows the whole of it, not its share of one long line.</summary>
+    public static RgbColor[] Frame(string effect, double seconds, IReadOnlyList<int> runs, RgbColor color, IReadOnlyList<RgbColor>? palette, int speedPercent, int brightnessPercent, string? direction = null)
+        => effect is RgbEffects.Rainbow or RgbEffects.Flow or RgbEffects.Chase
+            ? [.. runs.SelectMany(n => Frame(effect, seconds, n, color, palette, speedPercent, brightnessPercent, direction))]
+            : Frame(effect, seconds, runs.Sum(), color, palette, speedPercent, brightnessPercent, direction);
+
+    /// <summary>A still gradient along each line of a device, from the first colour to the last; the other way round when <paramref name="direction"/> says so.</summary>
+    public static RgbColor[] Gradient(IReadOnlyList<RgbColor> palette, IReadOnlyList<int> runs, string? direction = null)
+    {
+        IReadOnlyList<RgbColor> ordered = RgbEffects.Reverse(direction) ? [.. palette.Reverse()] : palette;
+        return [.. runs.SelectMany(n => Gradient(ordered, n))];
+    }
+
     /// <summary>A still gradient along a strip, first colour at its start and last at its end.</summary>
     public static RgbColor[] Gradient(IReadOnlyList<RgbColor> palette, int leds)
         => [.. Enumerable.Range(0, Math.Max(leds, 1)).Select(i => palette.Count == 1 ? palette[0] : Sample(palette, leds <= 1 ? 0 : (double)i / (leds - 1), loop: false))];
