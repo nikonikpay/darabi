@@ -193,7 +193,7 @@ public sealed partial class WebBridge
             scene.Dark = false; Save();
             session.Runner.Start();
             report = new { effect = asked, native, simulated, still, skipped };
-            _log.LogInformation("RGB set: device {Device}, mode {Mode}{Name}, colour {Color}, palette {Palette}; own effect: {Native}, run by the app: {Simulated}, refused: {Refused}, left as they were: {Skipped}", device, mode, modeName, hex.Length > 0 ? hex : "off", palette, native, simulated, failed.Count, string.Join(", ", skipped));
+            _log.LogInformation("RGB set: device {Device}, mode {Mode}{Name}, colour {Color}, palette {Palette}, direction {Direction}; own effect: {Native}, run by the app: {Simulated}, refused: {Refused}, left as they were: {Skipped}", device, mode, modeName, hex.Length > 0 ? hex : "off", palette, direction, native, simulated, failed.Count, string.Join(", ", skipped));
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
             return State(failed.Count > 0 ? string.Join(" ", failed) : null);
         }));
