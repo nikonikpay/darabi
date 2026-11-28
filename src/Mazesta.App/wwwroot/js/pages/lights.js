@@ -38,6 +38,7 @@ function harmonies(hex) {
 const lit = (d) => (d.colors || []).find((c) => /^#[0-9a-f]{6}$/i.test(c) && c.toLowerCase() !== "#000000");
 // Laid as the LED strips on the cards are: the first LED at the start of the line (the right in Persian).
 const grad = (cs) => cs.length > 1 ? `linear-gradient(${document.dir === "rtl" ? 270 : 90}deg, ${cs.join(", ")})` : cs[0];
+const ONBOARD = { "Onboard lights": "Rgb_Zone_Onboard", "Onboard lights (if the board has them)": "Rgb_Zone_OnboardIf" };
 const MAX_STOPS = 4;   // a gradient takes two to four colours
 const look = (color) => ({ dir: "ltr", kind: "solid", a: color, g: [color, fromHsl(toHsl(color).h + 180, 1, 0.5)], edit: 0, preset: null, fx: "Static", own: "" });
 
@@ -252,7 +253,8 @@ export function mount(el) {
   }
 
   function zoneRow(d, z) {
-    return h("div", { class: "rgb-zone" }, h("span", { class: "lat" }, z.name), h("span", { class: "rgb-zone-n" }, t("Rgb_Leds", z.leds)));
+    const own = ONBOARD[z.name];   // the app's own zone (the board's uncounted lights) is named in the page's language; the others by their device
+    return h("div", { class: "rgb-zone" }, h("span", { class: own ? "" : "lat" }, own ? t(own) : z.name), h("span", { class: "rgb-zone-n" }, t("Rgb_Leds", z.leds)));
   }
 
   // The headers of the board that take a length. A strip cannot say how long it is, so "Detect" asks: the header is given n LEDs with the last one red, and the answer halves the range.

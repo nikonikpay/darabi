@@ -3476,6 +3476,8 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_All_Sub" xml:space="preserve"><value>یک رنگ یا یک افکت برای همه‌ی دستگاه‌ها</value></data>
   <data name="Rgb_Devices" xml:space="preserve"><value>دستگاه‌ها</value></data>
   <data name="Rgb_Zones" xml:space="preserve"><value>خروجی‌ها</value></data>
+  <data name="Rgb_Zone_Onboard" xml:space="preserve"><value>چراغ‌های روی برد</value></data>
+  <data name="Rgb_Zone_OnboardIf" xml:space="preserve"><value>چراغ‌های روی برد (اگر داشته باشد)</value></data>
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>تعداد LED</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>تا {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>اعمال</value></data>

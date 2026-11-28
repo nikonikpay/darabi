@@ -3476,6 +3476,8 @@ Cancel: stop.</value></data>
   <data name="Rgb_All_Sub" xml:space="preserve"><value>one colour or one effect for every device</value></data>
   <data name="Rgb_Devices" xml:space="preserve"><value>Devices</value></data>
   <data name="Rgb_Zones" xml:space="preserve"><value>Outputs</value></data>
+  <data name="Rgb_Zone_Onboard" xml:space="preserve"><value>Lights on the board</value></data>
+  <data name="Rgb_Zone_OnboardIf" xml:space="preserve"><value>Lights on the board (if it has them)</value></data>
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>number of LEDs</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>up to {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>Set</value></data>

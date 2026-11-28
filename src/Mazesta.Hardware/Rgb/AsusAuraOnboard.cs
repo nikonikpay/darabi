@@ -30,7 +30,9 @@ public static class AsusAuraOnboard
         if (!Controllers.Any(id => path.Contains($"VID_0B05&PID_{id}", StringComparison.OrdinalIgnoreCase))) return null;
         foreach (var (board, channel) in Seen) if (d.Name.EndsWith(board, StringComparison.OrdinalIgnoreCase)) return new(path, [channel], Leds);
         // A zone of a fixed length is the controller's own count of the board's lights: OpenRGB colours those itself.
-        return d.Zones.Count > 0 && d.Zones.All(z => z.Resizable) ? new(path, Likely, Leds) : null;
+        if (d.Zones.Count == 0 || !d.Zones.All(z => z.Resizable)) return null;
+        byte[] past = [.. Likely.Where(c => c >= d.Zones.Count)];   // the first channels are the headers' own: never written over
+        return past.Length > 0 ? new(path, past, Leds) : null;
     }
 
     /// <summary>The device with its uncounted lights added as its last zone (their colours are the ones last written: the controller cannot be asked), or the device as it is.</summary>
