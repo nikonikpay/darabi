@@ -12,7 +12,9 @@ $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 if (-not $admin -and -not $FactsOnly) {
     $forward = "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$PSCommandPath`"", "-App", "`"$exe`""
     $before = Get-Date
-    $p = Start-Process (Get-Process -Id $PID).Path -Verb RunAs -Wait -PassThru -ArgumentList $forward
+    # Not -Wait: that also waits for every program the elevated run leaves behind.
+    $p = Start-Process (Get-Process -Id $PID).Path -Verb RunAs -PassThru -ArgumentList $forward
+    $p.WaitForExit()
     $last = Get-ChildItem (Join-Path $repo "artifacts/hw-doctor") -Filter *.zip -ErrorAction SilentlyContinue | Where-Object LastWriteTime -ge $before | Sort-Object LastWriteTime | Select-Object -Last 1
     Write-Host "Elevated run ended ($($p.ExitCode)). Result: $(if ($last) { $last.FullName } else { 'none written' })"; exit $p.ExitCode
 }
@@ -38,7 +40,12 @@ Section "Driver blockers (1 = on)" {
         "{0}: {1}" -f $r[0], (Get-ItemProperty "HKLM:\$($r[1])" -ErrorAction SilentlyContinue).($r[2])
     }
 }
-Section "PawnIO driver" { sc.exe query PawnIO; "installed version: " + (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO" -ErrorAction SilentlyContinue).DisplayVersion }
+Section "PawnIO driver" {
+    sc.exe query PawnIO
+    "listed version: " + (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO" -ErrorAction SilentlyContinue).DisplayVersion
+    $image = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\PawnIO" -ErrorAction SilentlyContinue).ImagePath
+    if ($image) { $file = $image -replace "^\\\?\?\\", "" -replace "^\\SystemRoot", $env:windir; "driver file: $file  version: " + (Get-Item $file -ErrorAction SilentlyContinue).VersionInfo.FileVersion }
+}
 Section "Code Integrity events naming PawnIO or WinRing" { Get-WinEvent -LogName Microsoft-Windows-CodeIntegrity/Operational -MaxEvents 500 -ErrorAction SilentlyContinue | Where-Object Message -match "pawnio|winring" | Select-Object -First 10 | Format-List TimeCreated, Id, Message }
 Section "Related processes" { Get-Process | Where-Object ProcessName -match $related | Group-Object ProcessName | Sort-Object Name | Format-Table Name, Count -AutoSize }
 Section "Related services" { Get-Service -ErrorAction SilentlyContinue | Where-Object { "$($_.Name) $($_.DisplayName)" -match $related } | Format-Table Name, Status, StartType, DisplayName -AutoSize }
@@ -50,7 +57,12 @@ if ($FactsOnly) { Write-Host "Facts: $facts"; exit 0 }
 
 $data = Join-Path (Split-Path $exe) "Data"; $logs = Join-Path $data "logs"
 $report = Join-Path $logs "hardware-report.txt"; $lights = Join-Path $logs "selftest-lights.txt"
-Get-Process Mazesta, Mazesta-Admin, MazestaTray -ErrorAction SilentlyContinue | Stop-Process -Force
+function Stop-App {
+    Get-Process Mazesta, Mazesta-Admin, MazestaTray -ErrorAction SilentlyContinue | Stop-Process -Force
+    # The app's own lights server too (a leftover holds the memory bus); an OpenRGB of the user's own is left alone.
+    Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$(Split-Path $exe)\*" } | Stop-Process -Force
+}
+Stop-App
 Start-Sleep -Seconds 2
 $started = Get-Date
 $proc = Start-Process $exe -ArgumentList "--selftest=lights" -PassThru
@@ -62,7 +74,7 @@ while (((Get-Date) - $started).TotalSeconds -lt 300 -and -not $proc.HasExited -a
     $lightsDone = (Test-Path $lights) -and (Get-Item $lights).LastWriteTime -ge $started -and (Select-String -Path $lights -Pattern "  DONE$|  FAILED:" -Quiet)
 }
 $summary = "sensor report written: $sensorsDone; lights self-test finished: $lightsDone; app exited by itself: $($proc.HasExited)"
-Get-Process Mazesta, Mazesta-Admin, MazestaTray -ErrorAction SilentlyContinue | Stop-Process -Force
+Stop-App
 "", "=== Run", $summary | Add-Content $facts
 
 # Only what this run wrote or what describes it; an old report must not pass for today's.

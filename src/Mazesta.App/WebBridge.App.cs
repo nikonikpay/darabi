@@ -79,7 +79,8 @@ public sealed partial class WebBridge
     private static object Provider(ProviderStatus s) => new
     {
         state = s.State.ToString(), text = ProviderText.Describe(s), count = s.SensorCount,
-        pawnIo = s.ReasonKey == ProviderText.PawnIoMissing, reason = s.ReasonKey is null ? null : Loc.Get(s.ReasonKey),
+        // A driver that runs and reads nothing is mended by the same setup, so it gets the same buttons.
+        pawnIo = s.ReasonKey is ProviderText.PawnIoMissing or global::Mazesta.Hardware.Lhm.LibreHardwareMonitorProvider.ReasonCpuSensorsUnread, reason = s.ReasonKey is null ? null : Loc.Get(s.ReasonKey),
     };
 
     /// <summary>Every node and sensor, flat: the page groups, filters and formats them itself.</summary>

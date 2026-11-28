@@ -123,15 +123,16 @@ internal static class Installer
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
     }
 
-    /// <summary>Has the app just installed check for the PawnIO sensor driver and put it in when it is missing or half removed (the app checks the signed setup it carries
-    /// and runs it). Done here, on every install and update, as the setup is already elevated; a failure does not undo the install, the app tries again when it runs.</summary>
+    /// <summary>Has the app just installed put the PawnIO sensor driver in again, current or not (the app checks the signed setup it carries and runs it).
+    /// Done here, on every install and update, as the setup is already elevated; a failure does not undo the install, the app tries again when it runs.
+    /// The wait covers taking the old driver out and putting the new one in (two minutes each at most).</summary>
     private static void InstallDriver(string exe, IProgress<(int Percent, string Text)> progress)
     {
         progress.Report((97, SetupText.Driver));
         try
         {
             using var p = Process.Start(new ProcessStartInfo(exe, "--install-driver") { UseShellExecute = false, CreateNoWindow = true });
-            if (p is not null && !p.WaitForExit(3 * 60 * 1000)) { try { p.Kill(); } catch (InvalidOperationException) { } }
+            if (p is not null && !p.WaitForExit(7 * 60 * 1000)) { try { p.Kill(); } catch (InvalidOperationException) { } }
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
     }

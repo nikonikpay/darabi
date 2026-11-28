@@ -2,7 +2,9 @@
 
 ## برای صاحب پروژه (فارسی)
 
-مشکل این است که روی یک سیستم دیگر دمای CPU و نورها درست نیستند. علت هنوز **معلوم نیست**؛ باید روی همان سیستم بررسی شود.
+روی یک سیستم دیگر دمای CPU و نور رم‌ها درست نبود. لاگ آن سیستم یک ریشه نشان داد (درایور سنسور PawnIO) و اصلاح شده، ولی **روی خود آن سیستم هنوز آزمایش نشده**.
+
+**اول این را امتحان کنید (بدون Claude):** نصاب تازه (`artifacts\Mazesta-Setup\MazestaTestSetup.exe`) را روی آن سیستم نصب کنید، ویندوز را ری‌استارت کنید و برنامه را باز کنید. اگر دمای CPU و نور رم درست شد کار تمام است. اگر نشد، خروجی عیب‌یابی برنامه را بگیرید و مراحل زیر را بروید.
 
 **۱. روی سیستم اصلی:** دو فایل پوشه‌ی `artifacts\hw-kit` را روی فلش بریزید (`hw-session.ps1` و `Mazesta-OpenRGB-kit.zip`). فایل zip لازم است، چون لینک دانلود بخش نورها منقضی شده و بدون آن برنامه روی سیستم تازه ساخته نمی‌شود.
 
@@ -27,7 +29,14 @@ powershell -ExecutionPolicy Bypass -File E:\hw-session.ps1
 ### Where things stand
 - Branch **`slice-17/cpu-temp-rgb`**, cut from `slice-16/crm-acc-offline` (app 0.15.22). Work and push here. `CLAUDE.md` names an older working branch; this note overrides it for this task.
 - Last change in this area: `06d6686` (an older PawnIO is updated to the carried 2.2.0; sensors are not reopened while a CPU temperature already reads; LibreHardwareMonitorLib 0.9.7-pre785; OpenRGB pipeline build f899bc88). Verified **only on a Ryzen 9 3950X** (5 CPU temperatures, 7 fans, 4 lights). It was not run on an i7-14700K or a 9800X3D, and the failing PC's parts are not recorded.
-- The symptom is unknown. **Ask first**: is the temperature missing or wrong (which number, against which tool, idle or loaded)? Which lights (board, RAM, graphics card, fans/strips; brand; screenshot)?
+
+### The failing PC (its diagnostics export of 2026-11-27, app 0.15.21)
+- i5-14600K, ASUS PRIME Z790-P D4, Corsair `CMW32GX4M2E3200C16` memory, RTX 3060. Memory integrity on.
+- PawnIO service **RUNNING with no listed version** on every run back to 0.15.7; all 31 CPU temperatures, every clock and power, the board's Super I/O (0 fans, 0 temperatures) and the memory's SPD (0 modules) read nothing; no memory lights. The graphics card's own sensors read.
+- One driver is behind all of it. Seen on the main PC: a lights server started while PawnIO could not be opened logs `Could not open PawnIO` for every SMBus module and finds no memory; started again with the driver up, it finds both modules.
+- Changed since (commit after `2af630b`): every new version of the app removes and installs the carried driver (`PawnIoDriver.IsDue`, `Reinstall`); a driver that reads nothing and is unlisted or older gets the setup again (`Repair`); the lights server starts only after the driver step; the log names the driver's file and version.
+- **Not yet run on that PC.** Install the new build, restart Windows, then check: `CPU Package` has a value, `Hardware details ready:` shows more than 0 SPD modules, and `OpenRGB devices` lists the memory. If the log says the setup did not take, remove the old driver (`sc.exe delete PawnIO` from an elevated shell, restart Windows) with the owner's OK and start the app again.
+- Its graphics card is also missing from the lights (subsystem `1043:8A8F`); ask whether it has any lighting before looking further.
 
 ### Working rules (the main PC's memory does not travel)
 - Answer in **Persian**. Smallest complete change; end each reply with one or two lines on what was not checked and the risk.

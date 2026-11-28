@@ -46,6 +46,9 @@ public sealed class RgbSession : IDisposable
                     var stopped = await Task.Run(Conflicts.StopAll, ct).ConfigureAwait(false);
                     if (stopped.Count > 0) _log.LogInformation("Stopped for the lights: {Makers}", string.Join(", ", stopped));
                 }
+                // The server opens the memory bus through the PawnIO driver as it starts, and keeps going without it: started while the driver was being put in
+                // again, it found no memory's lights. So the driver is seen to first (this waits for a setup that is running).
+                await Task.Run(() => Lhm.PawnIoDriver.EnsureInstalled(IsElevated(), _log), ct).ConfigureAwait(false);
                 // Nothing listens, so an OpenRGB of this folder that still runs is a leftover (a crashed run, a scan that hung): it holds the SMBus lock, and a second server then
                 // finds no motherboard (the "found once, not the next time" report). It is ended before a new one starts.
                 await Task.Run(StopBundledServer, ct).ConfigureAwait(false);
