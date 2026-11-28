@@ -96,7 +96,7 @@ public static class HardwareDiagnosticsReport
             foreach (var s in n.Sensors.OrderBy(s => s.Kind).ThenBy(s => s.Ordinal))
             {
                 var t = tallies.GetValueOrDefault(s.Id);
-                string seen = t is null ? "not polled" : I($"good {t.Good}, bad {t.Bad}, last {t.Last}");
+                string seen = t is null ? "not polled" : I($"good {t.Good}, bad {t.Bad}, last {t.Last}{(t.Max is { } m ? I($", max {m:0.###}") : "")}");   // the number tells a wrong reading from a missing one
                 b.AppendLine(I($"    {s.Kind,-12} {s.Name,-32} role={(s.Role == SensorRole.None ? "-" : s.Role.ToString()),-26} unit={s.Unit,-14} {s.Id.Value}  [{seen}]"));
             }
         }

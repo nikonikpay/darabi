@@ -25,7 +25,9 @@ Copy-Item $pawn.FullName (Join-Path $target "Redist")
 $cache = [IO.Path]::GetFullPath("../Mazesta-Redist/OpenRGB-f899bc88", $repo)
 if (-not (Test-Path (Join-Path $cache "OpenRGB.exe"))) {
     $zip = Join-Path ([IO.Path]::GetTempPath()) "openrgb-f899bc88.zip"
-    Invoke-WebRequest "https://gitlab.com/CalcProgrammer1/OpenRGB/-/jobs/18331952696/artifacts/download" -OutFile $zip
+    # The pipeline's files expire on GitLab (403 since 2026-11-28), so a machine that never built before gets the cache copied from one that did.
+    try { Invoke-WebRequest "https://gitlab.com/CalcProgrammer1/OpenRGB/-/jobs/18331952696/artifacts/download" -OutFile $zip }
+    catch { throw "OpenRGB f899bc88 could not be downloaded ($($_.Exception.Message)). Copy the OpenRGB-f899bc88 folder from a machine that has built before to $cache (docs/HANDOFF-CPU-TEMP-RGB.md)." }
     if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne "D9C66F9CF9DB4D4D2BEB23620B3301A713E9C31DC6CD61676F3EF62CC4AECE04") { Remove-Item $zip -Force; throw "The OpenRGB download does not match the pinned hash." }
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "openrgb-unpack"
     if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }

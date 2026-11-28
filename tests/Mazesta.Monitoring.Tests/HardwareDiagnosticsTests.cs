@@ -75,5 +75,6 @@ public class HardwareDiagnosticsNotesTests
         var tallies = new Dictionary<SensorId, SensorTally> { [board.Sensors[1].Id] = new(0, 15, DataQuality.Invalid, 0) };
         var text = HardwareDiagnosticsReport.Build(DateTimeOffset.UnixEpoch, "test", "PC", new ProviderStatus(ProviderState.Ready, 2, null, null), [board], tallies);
         Assert.Contains("'Temp #3'", text); Assert.Contains("Not measured by the hardware (1)", text);
+        Assert.Contains("[good 0, bad 15, last Invalid, max 0]", text);
     }
 }
