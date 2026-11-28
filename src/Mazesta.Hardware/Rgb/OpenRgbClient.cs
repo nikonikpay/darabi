@@ -70,9 +70,9 @@ public sealed class OpenRgbClient : IDisposable
         {
             await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(d.Modes.ToList().IndexOf(mode), mode, _version), ct).ConfigureAwait(false);
             await Task.Delay(SettleMs, ct).ConfigureAwait(false);
-            await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false);
+            await SendLedsAsync(d, all, ct).ConfigureAwait(false);
             await Task.Delay(SettleMs, ct).ConfigureAwait(false);   // sent once more: a controller still taking the mode change (a memory stick coming out of its own effect) kept the colours it had
-            await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false);
+            await SendLedsAsync(d, all, ct).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
     }
@@ -124,7 +124,7 @@ public sealed class OpenRgbClient : IDisposable
         var d = Device(device); if (d is null || colors.Count == 0) return;
         var all = Enumerable.Range(0, d.LedCount).Select(i => colors[Math.Min(i, colors.Count - 1)]).ToList();
         await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try { await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false); }
+        try { await SendLedsAsync(d, all, ct).ConfigureAwait(false); }
         finally { _gate.Release(); }
     }
 
@@ -145,7 +145,7 @@ public sealed class OpenRgbClient : IDisposable
         try
         {
             await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(index, mode, _version), ct).ConfigureAwait(false);
-            if (mode.PerLed && leds is { Count: > 0 }) await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(Enumerable.Range(0, d.LedCount).Select(i => leds[Math.Min(i, leds.Count - 1)]).ToList()), ct).ConfigureAwait(false);
+            if (mode.PerLed && leds is { Count: > 0 }) await SendLedsAsync(d, Enumerable.Range(0, d.LedCount).Select(i => leds[Math.Min(i, leds.Count - 1)]).ToList(), ct).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
     }
@@ -176,12 +176,19 @@ public sealed class OpenRgbClient : IDisposable
             await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, packet, ct).ConfigureAwait(false);
             if (color is { } leds && mode.PerLed)
             {
-                var all = OpenRgbProtocol.Leds(Enumerable.Repeat(leds, Math.Max(d.LedCount, 1)).ToList());
-                for (int k = 0; k < 2; k++) { await Task.Delay(SettleMs, ct).ConfigureAwait(false); await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, all, ct).ConfigureAwait(false); }
+                var all = Enumerable.Repeat(leds, Math.Max(d.LedCount, 1)).ToList();
+                for (int k = 0; k < 2; k++) { await Task.Delay(SettleMs, ct).ConfigureAwait(false); await SendLedsAsync(d, all, ct).ConfigureAwait(false); }
             }
             else { await Task.Delay(SettleMs, ct).ConfigureAwait(false); await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, packet, ct).ConfigureAwait(false); }
         }
         finally { _gate.Release(); }
+    }
+
+    /// <summary>The colours of a device's LEDs, and of the lights of it that its controller does not count (<see cref="AsusAuraOnboard"/>).</summary>
+    private async Task SendLedsAsync(RgbDevice d, IReadOnlyList<RgbColor> colors, CancellationToken ct)
+    {
+        await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(colors), ct).ConfigureAwait(false);
+        AsusAuraOnboard.Paint(d, colors);
     }
 
     private async Task SendAsync(int device, int id, byte[] payload, CancellationToken ct)
